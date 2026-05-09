@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +9,6 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Daftarkan field yang boleh diisi secara massal
     protected $fillable = [
         'name',
         'sku',
@@ -20,4 +18,10 @@ class Product extends Model
         'category',
         'image_path',
     ];
+
+    // Hubungan One-to-Many: Satu Produk bisa punya banyak Transaksi
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Admin\StaffController; 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Controllers\Admin\TransactionController; // Tambahkan ini di atas
 
 // Landing Page
 Route::get('/', function () {
@@ -34,13 +35,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // Admin & Owner Routes (Gunakan Class Path langsung)
-    Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
+Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        
+        // Product Management
         Route::get('/inventory', [ProductController::class, 'index'])->name('admin.inventory');
         Route::get('/products/create', [ProductController::class, 'create'])->name('admin.products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('admin.products.store');
 
-        // Route Staff (Proteksi ada di StaffController)
+        // Transaction Management
+        Route::get('/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
+        Route::patch('/transactions/{transaction}/status', [TransactionController::class, 'updateStatus'])->name('admin.transactions.updateStatus');
+
+        // Route Staff
         Route::get('/staff', [StaffController::class, 'index'])->name('admin.staff.index');
         Route::get('/staff/create', [StaffController::class, 'create'])->name('admin.staff.create');
         Route::post('/staff', [StaffController::class, 'store'])->name('admin.staff.store');
