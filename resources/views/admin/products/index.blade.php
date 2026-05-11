@@ -27,7 +27,7 @@
             <tr>
                 <td>
                     <div class="d-flex align-items-center">
-                        <img src="{{ asset('product_image/' . $product->image_path) }}" class="rounded bg-light" style="width: 45px; height: 45px; object-fit: cover;">
+                        <img src="{{ Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" class="rounded bg-light" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/45?text=No+Image'">
                         <div class="ms-3">
                             <p class="mb-0 fw-medium">{{ $product->name }}</p>
                         </div>

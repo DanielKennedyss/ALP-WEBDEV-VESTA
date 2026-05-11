@@ -19,6 +19,10 @@ class Product extends Model
         'image_path',
     ];
 
+    protected $casts = [
+        'price' => 'decimal:0',
+        'stock' => 'integer',
+    ];
     // Hubungan One-to-Many: Satu Produk bisa punya banyak Transaksi
     public function transactions()
     {

@@ -11,7 +11,8 @@ use App\Http\Controllers\Admin\TransactionController; // Tambahkan ini di atas
 
 // Landing Page
 Route::get('/', function () {
-    return view('welcome');
+    $products = \App\Models\Product::all();
+    return view('home', compact('products'));
 });
 
 // Guest Routes

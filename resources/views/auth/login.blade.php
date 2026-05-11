@@ -1,13 +1,49 @@
 @extends('base.base')
 
 @section('content')
-<!-- Link Bootstrap CDN -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 <style>
-    .vh-100-custom { min-height: 100vh; }
-    .bg-editorial { background-color: #f8f9fa; }
-    
+    html, body { overflow: hidden; height: 100vh; width: 100vw; margin: 0; padding: 0; }
+    body { padding-top: 0 !important; }
+
+    /* Hapus styling dari header.blade.php */
+    nav, footer { display: none !important; }
+
+    .login-wrapper {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    .editorial-panel {
+        flex: 0 0 50%;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: flex-end;
+        padding: 3rem;
+    }
+
+    .editorial-panel h1 {
+        font-size: 5rem;
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        margin-bottom: 1rem;
+    }
+
+    .editorial-panel p {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.25em;
+        color: #6c757d;
+    }
+
+    .form-panel {
+        flex: 0 0 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+    }
+
     .form-minimal input {
         border: none;
         border-bottom: 1px solid #dee2e6;
@@ -15,14 +51,13 @@
         padding-left: 0;
         font-size: 0.9rem;
         background-color: transparent;
+        box-shadow: none !important;
     }
-    
+
     .form-minimal input:focus {
-        box-shadow: none;
         border-bottom: 1px solid #000;
-        background-color: transparent;
     }
-    
+
     .label-caps {
         font-size: 10px;
         font-weight: 700;
@@ -30,16 +65,18 @@
         letter-spacing: 0.2em;
         color: #adb5bd;
     }
-    
+
     .btn-vesta {
         background: #000;
         color: #fff;
         border-radius: 0;
-        padding: 15px;
+        padding: 1rem;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.3em;
         text-transform: uppercase;
+        border: none;
+        width: 100%;
         transition: all 0.3s ease;
     }
 
@@ -48,64 +85,70 @@
         color: #fff;
     }
 
-    /* Menghilangkan navigasi standar jika ada di base.base */
-    nav, footer { display: none !important; }
+    .form-control::placeholder {
+        color: #adb5bd;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+    }
+
+    @media (max-width: 991px) {
+        .editorial-panel { display: none; }
+        .form-panel { flex: 0 0 100%; }
+        html, body { overflow: auto; }
+    }
 </style>
 
-<div class="container-fluid p-0 overflow-hidden">
-    <div class="row g-0 vh-100-custom">
-        
-        <!-- SISI KIRI: Editorial Space (Sama dengan Register) -->
-        <div class="col-lg-6 bg-editorial d-none d-lg-flex align-items-end p-5">
-            <div>
-                <h1 class="display-3 fw-light tracking-tighter mb-4">VESTA</h1>
-                <p class="text-muted text-uppercase small tracking-widest">
-                    Welcome back. Elevate your curation once again.
-                </p>
-            </div>
+<div class="login-wrapper">
+    <!-- SISI KIRI: Editorial Space -->
+    <div class="editorial-panel">
+        <div>
+            <h1>VESTA</h1>
+            <p>Welcome back. Elevate your curation once again.</p>
         </div>
+    </div>
 
-        <!-- SISI KANAN: Form Login -->
-        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-white p-5">
-            <div class="w-100" style="max-width: 380px;">
-                <div class="mb-5">
-                    <h2 class="fw-normal mb-1">Welcome back.</h2>
-                    <p class="text-muted small text-uppercase tracking-wider">Please enter your details to sign in.</p>
+    <!-- SISI KANAN: Form Login -->
+    <div class="form-panel">
+        <div style="width: 100%; max-width: 380px;">
+            <div class="mb-5">
+                <h2 style="font-weight: 300; margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome back.</h2>
+                <p class="label-caps">Please enter your details to sign in.</p>
+            </div>
+
+            <form action="{{ route('login') }}" method="POST" class="form-minimal">
+                @csrf
+
+                <div class="mb-4">
+                    <div>
+                        <label class="label-caps d-block mb-2">Email Address</label>
+                    </div>
+                    
+                    <input type="email" name="email" class="form-control" placeholder="enter your email" required autofocus>
                 </div>
 
-                <form action="{{ route('login') }}" method="POST" class="form-minimal">
-                    @csrf
-                    
-                    <!-- Email Address -->
-                    <div class="mb-4">
-                        <label class="label-caps">Email Address</label>
-                        <input type="email" name="email" class="form-control" placeholder="enter your email" required autofocus>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <label class="label-caps mb-0">Password</label>
+                        <a href="#" class="label-caps text-decoration-none text-dark" style="opacity: 0.6;">Forgot?</a>
                     </div>
+                    <input type="password" name="password" class="form-control" placeholder="enter your password" required>
+                </div>
 
-                    <!-- Password -->
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between">
-                            <label class="label-caps">Password</label>
-                            <a href="#" class="label-caps text-decoration-none text-dark" style="opacity: 0.6;">Forgot?</a>
-                        </div>
-                        <input type="password" name="password" class="form-control" placeholder="enter your password" required>
-                    </div>
+                <div class="mb-5 d-flex align-items-center">
+                    <input type="checkbox" name="remember" id="remember" class="me-2">
+                    <label for="remember" class="label-caps mb-0" style="cursor: pointer;">Remember me</label>
+                </div>
 
-                    <!-- Remember Me -->
-                    <div class="mb-5 d-flex align-items-center">
-                        <input type="checkbox" name="remember" id="remember" class="me-2">
-                        <label for="remember" class="label-caps mb-0" style="cursor: pointer;">Remember me</label>
-                    </div>
+                <button type="submit" class="btn btn-vesta">
+                    Sign In &rarr;
+                </button>
+            </form>
 
-                    <button type="submit" class="btn btn-vesta w-100 border-0">
-                        Sign In &rarr;
-                    </button>
-                </form>
-
-                <p class="mt-5 text-center label-caps">
-                    Don't have an account? <a href="{{ route('register') }}" class="text-dark text-decoration-none fw-bold">Sign up</a>
-                </p>
-            </div>
+            <p class="mt-5 text-center">
+                <span class="label-caps">Don't have an account?</span>
+                <a href="{{ route('register') }}" class="text-dark text-decoration-none fw-bold ms-1">Sign up</a>
+            </p>
         </div>
     </div>
 </div>
