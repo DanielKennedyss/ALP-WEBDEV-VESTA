@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VESTRA - Luxury Fashion Redefined</title>
+    <title>VESTA - Luxury Fashion Redefined</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
-                <a href="/" class="text-xl font-serif tracking-[0.3em]">VESTRA</a>
+                <a href="/" class="text-xl font-serif tracking-[0.3em]">VESTA</a>
 
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center gap-10">
@@ -68,7 +68,7 @@
 
         <!-- Hero Content -->
         <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-            <h1 class="text-white text-5xl md:text-7xl lg:text-8xl font-serif tracking-[0.2em] mb-4">VESTRA</h1>
+            <h1 class="text-white text-5xl md:text-7xl lg:text-8xl font-serif tracking-[0.2em] mb-4">VESTA</h1>
             <div class="w-20 h-px bg-white/50 my-6"></div>
             <p class="text-white/80 text-xs md:text-sm tracking-[0.4em] uppercase">Luxury Fashion Redefined</p>
         </div>
@@ -84,7 +84,7 @@
     <!-- BRAND INTRO -->
     <section id="about" class="w-full py-32 px-6 lg:px-8 bg-white">
         <div class="max-w-3xl mx-auto text-center">
-            <span class="text-xs tracking-[0.3em] text-gray-400 uppercase">The House of Vestra</span>
+            <span class="text-xs tracking-[0.3em] text-gray-400 uppercase">The House of Vesta</span>
             <h2 class="text-3xl md:text-4xl font-serif tracking-[0.1em] mt-6 mb-8">Crafting Excellence</h2>
             <p class="text-gray-600 text-sm leading-relaxed">
                 Discover our curated collection of luxury fashion pieces, meticulously crafted with the finest materials and unwavering attention to detail.
@@ -185,7 +185,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                 <div class="md:col-span-2">
-                    <a href="/" class="text-2xl font-serif tracking-[0.3em]">VESTRA</a>
+                    <a href="/" class="text-2xl font-serif tracking-[0.3em]">VESTA</a>
                     <p class="text-gray-500 text-sm mt-4 leading-relaxed max-w-sm">
                         Luxury fashion for the discerning individual. Crafted with passion, worn with pride.
                     </p>
@@ -210,7 +210,7 @@
                 </div>
             </div>
             <div class="pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                <p class="text-xs tracking-wide text-gray-400">&copy; {{ date('Y') }} VESTRA. All rights reserved.</p>
+                <p class="text-xs tracking-wide text-gray-400">&copy; {{ date('Y') }} VESTA. All rights reserved.</p>
                 <div class="flex items-center gap-6">
                     <a href="#" class="text-gray-400 hover:text-black transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.226 1.523 4.077 3.415 4.099-1.107 1.05-2.655 1.64-4.237 1.64-.26 0-.515-.015-.766-.04.56 1.745 2.193 3.02 4.098 3.06-1.503 1.18-3.396 1.883-5.454 1.883-.355 0-.704-.02-1.048-.05 1.954.98 4.298 1.62 6.803 1.62 8.162 0 12.628-6.41 12.628-11.98 0-.182 0-.363-.01-.543.868-.628 1.624-1.408 2.223-2.303"/></svg>

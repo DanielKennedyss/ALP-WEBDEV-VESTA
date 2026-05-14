@@ -44,18 +44,34 @@
         padding: 3rem;
     }
 
-    .form-minimal input {
+    .form-minimal input[type="email"],
+    .form-minimal input[type="password"] {
         border: none;
         border-bottom: 1px solid #dee2e6;
         border-radius: 0;
-        padding-left: 0;
-        font-size: 0.9rem;
+        padding: 0.5rem 0;
+        font-size: 0.85rem;
         background-color: transparent;
         box-shadow: none !important;
+        width: 100%;
+        display: block;
     }
 
-    .form-minimal input:focus {
+    .form-minimal input[type="checkbox"] {
+        width: 14px !important;
+        height: 14px !important;
+        display: inline-block !important;
+        appearance: auto !important;
+        -webkit-appearance: checkbox !important;
+        border: 1px solid #adb5bd !important;
+        cursor: pointer;
+        vertical-align: middle;
+    }
+
+    .form-minimal input[type="email"]:focus,
+    .form-minimal input[type="password"]:focus {
         border-bottom: 1px solid #000;
+        outline: none;
     }
 
     .label-caps {
@@ -85,11 +101,31 @@
         color: #fff;
     }
 
-    .form-control::placeholder {
+    .form-minimal input::placeholder {
         color: #adb5bd;
-        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.02em;
+        text-transform: none;
+    }
+
+    .password-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .forgot-link {
         font-size: 10px;
-        letter-spacing: 0.1em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #6c757d;
+        text-decoration: none;
+    }
+
+    .forgot-link:hover {
+        color: #333;
     }
 
     @media (max-width: 991px) {
@@ -110,7 +146,7 @@
 
     <!-- SISI KANAN: Form Login -->
     <div class="form-panel">
-        <div style="width: 100%; max-width: 380px;">
+        <div style="width: 100%; max-width: 420px;">
             <div class="mb-5">
                 <h2 style="font-weight: 300; margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome back.</h2>
                 <p class="label-caps">Please enter your details to sign in.</p>
@@ -119,25 +155,22 @@
             <form action="{{ route('login') }}" method="POST" class="form-minimal">
                 @csrf
 
-                <div class="mb-4">
-                    <div>
-                        <label class="label-caps d-block mb-2">Email Address</label>
-                    </div>
-                    
-                    <input type="email" name="email" class="form-control" placeholder="enter your email" required autofocus>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Email Address</label>
+                    <input type="email" name="email" placeholder="enter your email" required autofocus>
                 </div>
 
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-2">
-                        <label class="label-caps mb-0">Password</label>
-                        <a href="#" class="label-caps text-decoration-none text-dark" style="opacity: 0.6;">Forgot?</a>
+                <div style="margin-bottom: 1.5rem;">
+                    <div class="password-row">
+                        <label class="label-caps" style="margin-bottom: 0;">Password</label>
+                        <a href="#" class="forgot-link">Forgot?</a>
                     </div>
-                    <input type="password" name="password" class="form-control" placeholder="enter your password" required>
+                    <input type="password" name="password" placeholder="enter your password" required>
                 </div>
 
-                <div class="mb-5 d-flex align-items-center">
-                    <input type="checkbox" name="remember" id="remember" class="me-2">
-                    <label for="remember" class="label-caps mb-0" style="cursor: pointer;">Remember me</label>
+                <div style="display: flex; align-items: center; margin-bottom: 2rem;">
+                    <input type="checkbox" name="remember" id="remember" style="margin-right: 0.5rem; width: auto;">
+                    <label for="remember" class="label-caps" style="cursor: pointer; margin-bottom: 0;">Remember me</label>
                 </div>
 
                 <button type="submit" class="btn btn-vesta">
@@ -147,7 +180,7 @@
 
             <p class="mt-5 text-center">
                 <span class="label-caps">Don't have an account?</span>
-                <a href="{{ route('register') }}" class="text-dark text-decoration-none fw-bold ms-1">Sign up</a>
+                <a href="{{ route('register') }}" class="text-dark text-decoration-none ms-1" style="font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.2em;">Sign Up</a>
             </p>
         </div>
     </div>
