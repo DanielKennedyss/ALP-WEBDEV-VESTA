@@ -10,7 +10,6 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        // Mengambil semua transaksi beserta data produknya (One-to-Many)
         $transactions = Transaction::with('product')->orderBy('created_at', 'desc')->get();
         return view('admin.transactions.index', compact('transactions'));
     }
@@ -18,7 +17,7 @@ class TransactionController extends Controller
     public function updateStatus(Request $request, Transaction $transaction)
     {
         $request->validate(['status' => 'required|in:pending,completed,cancelled']);
-        
+
         $transaction->update(['status' => $request->status]);
 
         return redirect()->back()->with('success', 'Order status updated successfully!');

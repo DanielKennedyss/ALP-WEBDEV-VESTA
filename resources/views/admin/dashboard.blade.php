@@ -62,13 +62,13 @@
         <div class="d-flex align-items-center mb-3">
             <div class="bg-light rounded overflow-hidden" style="width: 40px; height: 40px;">
                 <!-- UPDATE BAGIAN INI -->
-                <img src="{{ asset('product/' . ($item->product->image_path ?? 'default.jpg')) }}" 
+                <img src="{{ asset('product_image/' . ($item->product->image_path ?? 'default.jpg')) }}" 
                      class="w-100 h-100 object-fit-cover" 
                      onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=V&background=000&color=fff';">
             </div>
             <div class="ms-3 flex-grow-1">
                 <p class="mb-0 fw-bold small" style="font-size: 11px;">{{ $item->product->name }}</p>
-                <p class="text-muted mb-0" style="font-size: 10px;">{{ ucfirst($item->product->category) }}</p>
+                <p class="text-muted mb-0" style="font-size: 10px;">{{ $item->product->category->name ?? '-' }}</p>
             </div>
             <div class="text-end">
                 <p class="mb-0 fw-bold small" style="font-size: 11px;">{{ $item->units_sold }}</p>

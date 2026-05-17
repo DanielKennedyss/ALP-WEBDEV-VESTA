@@ -26,7 +26,7 @@
                         <div class="d-flex align-items-center">
                             <div class="bg-light rounded" style="width: 35px; height: 35px; margin-right: 12px; overflow: hidden;">
     <!-- Gunakan folder public/product sesuai rencanamu -->
-    <img src="{{ asset('product/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
+    <img src="{{ asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
          class="w-100 h-100 object-fit-cover" 
          onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name) }}&background=000&color=fff';">
 </div>

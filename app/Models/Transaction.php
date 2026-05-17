@@ -7,9 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
-        'product_id', 
-        'quantity', 
-        'total_price', 
+        'product_id',
+        'quantity',
+        'total_price',
+        'customer_name',
+        'customer_email',
+        'invoice_number',
+        'payment_url',
+        'paid_at',
         'status'
     ];
 

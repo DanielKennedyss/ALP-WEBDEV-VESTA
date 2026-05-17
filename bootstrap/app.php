@@ -11,7 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->validateCsrfTokens(except: [
+            'direct-checkout',
+            'direct-checkout/*',
+            'cart/add',
+            'cart/add/*',
+            'checkout',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

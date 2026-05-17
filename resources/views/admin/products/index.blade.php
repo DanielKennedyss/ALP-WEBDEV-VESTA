@@ -16,8 +16,10 @@
                 <th>Product Detail</th>
                 <th>SKU</th>
                 <th>Category</th>
+                <th>Gender</th>
+                <th>Sizes</th>
                 <th>Price</th>
-                <th>Stock</th>
+                <th>Total Stock</th>
                 <th>Status</th>
                 <th class="text-end">Action</th>
             </tr>
@@ -27,20 +29,28 @@
             <tr>
                 <td>
                     <div class="d-flex align-items-center">
-                        <img src="{{ Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" class="rounded bg-light" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/45?text=No+Image'">
+                        <img src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" class="rounded bg-light" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/45?text=No+Image'">
                         <div class="ms-3">
                             <p class="mb-0 fw-medium">{{ $product->name }}</p>
                         </div>
                     </div>
                 </td>
                 <td class="text-muted">{{ $product->sku }}</td>
-                <td>{{ $product->category }}</td>
-                <td>IDR {{ number_format($product->price, 0, ',', '.') }}</td>
-                <td>{{ $product->stock }}</td>
+                <td>{{ $product->category->name ?? '-' }}</td>
+                <td>{{ $product->gender ?? '-' }}</td>
                 <td>
-                    @if($product->stock <= 0)
+                    @foreach($product->variants as $variant)
+                        <span class="badge bg-light text-dark border" style="font-size: 10px;">
+                            {{ $variant->size_label }} ({{ $variant->stock }})
+                        </span>
+                    @endforeach
+                </td>
+                <td>IDR {{ number_format($product->price, 0, ',', '.') }}</td>
+                <td>{{ $product->total_stock }}</td>
+                <td>
+                    @if($product->isOutOfStock())
                         <span class="status-badge status-out">Out of Stock</span>
-                    @elseif($product->stock <= 10)
+                    @elseif($product->hasLowStock())
                         <span class="status-badge status-low">Low Stock</span>
                     @else
                         <span class="text-success small">● Healthy</span>
@@ -52,7 +62,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">No products in inventory.</td>
+                <td colspan="9" class="text-center py-5 text-muted">No products in inventory.</td>
             </tr>
             @endforelse
         </tbody>

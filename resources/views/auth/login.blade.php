@@ -17,15 +17,34 @@
     .editorial-panel {
         flex: 0 0 50%;
         background-color: #f8f9fa;
+        background-image: url('https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200&q=80');
+        background-size: cover;
+        background-position: center;
+        position: relative;
         display: flex;
         align-items: flex-end;
         padding: 3rem;
     }
 
+    .editorial-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+        z-index: 1;
+    }
+
+    .editorial-panel > div {
+        position: relative;
+        z-index: 2;
+        color: white;
+    }
+
     .editorial-panel h1 {
+        font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
         font-size: 5rem;
         font-weight: 300;
-        letter-spacing: -0.03em;
+        letter-spacing: 0.1em;
         margin-bottom: 1rem;
     }
 
@@ -33,7 +52,7 @@
         text-transform: uppercase;
         font-size: 0.75rem;
         letter-spacing: 0.25em;
-        color: #6c757d;
+        color: #e0e0e0;
     }
 
     .form-panel {
@@ -45,12 +64,15 @@
     }
 
     .form-minimal input[type="email"],
-    .form-minimal input[type="password"] {
+    .form-minimal input[type="password"],
+    .form-minimal input[type="text"] {
         border: none;
         border-bottom: 1px solid #dee2e6;
         border-radius: 0;
         padding: 0.5rem 0;
-        font-size: 0.85rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #333;
         background-color: transparent;
         box-shadow: none !important;
         width: 100%;
@@ -69,17 +91,16 @@
     }
 
     .form-minimal input[type="email"]:focus,
-    .form-minimal input[type="password"]:focus {
-        border-bottom: 1px solid #000;
+    .form-minimal input[type="password"]:focus,
+    .form-minimal input[type="text"]:focus {
+        border-bottom: 2px solid #000;
         outline: none;
     }
 
     .label-caps {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        color: #adb5bd;
+        font-size: 14px;
+        font-weight: 400;
+        color: #333;
     }
 
     .btn-vesta {
@@ -103,7 +124,8 @@
 
     .form-minimal input::placeholder {
         color: #adb5bd;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
+        font-weight: 400;
         letter-spacing: 0.02em;
         text-transform: none;
     }
@@ -116,11 +138,9 @@
     }
 
     .forgot-link {
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #6c757d;
+        font-size: 14px;
+        font-weight: 400;
+        color: #0d6efd;
         text-decoration: none;
     }
 
@@ -148,7 +168,7 @@
     <div class="form-panel">
         <div style="width: 100%; max-width: 420px;">
             <div class="mb-5">
-                <h2 style="font-weight: 300; margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome back.</h2>
+                <h2 style="font-weight: 600; margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome back.</h2>
                 <p class="label-caps">Please enter your details to sign in.</p>
             </div>
 
@@ -180,7 +200,7 @@
 
             <p class="mt-5 text-center">
                 <span class="label-caps">Don't have an account?</span>
-                <a href="{{ route('register') }}" class="text-dark text-decoration-none ms-1" style="font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.2em;">Sign Up</a>
+                <a href="{{ route('register') }}" class="text-dark ms-1" style="text-decoration: underline;">Sign Up</a>
             </p>
         </div>
     </div>

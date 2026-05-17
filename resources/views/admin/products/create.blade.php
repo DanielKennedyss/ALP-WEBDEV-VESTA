@@ -6,7 +6,7 @@
     <h1 class="fw-normal tracking-tighter" style="font-size: 2.5rem;">New Product</h1>
 </div>
 
-{{-- 1. ERROR FEEDBACK BLOCK --}}
+{{-- ERROR FEEDBACK --}}
 @if ($errors->any())
     <div class="alert alert-danger border-0 rounded-0 shadow-sm mb-4" style="background-color: #fff5f5; border-left: 4px solid #ff4d4d !important;">
         <ul class="mb-0 small fw-bold text-uppercase" style="list-style: none; letter-spacing: 0.5px; color: #ff4d4d;">
@@ -17,56 +17,136 @@
     </div>
 @endif
 
-<div class="admin-card" style="max-width: 900px;">
-    {{-- 2. ENCTYPE HARUS ADA UNTUK UPLOAD GAMBAR --}}
+<div class="admin-card" style="max-width: 960px;">
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="row g-5">
-            <!-- Left Side: Basic Info -->
+
+            {{-- ============ LEFT SIDE: Basic Info ============ --}}
             <div class="col-md-7">
+                {{-- Product Name --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Name</label>
                     <input type="text" name="name" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none @error('name') is-invalid @enderror" 
                            placeholder="e.g. Noir Monogram Tote" value="{{ old('name') }}" required>
                 </div>
                 
+                {{-- Description --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Description</label>
                     <textarea name="description" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
                               rows="4" placeholder="Crafted from premium leather...">{{ old('description') }}</textarea>
                 </div>
-            </div>
-            
-            <!-- Right Side: Logistics -->
-            <div class="col-md-5">
-                <div class="mb-4">
-                    <label class="stat-label d-block mb-2">SKU (Stock Keeping Unit)</label>
-                    <input type="text" name="sku" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none @error('sku') is-invalid @enderror" 
-                           placeholder="VS-LTH-001" value="{{ old('sku') }}" required>
-                </div>
 
-                <div class="row">
-                    <div class="col-6 mb-4">
-                        <label class="stat-label d-block mb-2">Price (IDR)</label>
-                        <input type="number" name="price" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
-                               placeholder="0" value="{{ old('price') }}" required>
-                    </div>
-                    <div class="col-6 mb-4">
-                        <label class="stat-label d-block mb-2">Stock</label>
-                        <input type="number" name="stock" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
-                               value="{{ old('stock', 0) }}" required>
-                    </div>
-                </div>
-
+                {{-- Category Dropdown --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Category</label>
-                    <select name="category" class="form-select border-0 border-bottom rounded-0 px-0 mb-2 shadow-none">
-                        <option value="Outerwear" {{ old('category') == 'Outerwear' ? 'selected' : '' }}>Outerwear</option>
-                        <option value="Basics" {{ old('category') == 'Basics' ? 'selected' : '' }}>Basics</option>
-                        <option value="Accessories" {{ old('category') == 'Accessories' ? 'selected' : '' }}>Accessories</option>
+                    <select name="category_id" id="categorySelect" class="form-select border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" required>
+                        <option value="" disabled {{ old('category_id') ? '' : 'selected' }}>-- Select Category --</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" 
+                                    data-name="{{ $category->name }}"
+                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
 
+                {{-- Gender Radio --}}
+                <div class="mb-4">
+                    <label class="stat-label d-block mb-3">Gender</label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gender" id="genderMale" value="Male" {{ old('gender') == 'Male' ? 'checked' : '' }} required>
+                            <label class="form-check-label small fw-medium" for="genderMale">Male</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="Female" {{ old('gender') == 'Female' ? 'checked' : '' }}>
+                            <label class="form-check-label small fw-medium" for="genderFemale">Female</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gender" id="genderUnisex" value="Unisex" {{ old('gender') == 'Unisex' ? 'checked' : '' }}>
+                            <label class="form-check-label small fw-medium" for="genderUnisex">Unisex</label>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Size Type Radio --}}
+                <div class="mb-4">
+                    <label class="stat-label d-block mb-3">Size Type</label>
+                    <div class="d-flex gap-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="size_type" id="sizeTypeOneSize" value="one_size" 
+                                   {{ old('size_type', 'one_size') == 'one_size' ? 'checked' : '' }} required>
+                            <label class="form-check-label small fw-medium" for="sizeTypeOneSize">One Size / No Size</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="size_type" id="sizeTypeCustom" value="custom" 
+                                   {{ old('size_type') == 'custom' ? 'checked' : '' }}>
+                            <label class="form-check-label small fw-medium" for="sizeTypeCustom">Custom</label>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="font-size: 9px;" id="sizeHelpText"></p>
+                </div>
+
+                {{-- One Size: Stock & Min Stock --}}
+                <div id="oneSizeFields" class="mb-4 p-3 bg-light rounded" style="display: none;">
+                    <h6 class="stat-label mb-3">One Size Stock</h6>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted" style="font-size: 10px;">Stock</label>
+                            <input type="number" name="stock_one_size" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none" 
+                                   value="{{ old('stock_one_size', 0) }}" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted" style="font-size: 10px;">Min. Stock</label>
+                            <input type="number" name="min_stock_one_size" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none" 
+                                   value="{{ old('min_stock_one_size', 5) }}" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Custom Sizes: Checkboxes + Stock inputs --}}
+                <div id="customSizeFields" class="mb-4" style="display: none;">
+                    <h6 class="stat-label mb-3">Select Sizes & Set Stock</h6>
+
+                    @foreach(['S', 'M', 'L', 'XL'] as $size)
+                    <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-light rounded size-row" id="sizeRow{{ $size }}">
+                        <div class="form-check pt-1" style="min-width: 60px;">
+                            <input class="form-check-input size-checkbox" type="checkbox" name="sizes[]" value="{{ $size }}" 
+                                   id="sizeCheck{{ $size }}" {{ is_array(old('sizes')) && in_array($size, old('sizes')) ? 'checked' : '' }} disabled>
+                            <label class="form-check-label small fw-bold" for="sizeCheck{{ $size }}">{{ $size }}</label>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label text-muted" style="font-size: 9px;">Stock</label>
+                                    <input type="number" name="stock_{{ $size }}" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none size-input" 
+                                           value="{{ old("stock_{$size}", 0) }}" min="0" disabled>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted" style="font-size: 9px;">Min. Stock</label>
+                                    <input type="number" name="min_stock_{{ $size }}" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none size-input" 
+                                           value="{{ old("min_stock_{$size}", 5) }}" min="1" disabled>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            
+            {{-- ============ RIGHT SIDE: Logistics ============ --}}
+            <div class="col-md-5">
+                {{-- Price --}}
+                <div class="mb-4">
+                    <label class="stat-label d-block mb-2">Price (IDR)</label>
+                    <input type="number" name="price" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
+                           placeholder="0" value="{{ old('price') }}" required>
+                </div>
+
+                {{-- Product Image --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Image</label>
                     <input type="file" name="image" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" accept=".jpg,.jpeg,.png">
@@ -81,4 +161,102 @@
         </div>
     </form>
 </div>
+
+{{-- ============ JavaScript Logic ============ --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const sizeTypeOneSize = document.getElementById('sizeTypeOneSize');
+    const sizeTypeCustom = document.getElementById('sizeTypeCustom');
+    const oneSizeFields = document.getElementById('oneSizeFields');
+    const customSizeFields = document.getElementById('customSizeFields');
+    const sizeCheckboxes = document.querySelectorAll('.size-checkbox');
+    const sizeHelpText = document.getElementById('sizeHelpText');
+
+    /**
+     * Toggle visibility of size fields based on size_type selection
+     */
+    function handleSizeTypeChange() {
+        const isOneSize = sizeTypeOneSize.checked;
+        const isCustom = sizeTypeCustom.checked;
+
+        // Show/hide One Size fields
+        oneSizeFields.style.display = isOneSize ? 'block' : 'none';
+
+        // Show/hide Custom Size fields
+        customSizeFields.style.display = isCustom ? 'block' : 'none';
+
+        // Enable/disable checkboxes
+        sizeCheckboxes.forEach(cb => {
+            cb.disabled = !isCustom;
+            if (!isCustom) {
+                cb.checked = false;
+                toggleSizeInputs(cb);
+            }
+        });
+    }
+
+    /**
+     * Enable/disable stock inputs when checkbox is toggled
+     */
+    function toggleSizeInputs(checkbox) {
+        const size = checkbox.value;
+        const row = document.getElementById('sizeRow' + size);
+        const inputs = row.querySelectorAll('.size-input');
+        
+        inputs.forEach(input => {
+            input.disabled = !checkbox.checked;
+            if (!checkbox.checked) {
+                input.value = input.name.startsWith('min_stock') ? '5' : '0';
+            }
+        });
+
+        // Visual feedback
+        row.style.opacity = checkbox.checked ? '1' : '0.5';
+    }
+
+    /**
+     * Handle category change - force One Size for Accessories
+     */
+    function handleCategoryChange() {
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const categoryName = selectedOption ? selectedOption.dataset.name : '';
+
+        if (categoryName === 'Accessories') {
+            // Force One Size, disable Custom
+            sizeTypeOneSize.checked = true;
+            sizeTypeCustom.disabled = true;
+            sizeHelpText.textContent = 'Accessories selalu menggunakan One Size / No Size.';
+            sizeHelpText.style.color = '#e67e22';
+        } else {
+            sizeTypeCustom.disabled = false;
+            sizeHelpText.textContent = '';
+        }
+
+        handleSizeTypeChange();
+    }
+
+    // Event listeners
+    sizeTypeOneSize.addEventListener('change', handleSizeTypeChange);
+    sizeTypeCustom.addEventListener('change', handleSizeTypeChange);
+    categorySelect.addEventListener('change', handleCategoryChange);
+
+    sizeCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            toggleSizeInputs(this);
+        });
+    });
+
+    // Initialize on page load
+    handleCategoryChange();
+    handleSizeTypeChange();
+
+    // Restore checked checkboxes state on page load (for old() values)
+    sizeCheckboxes.forEach(cb => {
+        if (cb.checked) {
+            toggleSizeInputs(cb);
+        }
+    });
+});
+</script>
 @endsection
