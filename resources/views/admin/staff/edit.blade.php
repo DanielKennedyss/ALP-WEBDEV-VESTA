@@ -3,57 +3,75 @@
 @section('admin_content')
 <div class="container-fluid py-5">
     <div class="row justify-content-center">
-        {{-- Ukuran col-md-8 atau col-lg-7 adalah standar ideal untuk form di Desktop --}}
+        {{-- Lebar yang proporsional untuk Laptop/Desktop --}}
         <div class="col-12 col-md-8 col-lg-7">
             
             <div class="text-center mb-5">
-                <h2 class="fw-bold tracking-tighter mb-1" style="font-size: 2.5rem;">RECRUIT STAFF</h2>
-                <p class="text-muted small text-uppercase tracking-widest">Register new administrative access for VESTA team</p>
+                <h2 class="fw-bold tracking-tighter mb-1" style="font-size: 2.5rem;">UPDATE STAFF</h2>
+                <p class="text-muted small text-uppercase tracking-widest">Modify administrative credentials for {{ $staff->name }}</p>
             </div>
 
             <div class="card border-0 shadow-sm" style="border-radius: 16px;">
                 <div class="card-body p-4 p-md-5">
-                    <form action="{{ route('admin.staff.store') }}" method="POST" id="staffForm">
+                    <form action="{{ route('admin.staff.update', $staff->id) }}" method="POST" id="editStaffForm">
                         @csrf
+                        @method('PUT')
 
                         <div class="mb-4">
                             <label class="form-label small fw-bold text-uppercase text-muted mb-3">Privilege Level</label>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <input type="radio" class="btn-check" name="role" id="role_staff" value="staff" checked>
+                                    <input type="radio" class="btn-check" name="role" id="role_staff" value="staff" 
+                                        {{ $staff->role == 'staff' ? 'checked' : '' }}
+                                        {{ auth()->user()->role !== 'owner' ? 'disabled' : '' }}>
                                     <label class="btn btn-outline-dark w-100 py-3 rounded-3 shadow-sm d-flex flex-column align-items-center" for="role_staff">
                                         <i class="bi bi-person-badge mb-2 fs-4"></i>
                                         <span class="fw-bold small">STORE STAFF</span>
                                     </label>
                                 </div>
                                 <div class="col-md-6">
-                                    <input type="radio" class="btn-check" name="role" id="role_manager" value="manager">
+                                    <input type="radio" class="btn-check" name="role" id="role_manager" value="manager" 
+                                        {{ $staff->role == 'manager' ? 'checked' : '' }}
+                                        {{ auth()->user()->role !== 'owner' ? 'disabled' : '' }}>
                                     <label class="btn btn-outline-dark w-100 py-3 rounded-3 shadow-sm d-flex flex-column align-items-center" for="role_manager">
                                         <i class="bi bi-shield-lock mb-2 fs-4"></i>
                                         <span class="fw-bold small">MANAGER</span>
                                     </label>
                                 </div>
                             </div>
+                            @if(auth()->user()->role !== 'owner')
+                                <small class="text-muted mt-2 d-block">* Role changes are restricted to Owner only.</small>
+                                <input type="hidden" name="role" value="{{ $staff->role }}">
+                            @endif
                         </div>
 
                         <div class="mb-4">
                             <label for="name" class="form-label small fw-bold text-uppercase text-muted">Full Name</label>
-                            <input type="text" name="name" id="name" class="form-control form-control-lg border-0 bg-light px-4 @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="e.g. Daniel Roger" required style="border-radius: 10px;">
+                            <input type="text" name="name" id="name" class="form-control form-control-lg border-0 bg-light px-4 @error('name') is-invalid @enderror" 
+                                value="{{ old('name', $staff->name) }}" required style="border-radius: 10px;">
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="mb-4">
                             <label for="email" class="form-label small fw-bold text-uppercase text-muted">Corporate Email</label>
-                            <input type="email" name="email" id="email" class="form-control form-control-lg border-0 bg-light px-4 @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="staff@vesta.com" required style="border-radius: 10px;">
+                            <input type="email" name="email" id="email" class="form-control form-control-lg border-0 bg-light px-4 @error('email') is-invalid @enderror" 
+                                value="{{ old('email', $staff->email) }}" required style="border-radius: 10px;">
                             @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <hr class="my-5 opacity-25">
 
+                        <div class="alert alert-light border-0 small text-muted p-3 mb-4" style="border-radius: 10px; background-color: #fcfcfc;">
+                            <i class="bi bi-info-circle me-2 text-primary"></i> 
+                            Leave the password fields empty if you do not wish to change the existing access key.
+                        </div>
+
                         <div class="mb-4">
-                            <label for="password" class="form-label small fw-bold text-uppercase text-muted">Security Password</label>
+                            <label for="password" class="form-label small fw-bold text-uppercase text-muted">New Password</label>
                             <div class="input-group">
-                                <input type="password" name="password" id="password" class="form-control form-control-lg border-0 bg-light px-4 @error('password') is-invalid @enderror" placeholder="Min. 8 characters" required style="border-radius: 10px 0 0 10px;">
+                                <input type="password" name="password" id="password" 
+                                    class="form-control form-control-lg border-0 bg-light px-4 @error('password') is-invalid @enderror" 
+                                    placeholder="••••••••" style="border-radius: 10px 0 0 10px;">
                                 <button class="btn btn-light border-0 px-4" type="button" onclick="togglePassword('password')" style="border-radius: 0 10px 10px 0; background-color: #f1f1f1;">
                                     <i class="bi bi-eye" id="password_icon"></i>
                                 </button>
@@ -62,16 +80,18 @@
                         </div>
 
                         <div class="mb-5">
-                            <label for="password_confirmation" class="form-label small fw-bold text-uppercase text-muted">Confirm Password</label>
-                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control form-control-lg border-0 bg-light px-4" placeholder="Repeat security key" required style="border-radius: 10px;">
+                            <label for="password_confirmation" class="form-label small fw-bold text-uppercase text-muted">Confirm New Password</label>
+                            <input type="password" name="password_confirmation" id="password_confirmation" 
+                                class="form-control form-control-lg border-0 bg-light px-4" 
+                                placeholder="••••••••" style="border-radius: 10px;">
                         </div>
 
                         <div class="mt-4">
                             <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill fw-bold text-uppercase shadow-lg mb-3" style="letter-spacing: 2px;">
-                                CONFIRM & CREATE ACCOUNT
+                                UPDATE STAFF ACCOUNT
                             </button>
                             <div class="text-center">
-                                <a href="{{ route('admin.staff.index') }}" class="text-muted text-decoration-none small fw-bold">DISCARD CHANGES</a>
+                                <a href="{{ route('admin.staff.index') }}" class="text-muted text-decoration-none small fw-bold">CANCEL & BACK</a>
                             </div>
                         </div>
                     </form>
@@ -83,9 +103,19 @@
 
 <style>
     body { background-color: #fcfcfc; }
-    .form-control:focus { background-color: #fff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #000 !important; }
+    .form-control:focus { 
+        background-color: #fff !important; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+        border: 1px solid #000 !important; 
+    }
     .btn-outline-dark { transition: all 0.3s ease; border: 1px solid #eee; color: #666; }
-    .btn-check:checked + .btn-outline-dark { background-color: #000; color: #fff; border-color: #000; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; }
+    .btn-check:checked + .btn-outline-dark { 
+        background-color: #000; 
+        color: #fff; 
+        border-color: #000; 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; 
+    }
     .tracking-tighter { letter-spacing: -1.5px; }
 </style>
 

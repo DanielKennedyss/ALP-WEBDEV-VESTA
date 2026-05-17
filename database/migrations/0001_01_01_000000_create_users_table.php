@@ -23,7 +23,7 @@ return new class extends Migration
 
             // RBAC & Membership System
             // Di file migration users
-            $table->enum('role', ['owner', 'admin', 'customer'])->default('customer');
+            $table->enum('role', ['owner', 'manager', 'staff', 'customer'])->default('customer');
             $table->enum('membership_level', ['bronze', 'silver', 'gold', 'platinum'])->default('bronze');
             $table->integer('loyalty_points')->default(0);
             $table->decimal('total_spending', 15, 2)->default(0.00);

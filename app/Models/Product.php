@@ -18,11 +18,15 @@ class Product extends Model
         'category_id',
         'gender',
         'image_path',
+        'size_type', // Tambahkan jika ada di migration
     ];
 
     protected $casts = [
         'price' => 'decimal:0',
     ];
+
+    // Menambahkan total_stock ke JSON output secara otomatis
+    protected $appends = ['total_stock', 'size_labels'];
     
     /**
      * Relasi: Product milik satu Category
@@ -40,14 +44,14 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
-    // Hubungan One-to-Many: Satu Produk bisa punya banyak Transaksi
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
     }
     
     /**
-     * Get total stock across all variants
+     * Accessor: Total stock dari semua varian
+     * Digunakan di tabel Inventory: {{ $product->total_stock }}
      */
     public function getTotalStockAttribute(): int
     {
@@ -55,25 +59,26 @@ class Product extends Model
     }
 
     /**
-     * Check if any variant is low on stock
+     * Logika Low Stock
      */
     public function hasLowStock(): bool
     {
         return $this->variants->contains(function ($variant) {
-            return $variant->isLowStock();
+            // Memastikan method isLowStock() ada di Model ProductVariant
+            return $variant->stock <= $variant->minimum_stock;
         });
     }
 
     /**
-     * Check if all variants are out of stock
+     * Logika Out of Stock
      */
     public function isOutOfStock(): bool
     {
-        return $this->total_stock <= 0;
+        return $this->getTotalStockAttribute() <= 0;
     }
 
     /**
-     * Get size labels as comma-separated string
+     * Accessor: Label Ukuran (S, M, L, XL)
      */
     public function getSizeLabelsAttribute(): string
     {

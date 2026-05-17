@@ -9,17 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->string('invoice_number')->nullable()->after('id');
+            // Menambahkan kolom yang spesifik untuk Midtrans & Identitas tambahan
+            $table->string('invoice_number')->unique()->after('id'); 
+            $table->string('customer_email')->nullable()->after('customer_name');
+            $table->text('shipping_address')->nullable()->after('customer_email');
             $table->string('payment_url')->nullable()->after('status');
             $table->timestamp('paid_at')->nullable()->after('payment_url');
-            $table->string('customer_email')->nullable()->after('customer_name');
         });
     }
 
     public function down(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn(['invoice_number', 'payment_url', 'paid_at', 'customer_email']);
+            $table->dropColumn(['invoice_number', 'customer_email', 'shipping_address', 'payment_url', 'paid_at']);
         });
     }
 };
