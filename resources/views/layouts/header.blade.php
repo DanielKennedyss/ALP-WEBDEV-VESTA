@@ -15,7 +15,7 @@
             <!-- Right Icons -->
             <div class="flex items-center gap-6">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">
+                    <a href="{{ route('profile') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">
                         ACCOUNT
                     </a>
                     <form action="{{ route('logout') }}" method="POST" class="inline m-0">

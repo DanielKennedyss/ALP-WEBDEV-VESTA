@@ -45,7 +45,7 @@
                 <form action="{{ route('logout') }}" method="POST" class="mt-auto">
                     @csrf
                     <button type="submit" class="text-xs tracking-[0.2em] uppercase font-medium hover:text-gray-500 transition-colors flex items-center gap-2">
-                        Logout 
+                        Logout
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>
@@ -57,7 +57,7 @@
         <!-- Order History Section -->
         <div class="mb-16">
             <h4 class="text-sm tracking-[0.2em] uppercase font-medium mb-8">My Order History</h4>
-            
+
             @if($transactions->isEmpty())
                 <div class="border border-gray-200 p-12 text-center">
                     <p class="text-sm tracking-widest text-gray-400 uppercase">You haven't made any orders yet.</p>
@@ -71,7 +71,8 @@
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Date</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Product</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Total</th>
-                                <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap">Status</th>
+                                <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Status</th>
+                                <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -81,13 +82,24 @@
                                 <td class="py-6 pr-6 text-sm text-gray-600">{{ $order->created_at->format('M d, Y H:i') }}</td>
                                 <td class="py-6 pr-6 text-sm">{{ $order->product ? $order->product->name : 'Unknown Product' }} <span class="text-gray-400 ml-1">(x{{ $order->quantity }})</span></td>
                                 <td class="py-6 pr-6 text-sm">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                                <td class="py-6">
+                                <td class="py-6 pr-6">
                                     @if($order->status == 'completed' || $order->status == 'success')
                                         <span class="inline-block border border-green-200 bg-green-50 text-green-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">Success</span>
                                     @elseif($order->status == 'pending')
                                         <span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">Pending</span>
                                     @else
-                                        <span class="inline-block border border-red-200 bg-red-50 text-red-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">Failed</span>
+                                        <span class="inline-block border border-red-200 bg-red-50 text-red-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">{{ ucfirst($order->status) }}</span>
+                                    @endif
+                                </td>
+                                <td class="py-6">
+                                    @if($order->status == 'pending' && $order->payment_url)
+                                        <a href="{{ route('payment.retry', $order->id) }}" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-gray-800 transition-colors">
+                                            Pay Now
+                                        </a>
+                                    @elseif($order->status == 'completed' || $order->status == 'success')
+                                        <span class="text-[10px] tracking-wider text-gray-400">—</span>
+                                    @else
+                                        <span class="text-[10px] tracking-wider text-gray-400">—</span>
                                     @endif
                                 </td>
                             </tr>

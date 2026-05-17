@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Category;
+use App\Models\ProductVariant;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,89 +23,209 @@ class StoreController extends Controller
     {
         $query = Product::with(['category', 'variants']);
 
+        // Search by product name
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhere('sku', 'like', '%' . $search . '%');
+            });
         }
 
+        // Filter by category
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->category);
             });
         }
 
-        $products = $query->orderBy('created_at', 'desc')->get();
-        return view('store.collection', compact('products'));
+        // Filter by gender
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        // Filter by size (only show products that have this size variant)
+        if ($request->filled('size')) {
+            $query->whereHas('variants', function ($q) use ($request) {
+                $q->where('size_label', $request->size);
+            });
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'newest');
+        switch ($sort) {
+            case 'price_low':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_high':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $products = $query->get();
+
+        // Get dynamic filter options from database
+        $categories = Category::orderBy('name')->pluck('name');
+        $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
+        $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
+
+        return view('store.collection', compact('products', 'categories', 'genders', 'sizes'));
     }
 
     public function add_to_cart(Request $request, $product_id)
     {
         $product = Product::with('variants')->findOrFail($product_id);
         $quantity = $request->input('quantity', 1);
+        $selectedSize = $request->input('size', null);
 
         if ($quantity < 1) {
             return redirect()->back()->with('error', 'Quantity must be at least 1.');
         }
 
-        // Gunakan total stock dari semua variants
-        $totalStock = $product->total_stock;
+        // If a size is selected, check stock for that specific variant
+        if ($selectedSize) {
+            $variant = $product->variants->where('size_label', $selectedSize)->first();
+            if (!$variant) {
+                return redirect()->back()->with('error', 'Selected size is not available.');
+            }
+            $availableStock = $variant->stock;
+        } else {
+            $availableStock = $product->total_stock;
+        }
+
+        // Use composite key for cart (product_id + size)
+        $cartKey = $selectedSize ? $product_id . '-' . $selectedSize : (string) $product_id;
 
         $cart = session()->get('cart', []);
-        $existingQuantity = isset($cart[$product_id]) ? $cart[$product_id]['quantity'] : 0;
+        $existingQuantity = isset($cart[$cartKey]) ? $cart[$cartKey]['quantity'] : 0;
         $totalQuantity = $existingQuantity + $quantity;
 
-        if ($totalQuantity > $totalStock) {
+        if ($totalQuantity > $availableStock) {
             return redirect()->back()->with('error', 'Requested total quantity exceeds available stock.');
         }
 
-        if (isset($cart[$product_id])) {
-            $cart[$product_id]['quantity'] = $totalQuantity;
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['quantity'] = $totalQuantity;
         } else {
-            $cart[$product_id] = [
+            $cart[$cartKey] = [
                 'product_id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
                 'quantity' => $quantity,
+                'size' => $selectedSize,
+                'image_path' => $product->image_path,
             ];
         }
 
         session()->put('cart', $cart);
-        return redirect()->back()->with('success', 'Product added to cart!');
+        return redirect()->back()->with('success', $product->name . ' has been added to your cart.');
     }
 
     public function view_cart()
     {
         $cart = session()->get('cart', []);
-        return view('store.cart', compact('cart'));
+
+        // Load full product data for each cart item (for images, variants)
+        $cartProducts = [];
+        foreach ($cart as $key => $item) {
+            $cartProducts[$key] = Product::with('variants')->find($item['product_id']);
+        }
+
+        return view('store.cart', compact('cart', 'cartProducts'));
     }
 
-    public function remove_from_cart($product_id)
+    public function remove_from_cart($cart_key)
     {
         $cart = session()->get('cart', []);
-        if (isset($cart[$product_id])) {
-            unset($cart[$product_id]);
+        if (isset($cart[$cart_key])) {
+            $removedName = $cart[$cart_key]['name'];
+            unset($cart[$cart_key]);
             session()->put('cart', $cart);
+            return redirect()->back()->with('success', $removedName . ' has been removed from your cart.');
         }
-        return redirect()->back()->with('success', 'Item removed from cart.');
+        return redirect()->back()->with('error', 'Item not found in cart.');
     }
 
-    public function update_cart(Request $request, $product_id)
+    public function update_cart(Request $request, $cart_key)
     {
         $quantity = (int) $request->input('quantity');
         if ($quantity < 1) {
-            return $this->remove_from_cart($product_id);
-        }
-
-        $product = Product::with('variants')->findOrFail($product_id);
-        if ($quantity > $product->total_stock) {
-            return redirect()->back()->with('error', 'Requested quantity exceeds available stock.');
+            return $this->remove_from_cart($cart_key);
         }
 
         $cart = session()->get('cart', []);
-        if (isset($cart[$product_id])) {
-            $cart[$product_id]['quantity'] = $quantity;
-            session()->put('cart', $cart);
+        if (!isset($cart[$cart_key])) {
+            return redirect()->back()->with('error', 'Item not found in cart.');
         }
-        return redirect()->back()->with('success', 'Cart updated successfully.');
+
+        $item = $cart[$cart_key];
+        $product = Product::with('variants')->findOrFail($item['product_id']);
+
+        // Check stock for the specific size variant or total stock
+        if (!empty($item['size'])) {
+            $variant = $product->variants->where('size_label', $item['size'])->first();
+            $maxStock = $variant ? $variant->stock : 0;
+        } else {
+            $maxStock = $product->total_stock;
+        }
+
+        if ($quantity > $maxStock) {
+            return redirect()->back()->with('error', 'Only ' . $maxStock . ' available in stock.');
+        }
+
+        $cart[$cart_key]['quantity'] = $quantity;
+        session()->put('cart', $cart);
+        return redirect()->back()->with('success', 'Cart updated.');
+    }
+
+    public function update_cart_size(Request $request, $cart_key)
+    {
+        $newSize = $request->input('new_size');
+        $cart = session()->get('cart', []);
+
+        if (!isset($cart[$cart_key])) {
+            return redirect()->back()->with('error', 'Item not found in cart.');
+        }
+
+        $item = $cart[$cart_key];
+        $product = Product::with('variants')->findOrFail($item['product_id']);
+        $variant = $product->variants->where('size_label', $newSize)->first();
+
+        if (!$variant || $variant->stock <= 0) {
+            return redirect()->back()->with('error', 'Selected size is not available.');
+        }
+
+        // Remove old entry
+        unset($cart[$cart_key]);
+
+        // Create new cart key with new size
+        $newKey = $item['product_id'] . '-' . $newSize;
+
+        // If already exists with new size, merge quantities
+        if (isset($cart[$newKey])) {
+            $mergedQty = $cart[$newKey]['quantity'] + $item['quantity'];
+            if ($mergedQty > $variant->stock) {
+                $mergedQty = $variant->stock;
+            }
+            $cart[$newKey]['quantity'] = $mergedQty;
+        } else {
+            $item['size'] = $newSize;
+            $cart[$newKey] = $item;
+        }
+
+        session()->put('cart', $cart);
+        return redirect()->back()->with('success', 'Size updated to ' . $newSize . '.');
     }
 
     public function checkout(Request $request)
@@ -270,6 +392,19 @@ class StoreController extends Controller
         }
     }
 
+    public function payment_retry($order_id)
+    {
+        $order = Transaction::findOrFail($order_id);
+
+        // Only allow retry for pending orders
+        if ($order->status !== 'pending' || !$order->payment_url) {
+            return redirect()->route('profile')->with('error', 'This order cannot be retried.');
+        }
+
+        $snapToken = $order->payment_url;
+        return view('store.payment', compact('snapToken', 'order'));
+    }
+
     public function payment_status($order_id)
     {
         $order = Transaction::findOrFail($order_id);
@@ -296,15 +431,15 @@ class StoreController extends Controller
             $order->status = 'cancelled';
             $order->payment_url = null;
             $order->save();
-            return redirect()->route('home')->with('error', 'Unable to retrieve payment status.');
+            return redirect()->route('profile')->with('error', 'Unable to retrieve payment status.');
         }
 
         if ($order->status == 'completed') {
-            return redirect()->route('home')->with('success', 'Payment successful!');
+            return redirect()->route('profile')->with('success', 'Payment successful! Thank you for shopping with VESTA.');
         } elseif ($order->status == 'pending') {
-            return redirect()->route('home')->with('error', 'Payment is pending. Please complete it.');
+            return redirect()->route('profile')->with('error', 'Payment is still pending. You can retry from your order history.');
         } else {
-            return redirect()->route('home')->with('error', 'Payment failed or expired.');
+            return redirect()->route('profile')->with('error', 'Payment failed or expired. Please try again.');
         }
     }
 
