@@ -13,6 +13,40 @@ use App\Http\Controllers\Admin\TransactionController; // Tambahkan ini di atas
 Route::get('/', function () {
     $products = \App\Models\Product::all();
     return view('home', compact('products'));
+<<<<<<< Updated upstream
+=======
+})->name('home');
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/about', function () { return view('about'); })->name('about');
+    Route::get('/contact', function () { return view('contact'); })->name('contact');
+    Route::post('/contact', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'subject' => 'required|string',
+            'message' => 'required|string|max:5000',
+        ]);
+        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully. Our team will contact you shortly.');
+    })->name('contact.submit');
+    Route::get('/collection', [StoreController::class, 'collection'])->name('collection');
+    Route::get('/cart', [StoreController::class, 'view_cart'])->name('cart.view');
+    
+    // Cart Actions
+    Route::post('/cart/add/{product_id}', [StoreController::class, 'add_to_cart'])->name('cart.add');
+    Route::post('/cart/remove/{cart_key}', [StoreController::class, 'remove_from_cart'])->name('cart.remove');
+    Route::post('/cart/update/{cart_key}', [StoreController::class, 'update_cart'])->name('cart.update');
+    Route::post('/cart/update-size/{cart_key}', [StoreController::class, 'update_cart_size'])->name('cart.update.size');
+    
+    // Checkout & Payment
+    Route::post('/direct-checkout/{product_id}', [StoreController::class, 'direct_checkout'])->name('direct.checkout');
+    Route::post('/checkout', [StoreController::class, 'checkout'])->name('checkout');
+    Route::get('/payment/return/{order_id}', [StoreController::class, 'payment_return'])->name('payment_return');
+    Route::get('/payment/status/{order_id}', [StoreController::class, 'payment_status'])->name('payment_status');
+    Route::get('/payment/retry/{order_id}', [StoreController::class, 'payment_retry'])->name('payment.retry');
+>>>>>>> Stashed changes
 });
 
 // Guest Routes

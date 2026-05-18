@@ -17,8 +17,12 @@
     </div>
 @endif
 
+<<<<<<< Updated upstream
 <div class="admin-card" style="max-width: 900px;">
     {{-- 2. ENCTYPE HARUS ADA UNTUK UPLOAD GAMBAR --}}
+=======
+<div class="admin-card bg-white p-4 p-md-5 rounded-4 shadow-sm" style="max-width: 960px;">
+>>>>>>> Stashed changes
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="row g-5">
