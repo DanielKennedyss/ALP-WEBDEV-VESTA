@@ -244,11 +244,12 @@
                     <p id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-400 mt-2"></p>
                 </div>
 
-                <div id="modalStock" class="mb-4"></div>
-
-                <div class="flex items-center gap-4 mb-6">
-                    <span class="text-xs tracking-[0.2em]">QTY</span>
-                    <input type="number" id="modalQuantity" value="1" min="1" class="w-20 border border-gray-200 px-3 py-2 text-center">
+                <div class="mb-6">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs tracking-[0.2em]">QTY</span>
+                        <input type="number" id="modalQuantity" value="1" min="1" disabled class="w-20 border border-gray-200 px-3 py-2 text-center disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    </div>
+                    <p id="qtyWarning" class="text-xs text-red-500 mt-2" style="display: none;">Purchase has reached the maximum limit!</p>
                 </div>
 
                 <form id="modalAddToCartForm" action="" method="POST">
@@ -289,9 +290,70 @@ document.getElementById('searchInput').addEventListener('input', function() {
     searchTimer = setTimeout(() => { document.getElementById('mainFilterForm').submit(); }, 600);
 });
 
-// Quantity sync
-document.getElementById('modalQuantity').addEventListener('input', function() {
-    document.getElementById('modalQuantityInput').value = this.value;
+// Quantity sync with max stock enforcement
+let prevQtyValue = 1;
+
+const qtyInput = document.getElementById('modalQuantity');
+
+qtyInput.addEventListener('focus', function() {
+    prevQtyValue = parseInt(this.value) || 1;
+});
+
+qtyInput.addEventListener('input', function() {
+    const max = parseInt(this.max) || 0;
+    let val = parseInt(this.value) || 1;
+    const warning = document.getElementById('qtyWarning');
+
+    if (val > max) {
+        val = max;
+        this.value = max;
+        warning.style.display = 'block';
+    } else if (val >= max && prevQtyValue >= max) {
+        warning.style.display = 'block';
+    } else if (val < 1) {
+        val = 1;
+        this.value = 1;
+        warning.style.display = 'none';
+    } else {
+        warning.style.display = 'none';
+    }
+    prevQtyValue = val;
+    document.getElementById('modalQuantityInput').value = val;
+});
+
+qtyInput.addEventListener('change', function() {
+    const max = parseInt(this.max) || 0;
+    let val = parseInt(this.value) || 1;
+    const warning = document.getElementById('qtyWarning');
+
+    if (val >= max) {
+        val = max;
+        this.value = max;
+        warning.style.display = 'block';
+    } else if (val < 1) {
+        val = 1;
+        this.value = 1;
+        warning.style.display = 'none';
+    } else {
+        warning.style.display = 'none';
+    }
+    prevQtyValue = val;
+    document.getElementById('modalQuantityInput').value = val;
+});
+
+qtyInput.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowUp') {
+        const max = parseInt(this.max) || 0;
+        const val = parseInt(this.value) || 1;
+        if (val >= max) {
+            e.preventDefault();
+            this.value = max;
+            document.getElementById('qtyWarning').style.display = 'block';
+            document.getElementById('modalQuantityInput').value = max;
+        }
+    } else if (e.key === 'ArrowDown') {
+        document.getElementById('qtyWarning').style.display = 'none';
+    }
 });
 
 function openQuickView(productId) {
@@ -345,10 +407,15 @@ function openQuickView(productId) {
     // Stock info
     const totalStock = variants.reduce((s, v) => s + v.stock, 0);
     document.getElementById('modalQuantity').max = totalStock;
-    const stockDiv = document.getElementById('modalStock');
-    stockDiv.innerHTML = totalStock > 0
-        ? '<span class="text-xs tracking-[0.2em] text-green-600">IN STOCK (' + totalStock + ' available)</span>'
-        : '<span class="text-xs tracking-[0.2em] text-red-500">SOLD OUT</span>';
+    document.getElementById('qtyWarning').style.display = 'none';
+
+    // Disable QTY input until a size is selected (if product has variants)
+    const qtyEl = document.getElementById('modalQuantity');
+    if (variants.length > 0) {
+        qtyEl.disabled = true;
+    } else {
+        qtyEl.disabled = totalStock <= 0;
+    }
 
     document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : '';
 
@@ -366,8 +433,10 @@ function selectSize(btn, sizeLabel, stock) {
     document.getElementById('modalSizeInput').value = sizeLabel;
     document.getElementById('modalQuantity').max = stock;
     document.getElementById('modalQuantity').value = '1';
+    document.getElementById('modalQuantity').disabled = false;
     document.getElementById('modalQuantityInput').value = '1';
     document.getElementById('sizeStockInfo').textContent = stock + ' available in size ' + sizeLabel;
+    document.getElementById('qtyWarning').style.display = 'none';
     updateActionButtons(true);
 }
 

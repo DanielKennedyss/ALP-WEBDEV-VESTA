@@ -150,19 +150,45 @@ class StoreController extends Controller
         try {
             $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
 
-            // SIMPAN USER_ID agar spending terhitung otomatis
+            // Build cart_items for stock tracking
+            $stockItems = collect($cart)->map(function($item) {
+                return [
+                    'product_id' => $item['product_id'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'quantity' => $item['quantity'],
+                    'size' => $item['size'] ?? null,
+                    'image_path' => $item['image_path'] ?? null,
+                ];
+            })->values()->toArray();
+
             $order = Transaction::create([
                 'user_id'        => Auth::id(), 
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'product_id'     => $cart[key($cart)]['product_id'] ?? 0,
-                'quantity'       => collect($cart)->sum('quantity'),
-                'total_price'    => $totalPrice,
-                'customer_name'  => Auth::check() ? Auth::user()->name : 'Guest',
-                'customer_email' => Auth::check() ? Auth::user()->email : 'guest@example.com',
-                'status'         => 'pending',
+                'product_id' => $cart[key($cart)]['product_id'] ?? 0,
+                'quantity' => collect($cart)->sum('quantity'),
+                'cart_items' => $stockItems,
+                'total_price' => $totalPrice,
+                'customer_name' => Auth::check() ? Auth::user()->name : 'Guest',
+                'customer_email' => Auth::check() ? Auth::user()->email : null,
+                'status' => 'pending',
+                'payment_url' => null,
+                'paid_at' => null,
             ]);
 
-            $this->initMidtrans();
+            // Midtrans payment integration
+            \Midtrans\Config::$serverKey = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
+
+            // Disable SSL verification for localhost/dev environments
+            // Include CURLOPT_HTTPHEADER => [] to prevent "Undefined array key 10023" warning
+            \Midtrans\Config::$curlOptions = [
+                CURLOPT_HTTPHEADER => [],
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ];
 
             $item_details = [];
             foreach ($cart as $product_id => $item) {
@@ -188,9 +214,22 @@ class StoreController extends Controller
             $order->update(['payment_url' => $snapToken]);
 
             DB::commit();
+
+            // Save cart items for display on payment page before clearing
+            $cartItems = collect($cart)->map(function($item) {
+                return [
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'quantity' => $item['quantity'],
+                    'size' => $item['size'] ?? null,
+                    'image_path' => $item['image_path'] ?? null,
+                    'subtotal' => $item['price'] * $item['quantity'],
+                ];
+            })->values()->toArray();
+
             session()->forget('cart');
 
-            return view('store.payment', compact('snapToken', 'order'));
+            return view('store.payment', compact('snapToken', 'order', 'cartItems'));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Checkout Error: ' . $e->getMessage());
@@ -213,19 +252,50 @@ class StoreController extends Controller
         DB::beginTransaction();
         try {
             $totalPrice = $product->price * $quantity;
-            
+
+            $customerName = Auth::check() ? Auth::user()->name : 'Guest';
+            $customerEmail = Auth::check() ? Auth::user()->email : null;
+
+            \Log::info('Creating transaction', ['totalPrice' => $totalPrice, 'customer' => $customerName]);
+
+            $selectedSize = $request->input('size', null);
+
+            // Build cart_items for stock tracking
+            $stockItems = [[
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'quantity' => $quantity,
+                'size' => $selectedSize,
+                'image_path' => $product->image_path ?? null,
+            ]];
+
             $order = Transaction::create([
                 'user_id'        => Auth::id(), // Simpan ID pembeli
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'product_id'     => $product->id,
-                'quantity'       => $quantity,
-                'total_price'    => $totalPrice,
-                'customer_name'  => Auth::check() ? Auth::user()->name : 'Guest',
-                'customer_email' => Auth::check() ? Auth::user()->email : 'guest@example.com',
-                'status'         => 'pending',
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'cart_items' => $stockItems,
+                'total_price' => $totalPrice,
+                'customer_name' => $customerName,
+                'customer_email' => $customerEmail,
+                'status' => 'pending',
+                'payment_url' => null,
+                'paid_at' => null,
             ]);
 
-            $this->initMidtrans();
+            \Midtrans\Config::$serverKey = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
+            // Disable SSL verification - use both options to fully disable
+            \Midtrans\Config::$curlOptions = [
+                CURLOPT_HTTPHEADER => [],
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ];
+
+            $displayName = $product->name;
 
             $params = [
                 'transaction_details' => ['order_id' => $order->invoice_number, 'gross_amount' => $totalPrice],
@@ -246,7 +316,20 @@ class StoreController extends Controller
             $order->update(['payment_url' => $snapToken]);
 
             DB::commit();
-            return view('store.payment', compact('snapToken', 'order'));
+
+            // Save item details for display on payment page
+            $cartItems = collect($stockItems)->map(function($item) {
+                return [
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'quantity' => $item['quantity'],
+                    'size' => $item['size'] ?? null,
+                    'image_path' => $item['image_path'] ?? null,
+                    'subtotal' => $item['price'] * $item['quantity'],
+                ];
+            })->toArray();
+
+            return view('store.payment', compact('snapToken', 'order', 'cartItems'));
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Checkout failed.');
@@ -259,6 +342,12 @@ class StoreController extends Controller
     public function payment_status($order_id)
     {
         $order = Transaction::findOrFail($order_id);
+
+        // If already success, redirect immediately
+        if ($order->status === 'success') {
+            return redirect()->route('profile')->with('success', 'Payment Successful! Thank you.');
+        }
+
         $this->initMidtrans();
 
         try {
@@ -287,6 +376,60 @@ class StoreController extends Controller
     }
 
     /**
+     * Callback from Midtrans Snap JS (called via AJAX from onSuccess)
+     * This directly marks the order as success without relying on Midtrans Status API
+     */
+    public function payment_callback(Request $request, $order_id)
+    {
+        $order = Transaction::findOrFail($order_id);
+        $callbackStatus = $request->input('status', 'pending');
+
+        if ($callbackStatus === 'success' && $order->status !== 'success') {
+            $order->status = 'success';
+            $order->paid_at = now();
+            $order->save();
+        } elseif ($callbackStatus === 'failed' && $order->status === 'pending') {
+            $order->status = 'failed';
+            $order->save();
+        }
+
+        return response()->json(['status' => $order->status]);
+    }
+
+    /**
+     * Retry payment for pending orders
+     */
+    public function payment_retry($order_id)
+    {
+        $order = Transaction::findOrFail($order_id);
+
+        if ($order->status === 'success') {
+            return redirect()->route('profile')->with('success', 'This order has already been paid.');
+        }
+
+        if (!$order->payment_url) {
+            return redirect()->route('profile')->with('error', 'No payment token available for this order.');
+        }
+
+        $snapToken = $order->payment_url;
+        $cartItems = $order->cart_items ?? [];
+
+        // Format cart items for display
+        $cartItems = collect($cartItems)->map(function($item) {
+            return [
+                'name' => $item['name'] ?? 'Unknown',
+                'price' => $item['price'] ?? 0,
+                'quantity' => $item['quantity'] ?? 1,
+                'size' => $item['size'] ?? null,
+                'image_path' => $item['image_path'] ?? null,
+                'subtotal' => ($item['price'] ?? 0) * ($item['quantity'] ?? 1),
+            ];
+        })->toArray();
+
+        return view('store.payment', compact('snapToken', 'order', 'cartItems'));
+    }
+
+    /**
      * Konfigurasi Internal Midtrans
      */
     private function initMidtrans()
@@ -296,15 +439,82 @@ class StoreController extends Controller
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
         \Midtrans\Config::$curlOptions = [
-        CURLOPT_HTTPHEADER => [], // TAMBAHKAN BARIS INI
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0,
-    ];
-}
+            CURLOPT_HTTPHEADER => [], // TAMBAHKAN BARIS INI
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ];
+    }
 
     public function payment_return($order_id)
     {
-        return $this->payment_status($order_id);
+        return request()->has('order_id') ? $this->payment_status($order_id) : redirect()->route('payment_status', $order_id);
+    }
+
+    /**
+     * Update Cart Item Quantity
+     */
+    public function update_cart(Request $request, $cart_key)
+    {
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$cart_key])) {
+            $newQuantity = (int) $request->input('quantity', 1);
+
+            if ($newQuantity <= 0) {
+                unset($cart[$cart_key]);
+                session()->put('cart', $cart);
+                return redirect()->back()->with('success', 'Item removed from cart.');
+            }
+
+            // Check stock limit
+            $product = Product::with('variants')->find($cart[$cart_key]['product_id']);
+            if ($product) {
+                $size = $cart[$cart_key]['size'] ?? null;
+                if ($size) {
+                    $variant = $product->variants->where('size_label', $size)->first();
+                    $maxStock = $variant ? $variant->stock : 0;
+                } else {
+                    $maxStock = $product->total_stock;
+                }
+
+                if ($newQuantity > $maxStock) {
+                    return redirect()->back()->with('error', 'Quantity exceeds available stock.');
+                }
+            }
+
+            $cart[$cart_key]['quantity'] = $newQuantity;
+            session()->put('cart', $cart);
+        }
+
+        return redirect()->back();
+    }
+
+    /**
+     * Update Cart Item Size
+     */
+    public function update_cart_size(Request $request, $cart_key)
+    {
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$cart_key])) {
+            $item = $cart[$cart_key];
+            $newSize = $request->input('new_size');
+            $newKey = $item['product_id'] . '-' . $newSize;
+
+            // If the new size key already exists, merge quantities
+            if (isset($cart[$newKey]) && $newKey !== $cart_key) {
+                $cart[$newKey]['quantity'] += $item['quantity'];
+                unset($cart[$cart_key]);
+            } else {
+                $item['size'] = $newSize;
+                unset($cart[$cart_key]);
+                $cart[$newKey] = $item;
+            }
+
+            session()->put('cart', $cart);
+        }
+
+        return redirect()->back();
     }
 
     public function remove_from_cart($cart_key)

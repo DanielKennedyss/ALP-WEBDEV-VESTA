@@ -49,6 +49,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/checkout', [StoreController::class, 'checkout'])->name('checkout');
     Route::get('/payment/return/{order_id}', [StoreController::class, 'payment_return'])->name('payment_return');
     Route::get('/payment/status/{order_id}', [StoreController::class, 'payment_status'])->name('payment_status');
+    Route::post('/payment/callback/{order_id}', [StoreController::class, 'payment_callback'])->name('payment.callback');
     Route::get('/payment/retry/{order_id}', [StoreController::class, 'payment_retry'])->name('payment.retry');
 });
 
