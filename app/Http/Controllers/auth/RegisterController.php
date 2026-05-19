@@ -30,14 +30,17 @@ public function store(Request $request)
         'email' => $request->email,
         'phone_number' => $request->phone_number,
         'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-        'role' => 'customer', // Default role
-        'membership_level' => 'bronze', // Default level untuk user baru VESTA
+        'role' => 'customer',
+        'membership_level' => 'bronze',
+        'loyalty_points' => 0,
+        'total_spending' => 0.00,
     ]);
 
     // 3. Langsung Login setelah daftar
     \Illuminate\Support\Facades\Auth::login($user);
 
     // 4. Redirect ke Dashboard
-    return redirect()->route('dashboard');
+
+return redirect()->route('home');
 }
 }

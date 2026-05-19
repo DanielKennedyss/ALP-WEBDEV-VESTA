@@ -1,74 +1,45 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom fixed-top py-3">
-    <div class="container">
-        <!-- Brand -->
-        <a class="navbar-brand fw-bold tracking-tighter" href="/" style="font-size: 1.5rem; letter-spacing: -0.05em;">
-            VESTA
-        </a>
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="flex items-center justify-between h-20">
+            <!-- Brand -->
+            <a href="/" class="text-xl font-serif tracking-[0.3em]">VESTA</a>
 
-        <!-- Mobile Toggle -->
-        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            <!-- Navigation Links (desktop) -->
+            <div class="hidden md:flex items-center gap-10">
+                <a href="/" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">HOME</a>
+                <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">COLLECTION</a>
+                <a href="{{ route('about') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">ABOUT</a>
+                <a href="{{ route('contact') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">CONTACT</a>
+            </div>
 
-        <!-- Navigation Links -->
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mx-auto">
-                <li class="nav-item">
-                    <a class="nav-link label-caps mx-3" href="#">Collections</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link label-caps mx-3" href="#">Lookbook</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link label-caps mx-3" href="#">Studio</a>
-                </li>
-            </ul>
+            <!-- Right Icons -->
+            <div class="flex items-center gap-6">
+                @auth
+                    <a href="{{ route('profile') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">
+                        ACCOUNT
+                    </a>
+                    <form action="{{ route('logout') }}" method="POST" class="inline m-0">
+                        @csrf
+                        <button type="submit" class="text-xs tracking-[0.2em] text-red-600 hover:text-red-700 transition-colors uppercase">
+                            Logout
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors border border-current px-4 py-2">
+                        LOGIN
+                    </a>
+                @endauth
 
-<!-- Right Icons -->
-<div class="d-flex align-items-center">
-    @auth
-        <!-- Link ke Dashboard (Bisa dibedakan role-nya nanti) -->
-        <a href="{{ route('admin.dashboard') }}" class="text-dark text-decoration-none label-caps fw-bold me-4">
-            ACCOUNT
-        </a>
-
-        <!-- Ikon Cart (Tetap sebagai link, bukan form logout) -->
-        <a href="#" class="text-dark me-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-bag" viewBox="0 0 16 16">
-                <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1m3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/>
-            </svg>
-        </a>
-
-        <!-- Tombol Logout yang sebenarnya -->
-        <form action="{{ route('logout') }}" method="POST" class="d-inline">
-            @csrf
-            <button type="submit" class="btn btn-link p-0 text-danger fw-bold label-caps text-decoration-none" style="border: none;">
-                LOGOUT
-            </button>
-        </form>
-    @else
-        <a href="{{ route('login') }}" class="text-dark text-decoration-none label-caps fw-bold">
-            SIGN IN
-        </a>
-    @endauth
-</div>
+                <a href="{{ route('cart.view') }}" class="hover:text-gray-600 transition-colors relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    @php $cartCount = collect(session('cart', []))->sum('quantity'); @endphp
+                    @if($cartCount > 0)
+                    <span class="absolute -top-2 -right-2 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{{ $cartCount }}</span>
+                    @endif
+                </a>
+            </div>
         </div>
     </div>
 </nav>
-
-<style>
-    .label-caps {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #000;
-    }
-    .navbar-brand {
-        letter-spacing: -0.05em;
-    }
-    /* Memberikan jarak agar konten dashboard tidak tertutup fixed-navbar */
-    body {
-        padding-top: 80px;
-    }
-</style>
