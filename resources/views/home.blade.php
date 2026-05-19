@@ -81,7 +81,6 @@
         </div>
     </section>
 
-<<<<<<< Updated upstream
     <!-- BRAND INTRO -->
     <section id="about" class="w-full py-32 px-6 lg:px-8 bg-white">
         <div class="max-w-3xl mx-auto text-center">
@@ -92,8 +91,6 @@
             </p>
         </div>
     </section>
-=======
->>>>>>> Stashed changes
 
     <!-- PRODUCT COLLECTION -->
     <section id="collection" class="w-full py-24 px-6 lg:px-8 bg-stone-50">

@@ -8,7 +8,6 @@
                     Fine-tuned essentials for the modern minimalist. Elevating utility through intentional design.
                 </p>
             </div>
-<<<<<<< Updated upstream
 
             <!-- Collections -->
             <div class="col-6 col-lg-2">
@@ -17,15 +16,6 @@
                     <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-dark">All Pieces</a></li>
                     <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-dark">Outerwear</a></li>
                     <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-dark">Basics</a></li>
-=======
-            <div>
-                <h4 class="text-xs tracking-[0.25em] mb-6">NAVIGATE</h4>
-                <ul class="space-y-3">
-                    <li><a href="/" class="text-gray-400 text-sm hover:text-black transition-colors">Home</a></li>
-                    <li><a href="{{ route('collection') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Collection</a></li>
-                    <li><a href="{{ route('about') }}" class="text-gray-400 text-sm hover:text-black transition-colors">About</a></li>
-                    <li><a href="{{ route('contact') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Contact</a></li>
->>>>>>> Stashed changes
                 </ul>
             </div>
 

@@ -5,20 +5,10 @@
             VESTA
         </a>
 
-<<<<<<< Updated upstream
         <!-- Mobile Toggle -->
         <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-=======
-            <!-- Navigation Links (desktop) -->
-            <div class="hidden md:flex items-center gap-10">
-                <a href="/" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">HOME</a>
-                <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">COLLECTION</a>
-                <a href="{{ route('about') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">ABOUT</a>
-                <a href="{{ route('contact') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">CONTACT</a>
-            </div>
->>>>>>> Stashed changes
 
         <!-- Navigation Links -->
         <div class="collapse navbar-collapse" id="navbarNav">
