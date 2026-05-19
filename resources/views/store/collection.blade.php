@@ -15,8 +15,22 @@
     .gender-unisex { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
     .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.6s ease forwards; opacity: 0; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
     .sidebar-section { border-bottom: 1px solid #f3f4f6; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
     .sidebar-title { font-size: 10px; letter-spacing: 0.3em; color: #9ca3af; text-transform: uppercase; margin-bottom: 1rem; font-weight: 500; }
+=======
+    
+    /* Horizontal Filter Styles */
+    .filter-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-size: 0.75rem; letter-spacing: 0.05em; background: #fff; border: 1px solid #e5e7eb; border-radius: 9999px; transition: all 0.2s; white-space: nowrap; color: #4b5563; }
+    .filter-btn:hover { border-color: #9ca3af; color: #000; }
+    .filter-btn.active { border-color: #000; color: #000; font-weight: 500; }
+    .dropdown-content { position: absolute; top: 100%; margin-top: 0.5rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); min-width: 200px; z-index: 50; padding: 0.5rem 0; overflow: hidden; }
+    .dropdown-item { display: block; width: 100%; text-align: left; padding: 0.6rem 1.25rem; font-size: 0.8rem; color: #4b5563; transition: background 0.2s; }
+    .dropdown-item:hover { background: #f9fafb; color: #000; }
+    .dropdown-item.active { background: #f3f4f6; font-weight: 600; color: #000; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 </style>
 
 <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-screen">
@@ -52,6 +66,7 @@
                 <input type="hidden" name="sort" id="filterSort" value="{{ request('sort', 'newest') }}">
             </form>
         </div>
+
 
         <div class="flex flex-col lg:flex-row gap-10">
             {{-- Sidebar Filters --}}
@@ -140,6 +155,90 @@
                     </div>
                 </div>
 
+        <div class="flex-1 max-w-[1400px] mx-auto w-full">
+            {{-- Horizontal Sticky Filter Bar --}}
+            <div class="sticky top-20 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 flex-wrap pb-1 md:pb-0">
+                        <div class="flex items-center gap-2 mr-2">
+                            <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            <span class="text-[10px] tracking-widest text-gray-500 font-medium uppercase">Filters</span>
+                        </div>
+
+                        {{-- Category Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('category') }}' }">
+                                Category <span class="text-black font-semibold ml-1">{{ request('category') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
+                                <button type="button" onclick="setFilter('category','')" class="dropdown-item {{ !request('category') ? 'active' : '' }}">All Categories</button>
+                                @foreach($categories as $cat)
+                                <button type="button" onclick="setFilter('category','{{ $cat }}')" class="dropdown-item {{ request('category') == $cat ? 'active' : '' }}">{{ strtoupper($cat) }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Gender Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('gender') }}' }">
+                                Gender <span class="text-black font-semibold ml-1">{{ request('gender') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
+                                <button type="button" onclick="setFilter('gender','')" class="dropdown-item {{ !request('gender') ? 'active' : '' }}">All Genders</button>
+                                @foreach($genders as $g)
+                                <button type="button" onclick="setFilter('gender','{{ $g }}')" class="dropdown-item {{ request('gender') == $g ? 'active' : '' }}">{{ strtoupper($g) }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Size Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('size') }}' }">
+                                Size <span class="text-black font-semibold ml-1">{{ request('size') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0 min-w-[280px]" style="display: none;">
+                                <div class="grid grid-cols-3 gap-2 p-4">
+                                    <button type="button" onclick="setFilter('size','')" class="size-btn {{ !request('size') ? 'active' : '' }}">ALL</button>
+                                    @foreach($sizes as $s)
+                                    <button type="button" onclick="setFilter('size','{{ $s }}')" class="size-btn {{ request('size') == $s ? 'active' : '' }}">{{ strtoupper($s) }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if(request('category') || request('gender') || request('size') || request('search'))
+                        <a href="{{ route('collection') }}" class="text-[10px] tracking-widest text-gray-500 hover:text-black transition-colors uppercase ml-2 underline underline-offset-4">Clear Filters</a>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
+                        <span class="text-xs text-gray-500 whitespace-nowrap"><span class="text-black font-medium">{{ $products->count() }}</span> Results</span>
+                        
+                        {{-- Sort Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="text-xs tracking-wider font-medium flex items-center gap-1.5 hover:text-gray-600 transition-colors uppercase">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                                Sort By
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content right-0 left-auto" style="display: none;">
+                                <button type="button" onclick="setFilter('sort','newest')" class="dropdown-item {{ request('sort','newest')=='newest' ? 'active' : '' }}">Newest First</button>
+                                <button type="button" onclick="setFilter('sort','price_low')" class="dropdown-item {{ request('sort')=='price_low' ? 'active' : '' }}">Price: Low → High</button>
+                                <button type="button" onclick="setFilter('sort','price_high')" class="dropdown-item {{ request('sort')=='price_high' ? 'active' : '' }}">Price: High → Low</button>
+                                <button type="button" onclick="setFilter('sort','name_asc')" class="dropdown-item {{ request('sort')=='name_asc' ? 'active' : '' }}">Name: A → Z</button>
+                                <button type="button" onclick="setFilter('sort','name_desc')" class="dropdown-item {{ request('sort')=='name_desc' ? 'active' : '' }}">Name: Z → A</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Products Grid --}}
+            <div class="w-full">
+
+
                 @if($products->isEmpty())
                 <div class="text-center py-24">
                     <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,7 +248,9 @@
                     <a href="{{ route('collection') }}" class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR FILTERS</a>
                 </div>
                 @else
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     @foreach($products as $index => $product)
                     <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
                         <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5">

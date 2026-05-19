@@ -2,7 +2,7 @@
 
 @section('admin_content')
 
-{{-- Style Animasi agar dashboard lebih "Hidup" dan Premium --}}
+{{-- Style Animasi   dashboard lebih "Hidup" dan Premium --}}
 <style>
     .admin-card {
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);

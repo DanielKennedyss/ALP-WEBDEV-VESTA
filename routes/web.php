@@ -22,6 +22,19 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['web'])->group(function () {
+    Route::get('/about', function () { return view('about'); })->name('about');
+    Route::get('/contact', function () { return view('contact'); })->name('contact');
+    Route::post('/contact', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'subject' => 'required|string',
+            'message' => 'required|string|max:5000',
+        ]);
+        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully. Our team will contact you shortly.');
+    })->name('contact.submit');
     Route::get('/collection', [StoreController::class, 'collection'])->name('collection');
     Route::get('/cart', [StoreController::class, 'view_cart'])->name('cart.view');
     

@@ -8,8 +8,8 @@
             <div class="hidden md:flex items-center gap-10">
                 <a href="/" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">HOME</a>
                 <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">COLLECTION</a>
-                <a href="/#about" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">ABOUT</a>
-                <a href="/#contact" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">CONTACT</a>
+                <a href="{{ route('about') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">ABOUT</a>
+                <a href="{{ route('contact') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">CONTACT</a>
             </div>
 
             <!-- Right Icons -->

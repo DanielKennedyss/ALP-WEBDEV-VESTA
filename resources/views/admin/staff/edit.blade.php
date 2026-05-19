@@ -72,7 +72,7 @@
                                 <input type="password" name="password" id="password" 
                                     class="form-control form-control-lg border-0 bg-light px-4 @error('password') is-invalid @enderror" 
                                     placeholder="••••••••" style="border-radius: 10px 0 0 10px;">
-                                <button class="btn btn-light border-0 px-4" type="button" onclick="togglePassword('password')" style="border-radius: 0 10px 10px 0; background-color: #f1f1f1;">
+                                <button class="btn border-0 px-4 btn-toggle-password" type="button" onclick="togglePassword('password')" style="border-radius: 0 10px 10px 0; background-color: #e9ecef;">
                                     <i class="bi bi-eye" id="password_icon"></i>
                                 </button>
                             </div>
@@ -81,9 +81,14 @@
 
                         <div class="mb-5">
                             <label for="password_confirmation" class="form-label small fw-bold text-uppercase text-muted">Confirm New Password</label>
-                            <input type="password" name="password_confirmation" id="password_confirmation" 
-                                class="form-control form-control-lg border-0 bg-light px-4" 
-                                placeholder="••••••••" style="border-radius: 10px;">
+                            <div class="input-group">
+                                <input type="password" name="password_confirmation" id="password_confirmation" 
+                                    class="form-control form-control-lg border-0 bg-light px-4" 
+                                    placeholder="••••••••" style="border-radius: 10px 0 0 10px;">
+                                <button class="btn border-0 px-4 btn-toggle-password" type="button" onclick="togglePassword('password_confirmation')" style="border-radius: 0 10px 10px 0; background-color: #e9ecef;">
+                                    <i class="bi bi-eye" id="password_confirmation_icon"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mt-4">
@@ -107,7 +112,20 @@
         background-color: #fff !important; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
         border: 1px solid #000 !important; 
+        outline: none;
     }
+    
+    /* Fokus pada Input Group (Password) */
+    .input-group:focus-within .form-control {
+        border-right: none !important;
+    }
+    .input-group:focus-within .btn-toggle-password {
+        background-color: #fff !important;
+        border: 1px solid #000 !important;
+        border-left: none !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    
     .btn-outline-dark { transition: all 0.3s ease; border: 1px solid #eee; color: #666; }
     .btn-check:checked + .btn-outline-dark { 
         background-color: #000; 
@@ -117,18 +135,26 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; 
     }
     .tracking-tighter { letter-spacing: -1.5px; }
+    .btn-toggle-password { transition: all 0.2s; color: #6c757d; }
+    .btn-toggle-password:hover { color: #000; background-color: #e2e6ea; }
 </style>
 
 <script>
     function togglePassword(id) {
         const input = document.getElementById(id);
         const icon = document.getElementById(id + '_icon');
+        
+        // Safety check
+        if (!input || !icon) return;
+
         if (input.type === "password") {
             input.type = "text";
-            icon.classList.replace('bi-eye', 'bi-eye-slash');
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
         } else {
             input.type = "password";
-            icon.classList.replace('bi-eye-slash', 'bi-eye');
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
         }
     }
 </script>

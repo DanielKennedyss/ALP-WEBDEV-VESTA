@@ -17,7 +17,7 @@
     </div>
 @endif
 
-<div class="admin-card" style="max-width: 960px;">
+<div class="admin-card bg-white p-4 p-md-5 rounded-4 shadow-sm" style="max-width: 960px;">
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="row g-5">

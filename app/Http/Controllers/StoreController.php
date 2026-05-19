@@ -47,9 +47,14 @@ class StoreController extends Controller
             });
         }
 
-        // Filter by gender
+        // Filter by gender (Male/Female also includes Unisex products)
         if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+            $selectedGender = $request->gender;
+            if (strtolower($selectedGender) === 'male' || strtolower($selectedGender) === 'female') {
+                $query->whereIn('gender', [$selectedGender, 'Unisex', 'unisex']);
+            } else {
+                $query->where('gender', $selectedGender);
+            }
         }
 
         // Filter by size

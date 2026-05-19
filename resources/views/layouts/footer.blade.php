@@ -12,8 +12,8 @@
                 <ul class="space-y-3">
                     <li><a href="/" class="text-gray-400 text-sm hover:text-black transition-colors">Home</a></li>
                     <li><a href="{{ route('collection') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Collection</a></li>
-                    <li><a href="/#about" class="text-gray-400 text-sm hover:text-black transition-colors">About</a></li>
-                    <li><a href="/#contact" class="text-gray-400 text-sm hover:text-black transition-colors">Contact</a></li>
+                    <li><a href="{{ route('about') }}" class="text-gray-400 text-sm hover:text-black transition-colors">About</a></li>
+                    <li><a href="{{ route('contact') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Contact</a></li>
                 </ul>
             </div>
             <div>
