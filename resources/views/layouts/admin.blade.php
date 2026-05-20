@@ -176,6 +176,11 @@
                 <i class="bi bi-receipt"></i> <span>Transactions</span>
             </a>
 
+            {{-- MENU VOUCHERS BARU BERSTANDAR LUXURY OPERATIONS --}}
+            <a href="{{ route('admin.vouchers.index') }}" class="nav-link-admin {{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
+                <i class="bi bi-ticket-perforated"></i> <span>Vouchers</span>
+            </a>
+
             {{-- Logic Role: Manager & Owner can manage staff --}}
             @if(in_array(auth()->user()->role, ['owner', 'manager']))
                 <span class="nav-label">Administration</span>

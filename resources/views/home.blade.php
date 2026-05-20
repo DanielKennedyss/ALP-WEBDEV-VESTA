@@ -49,8 +49,6 @@
         </div>
     </section>
 
-<<<<<<< HEAD
-    <!-- BRAND INTRO -->
     <section id="about" class="w-full py-32 px-6 lg:px-8 bg-white">
         <div class="max-w-3xl mx-auto text-center">
             <span class="text-xs tracking-[0.3em] text-gray-400 uppercase">The House of Vesta</span>
@@ -60,8 +58,6 @@
             </p>
         </div>
     </section>
-=======
->>>>>>> 90f4ec492a61cc76c2cf12e75b308d2314ee509f
 
     <!-- PRODUCT COLLECTION -->
     <section id="collection" class="w-full py-24 px-6 lg:px-8 bg-stone-50">

@@ -30,25 +30,25 @@
                 <h1 class="text-4xl md:text-5xl font-serif tracking-[0.1em] mt-2 uppercase">{{ Auth::user()->name }}</h1>
             </div>
             <div class="mt-6 md:mt-0">
-                <div class="border border-black px-6 py-3 inline-block">
-                    <span class="text-xs tracking-[0.2em] uppercase font-medium">Tier: {{ Auth::user()->membership_level ?? 'Bronze' }}</span>
+                <div class="border border-black px-6 py-3 inline-block bg-black text-white">
+                    {{-- MEMANGGIL NAMA TIER LUXURY SECARA OTOMATIS --}}
+                    <span class="text-xs tracking-[0.2em] uppercase font-bold">STATUS: {{ Auth::user()->membership_tier_badge }}</span>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             <div class="profile-card delay-1 border border-gray-200 bg-stone-50 p-8 flex flex-col justify-between">
-                <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Loyalty Points</span>
+                <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Privilege Points</span>
                 <div class="flex items-baseline gap-2">
-                    {{-- Otomatis terupdate via Model Observer --}}
-                    <h2 class="text-4xl font-light">{{ number_format(Auth::user()->loyalty_points ?? 0, 0) }}</h2>
+                    {{-- MENAMPILKAN POIN YANG SUDAH DIKALIBRASI (Rp 1.000 / Poin) --}}
+                    <h2 class="text-4xl font-light">{{ number_format(Auth::user()->loyalty_points ?? 0, 0, ',', '.') }}</h2>
                     <span class="text-xs tracking-widest text-gray-400">PTS</span>
                 </div>
             </div>
 
             <div class="profile-card delay-2 border border-gray-200 p-8 flex flex-col justify-between">
-                <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Total Spending</span>
-                {{-- Otomatis terupdate via Model Observer --}}
+                <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Lifetime Spending</span>
                 <h2 class="text-3xl font-light">IDR {{ number_format(Auth::user()->total_spending ?? 0, 0, ',', '.') }}</h2>
             </div>
 
@@ -85,7 +85,7 @@
                             <tr class="border-b border-black">
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Order ID</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Date</th>
-                                <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Product</th>
+                                <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Product(s)</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Total</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap pr-6">Status</th>
                                 <th class="pb-4 text-[10px] tracking-[0.2em] uppercase text-gray-400 font-medium whitespace-nowrap">Action</th>
@@ -95,14 +95,27 @@
                             @foreach($transactions as $order)
                             <tr class="border-b border-gray-100 hover:bg-stone-50 transition-colors">
                                 <td class="py-6 pr-6 text-sm font-medium">{{ $order->invoice_number }}</td>
-                                <td class="py-6 pr-6 text-sm text-gray-600">{{ $order->created_at->format('M d, Y H:i') }}</td>
+                                <td class="py-6 pr-6 text-sm text-gray-600">{{ $order->created_at->format('M d, Y') }}</td>
                                 <td class="py-6 pr-6 text-sm">
-                                    {{ $order->product ? $order->product->name : 'Unknown Product' }} 
-                                    <span class="text-gray-400 ml-1">(x{{ $order->quantity }})</span>
+                                    {{-- LOGIKA PEMBACAAN CART ITEMS DARI RERE --}}
+                                    @if($order->cart_items && is_array($order->cart_items) && count($order->cart_items) > 0)
+                                        {{ $order->cart_items[0]['name'] }} 
+                                        <span class="text-gray-400 ml-1">(x{{ $order->cart_items[0]['quantity'] }})</span>
+                                        
+                                        @if(count($order->cart_items) > 1)
+                                            <br>
+                                            <span class="text-[10px] text-gray-400 italic mt-1 inline-block">
+                                                + {{ count($order->cart_items) - 1 }} other item(s)
+                                            </span>
+                                        @endif
+                                    @else
+                                        {{-- Fallback jika transaksi lama belum pakai cart --}}
+                                        {{ $order->product ? $order->product->name : 'Unknown Product' }} 
+                                        <span class="text-gray-400 ml-1">(x{{ $order->quantity }})</span>
+                                    @endif
                                 </td>
                                 <td class="py-6 pr-6 text-sm">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
                                 <td class="py-6 pr-6">
-                                    {{-- Sinkronisasi Status: success & completed --}}
                                     @if($order->status == 'completed' || $order->status == 'success')
                                         <span class="inline-block border border-green-200 bg-green-50 text-green-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">Success</span>
                                     @elseif($order->status == 'pending')
@@ -130,8 +143,9 @@
 
         <div class="bg-black text-white p-12 text-center profile-card delay-4">
             <h3 class="text-2xl md:text-3xl font-serif tracking-[0.1em] mb-4">VESTA Winter Collection '26 is coming.</h3>
-            <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Exclusively for {{ Auth::user()->membership_level ?? 'Bronze' }} members.</p>
+            {{-- FOOTER EKSKLUSIF BERDASARKAN TIER --}}
+            <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Exclusive preview for {{ Auth::user()->membership_tier_badge }} members.</p>
         </div>
     </div>
 </div>
-@endsection
+@endsection 

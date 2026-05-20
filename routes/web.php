@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\VoucherController; // <--- BEST PRACTICE: Import namespace controller voucher baru
 use App\Http\Middleware\AdminMiddleware;
 
 /*
@@ -49,6 +50,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/checkout', [StoreController::class, 'checkout'])->name('checkout');
     Route::get('/payment/return/{order_id}', [StoreController::class, 'payment_return'])->name('payment_return');
     Route::get('/payment/status/{order_id}', [StoreController::class, 'payment_status'])->name('payment_status');
+    Route::post('/payment/callback/{order_id}', [StoreController::class, 'payment_callback'])->name('payment.callback');
     Route::get('/payment/retry/{order_id}', [StoreController::class, 'payment_retry'])->name('payment.retry');
 });
 
@@ -62,6 +64,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'authenticate']);
     
+    // Registrasi Akun Baru Vesta
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
 });
@@ -127,6 +130,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/transactions', 'index')->name('admin.transactions.index');
             Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('admin.transactions.updateStatus');
         });
+
+        // ====== OPERATIONAL FITUR: Luxury Voucher Management ======
+        // Menggunakan Route::resource dengan kustomisasi penamaan alias rute 'admin.vouchers.*'
+        Route::resource('vouchers', VoucherController::class)->names([
+            'index'   => 'admin.vouchers.index',
+            'create'  => 'admin.vouchers.create',
+            'store'   => 'admin.vouchers.store',
+            'edit'    => 'admin.vouchers.edit',
+            'update'  => 'admin.vouchers.update',
+            'destroy' => 'admin.vouchers.destroy',
+        ]);
 
         // Staff & Access Management (Hanya Owner yang bisa akses penuh biasanya)
         Route::controller(StaffController::class)->group(function () {
