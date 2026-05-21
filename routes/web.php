@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -10,18 +9,15 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController; // <--- BEST PRACTICE: Import namespace controller voucher baru
 use App\Http\Middleware\AdminMiddleware;
-
 /*
 |--------------------------------------------------------------------------
 | Public Routes (E-commerce Front-end)
 |--------------------------------------------------------------------------
 */
-
 Route::get('/', function () {
     $products = \App\Models\Product::orderBy('created_at', 'desc')->take(8)->get();
     return view('home', compact('products'));
 })->name('home');
-
 Route::middleware(['web'])->group(function () {
     Route::get('/about', function () { return view('about'); })->name('about');
     Route::get('/contact', function () { return view('contact'); })->name('contact');
@@ -52,14 +48,16 @@ Route::middleware(['web'])->group(function () {
     Route::get('/payment/status/{order_id}', [StoreController::class, 'payment_status'])->name('payment_status');
     Route::post('/payment/callback/{order_id}', [StoreController::class, 'payment_callback'])->name('payment.callback');
     Route::get('/payment/retry/{order_id}', [StoreController::class, 'payment_retry'])->name('payment.retry');
+    // Wishlist Actions
+    Route::get('/wishlist/items', [StoreController::class, 'get_wishlist'])->name('wishlist.items');
+    Route::post('/wishlist/toggle/{product_id}', [StoreController::class, 'toggle_wishlist'])->name('wishlist.toggle');
+    Route::post('/wishlist/sync', [StoreController::class, 'sync_wishlist'])->name('wishlist.sync');
 });
-
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login / Register)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'authenticate']);
@@ -68,18 +66,14 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
 });
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes (Customer & Admin)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('auth')->group(function () {
-
     // Global Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
     /*
      |--- Customer Side ---
      | Route ini hanya bisa diakses oleh role 'customer'. 
@@ -92,7 +86,6 @@ Route::middleware('auth')->group(function () {
         if (in_array($user->role, ['owner', 'manager', 'staff'])) {
             return redirect()->route('admin.dashboard');
         }
-
         $transactions = \App\Models\Transaction::where('customer_name', $user->name)
             ->with('product')
             ->orderBy('created_at', 'desc')
@@ -100,12 +93,10 @@ Route::middleware('auth')->group(function () {
             
         return view('profile', compact('transactions'));
     })->name('profile');
-
     // Redirect dashboard lama ke profile customer
     Route::get('/dashboard', function () {
         return redirect()->route('profile');
     });
-
     /*
      |--- Admin Panel Side (Owner, Manager, Staff) ---
      | Menggunakan AdminMiddleware untuk memfilter personil internal.
@@ -124,13 +115,11 @@ Route::middleware('auth')->group(function () {
             Route::put('/products/{product}', 'update')->name('admin.products.update');
             Route::delete('/products/{product}', 'destroy')->name('admin.products.destroy');
         });
-
         // Transaction & Order Management
         Route::controller(TransactionController::class)->group(function () {
             Route::get('/transactions', 'index')->name('admin.transactions.index');
             Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('admin.transactions.updateStatus');
         });
-
         // ====== OPERATIONAL FITUR: Luxury Voucher Management ======
         // Menggunakan Route::resource dengan kustomisasi penamaan alias rute 'admin.vouchers.*'
         Route::resource('vouchers', VoucherController::class)->names([
@@ -141,7 +130,6 @@ Route::middleware('auth')->group(function () {
             'update'  => 'admin.vouchers.update',
             'destroy' => 'admin.vouchers.destroy',
         ]);
-
         // Staff & Access Management (Hanya Owner yang bisa akses penuh biasanya)
         Route::controller(StaffController::class)->group(function () {
             Route::get('/staff', 'index')->name('admin.staff.index');
