@@ -15,15 +15,17 @@
             <!-- Right Icons -->
             <div class="flex items-center gap-6">
                 @auth
-                    <a href="{{ route('profile') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">
-                        ACCOUNT
+                    @php
+                        $fullName = auth()->user()->name;
+                        $nameParts = explode(' ', trim($fullName));
+                        $firstName = $nameParts[0] ?? 'User';
+                        $initial = strtoupper(substr($firstName, 0, 1));
+                    @endphp
+                    <a href="{{ route('profile') }}" class="flex items-center group transition-all duration-300">
+                        <span class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-semibold transition-transform duration-300 group-hover:scale-105">
+                            {{ $initial }}
+                        </span>
                     </a>
-                    <form action="{{ route('logout') }}" method="POST" class="inline m-0">
-                        @csrf
-                        <button type="submit" class="text-xs tracking-[0.2em] text-red-600 hover:text-red-700 transition-colors uppercase">
-                            Logout
-                        </button>
-                    </form>
                 @else
                     <a href="{{ route('login') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors border border-current px-4 py-2">
                         LOGIN
