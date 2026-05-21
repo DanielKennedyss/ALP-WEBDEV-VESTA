@@ -113,6 +113,30 @@
     // Wishlist global JS
     const IS_AUTHENTICATED = @json(auth()->check());
     let wishlistItems = [];
+
+    // Branded VESTA dynamic toast notifications
+    function showVestaToast(message, type = 'error') {
+        let existing = document.getElementById('globalToast');
+        if (existing) existing.remove();
+        
+        let toast = document.createElement('div');
+        toast.className = `vesta-global-toast toast-${type}`;
+        toast.id = 'globalToast';
+        toast.innerHTML = `
+            <div>
+                <div class="toast-brand">VESTA</div>
+                <div class="toast-msg">${message}</div>
+            </div>
+            <span class="toast-close" onclick="this.parentElement.style.animation='vestaToastOut 0.4s ease forwards';setTimeout(()=>this.parentElement.remove(),400)">✕</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(function() {
+            if (toast) {
+                toast.style.animation = 'vestaToastOut 0.4s ease forwards';
+                setTimeout(function() { toast.remove(); }, 400);
+            }
+        }, 5000);
+    }
     // Helper to get csrf token
     function getCsrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
@@ -132,10 +156,6 @@
                 }
             }
             await fetchWishlistFromDb();
-        } else {
-            // Guest: Load entirely from local storage
-            wishlistItems = JSON.parse(localStorage.getItem('vesta_wishlist') || '[]');
-            updateWishlistCountUI();
         }
 
         // Sync any heart buttons on the collection page if active
@@ -195,61 +215,19 @@
         if (event) {
             event.stopPropagation();
         }
+        if (!IS_AUTHENTICATED) {
+            showVestaToast('Please login or sign up first to add items to your wishlist.', 'error');
+            return;
+        }
         const heartBtn = document.getElementById('wishlist-heart-' + product.id);
         const heartSvg = heartBtn ? heartBtn.querySelector('svg') : null;
         const navIcon = document.getElementById('navbar-wishlist-icon');
         const isCurrentlyWishlisted = wishlistItems.some(item => item.id === product.id);
-        if (IS_AUTHENTICATED) {
-            // Persist to DB
-            try {
-                // Instantly update UI for snappy feeling
-                if (!isCurrentlyWishlisted) {
-                    if (heartBtn) {
-                        heartBtn.classList.remove('text-gray-400', 'hover:text-red-500');
-                        heartBtn.classList.add('text-red-500');
-                        if (heartSvg) {
-                            heartSvg.setAttribute('fill', '#ef4444');
-                            heartSvg.style.fill = '#ef4444';
-                        }
-                    }
-                    if (heartBtn && navIcon) {
-                        animateHeartToNavbar(heartBtn, navIcon);
-                    }
-                } else {
-                    if (heartBtn) {
-                        heartBtn.classList.add('text-gray-400', 'hover:text-red-500');
-                        heartBtn.classList.remove('text-red-500');
-                        if (heartSvg) {
-                            heartSvg.setAttribute('fill', 'none');
-                            heartSvg.style.fill = 'none';
-                        }
-                    }
-                }
-                const res = await fetch('/wishlist/toggle/' + product.id, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': getCsrfToken()
-                    }
-                });
-                const data = await res.json();
-
-                // Fetch latest wishlist items to sync state perfectly
-                await fetchWishlistFromDb();
-
-                if (typeof syncCardHearts === 'function') {
-                    syncCardHearts();
-                }
-            } catch (e) {
-                console.error('Error toggling DB wishlist:', e);
-            }
-        } else {
-            // Persist to LocalStorage
-            let wishlist = JSON.parse(localStorage.getItem('vesta_wishlist') || '[]');
-            const idx = wishlist.findIndex(item => item.id === product.id);
-            if (idx === -1) {
-                wishlist.push(product);
-                localStorage.setItem('vesta_wishlist', JSON.stringify(wishlist));
-                wishlistItems = wishlist;
+        
+        // Persist to DB
+        try {
+            // Instantly update UI for snappy feeling
+            if (!isCurrentlyWishlisted) {
                 if (heartBtn) {
                     heartBtn.classList.remove('text-gray-400', 'hover:text-red-500');
                     heartBtn.classList.add('text-red-500');
@@ -262,9 +240,6 @@
                     animateHeartToNavbar(heartBtn, navIcon);
                 }
             } else {
-                wishlist.splice(idx, 1);
-                localStorage.setItem('vesta_wishlist', JSON.stringify(wishlist));
-                wishlistItems = wishlist;
                 if (heartBtn) {
                     heartBtn.classList.add('text-gray-400', 'hover:text-red-500');
                     heartBtn.classList.remove('text-red-500');
@@ -274,10 +249,22 @@
                     }
                 }
             }
-            updateWishlistCountUI();
+            const res = await fetch('/wishlist/toggle/' + product.id, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': getCsrfToken()
+                }
+            });
+            const data = await res.json();
+
+            // Fetch latest wishlist items to sync state perfectly
+            await fetchWishlistFromDb();
+
             if (typeof syncCardHearts === 'function') {
                 syncCardHearts();
             }
+        } catch (e) {
+            console.error('Error toggling DB wishlist:', e);
         }
     }
     // Direct removal from within drawer

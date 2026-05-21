@@ -76,6 +76,9 @@ class StoreController extends Controller
      */
     public function add_to_cart(Request $request, $product_id)
     {
+        if (!Auth::check()) {
+            return redirect()->back()->with('error', 'Please login or sign up first to add items to your cart.');
+        }
         $product = Product::with('variants')->findOrFail($product_id);
         $quantity = $request->input('quantity', 1);
         $selectedSize = $request->input('size', null);
@@ -242,6 +245,9 @@ class StoreController extends Controller
      */
     public function direct_checkout(Request $request, $product_id)
     {
+        if (!Auth::check()) {
+            return redirect()->back()->with('error', 'Please login or sign up first to buy products.');
+        }
         $product = Product::with('variants')->findOrFail($product_id);
         $quantity = $request->input('quantity', 1);
         $user = Auth::user();
