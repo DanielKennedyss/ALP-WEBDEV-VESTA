@@ -2,39 +2,41 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
-protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'phone_number', // Field krusial untuk VESTA
-    'role',
-    'membership_level',
-];
+    protected $fillable = [
+        'name', 
+        'email', 
+        'password', 
+        'phone_number', 
+        'avatar',
+        'role', 
+        'membership_level', 
+        'loyalty_points', 
+        'total_spending', 
+        'status',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
-        'password',
+        'password', 
         'remember_token',
     ];
 
@@ -43,11 +45,115 @@ protected $fillable = [
      *
      * @return array<string, string>
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'total_spending' => 'decimal:2',
+        'loyalty_points' => 'integer',
+    ];
+
+    /**
+     * --------------------------------------------------------------------------
+     * RELATIONS
+     * --------------------------------------------------------------------------
+     */
+
+    /**
+     * RELASI: One-to-Many ke model Transaction
+     */
+    public function transactions(): HasMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * --------------------------------------------------------------------------
+     * ACCESSORS & MUTATORS (Laravel 11 Style)
+     * --------------------------------------------------------------------------
+     */
+
+    /**
+     * Accessor: Menghitung total spending khusus 1 tahun terakhir (Annual Spending)
+     * Cara panggil di Code: $user->annual_spending
+     */
+    public function getAnnualSpendingAttribute(): float
+    {
+        return (float) $this->transactions()
+            ->whereIn('status', ['success', 'settlement', 'paid'])
+            ->where('created_at', '>=', now()->subYear()) // 365 hari terakhir dari detik ini
+            ->sum('total_price');
+    }
+
+    /**
+     * Accessor: Mapping nilai database ke Nama Luxury di Tampilan Blade (UI)
+     * Cara panggil di Blade: {{ auth()->user()->membership_tier_badge }}
+     */
+    public function getMembershipTierBadgeAttribute(): string
+    {
+        return match ($this->membership_level) {
+            'platinum' => 'VESTA PRIVÉ',
+            'gold'     => 'HAUTE CIRCLE',
+            'silver'   => 'LA MAISON',
+            default    => 'THE ATELIER',
+        };
+    }
+
+    /**
+     * --------------------------------------------------------------------------
+     * BUSINESS LOGIC & HELPERS
+     * --------------------------------------------------------------------------
+     */
+
+    /**
+     * Fungsi Otomatis: Mengevaluasi Annual Spending & memperbarui Tier di Database
+     */
+    public function updateMembershipTier(): string
+    {
+        $spending = $this->annual_spending;
+
+        // Klasifikasi tier berdasarkan batas minimum pengeluaran tahunan VESTA
+        if ($spending >= 30000000) {
+            $tier = 'platinum';
+        } elseif ($spending >= 15000000) {
+            $tier = 'gold';
+        } elseif ($spending >= 5000000) {
+            $tier = 'silver';
+        } else {
+            $tier = 'bronze';
+        }
+
+        // Simpan langsung perubahan tier ke database jika ada perbedaan
+        if ($this->membership_level !== $tier) {
+            $this->update(['membership_level' => $tier]);
+        }
+
+        return $tier;
+    }
+
+    /**
+     * Role-Based Access Control (RBAC) Helpers
+     */
+    public function isOwner(): bool 
+    { 
+        return $this->role === 'owner'; 
+    }
+
+    public function isManager(): bool 
+    { 
+        return $this->role === 'manager'; 
+    }
+
+    public function isStaff(): bool 
+    { 
+        return $this->role === 'staff'; 
+    }
+    
+    public function isCustomer(): bool 
+    { 
+        return $this->role === 'customer'; 
+    }
+    public function loyaltyHistories()
+{
+    return $this->hasMany(LoyaltyPointHistory::class)->latest();
+}
 }

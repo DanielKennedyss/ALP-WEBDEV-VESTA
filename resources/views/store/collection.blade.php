@@ -13,13 +13,8 @@
     .gender-male { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
     .gender-female { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
     .gender-unisex { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
-    
-    /* Animasi Staggered untuk Product Card */
-    .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
-    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-
-    .sidebar-section { border-bottom: 1px solid #f3f4f6; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
-    .sidebar-title { font-size: 10px; letter-spacing: 0.3em; color: #9ca3af; text-transform: uppercase; margin-bottom: 1rem; font-weight: 500; }
+    .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.6s ease forwards; opacity: 0; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     
     /* Horizontal Filter Styles */
     .filter-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-size: 0.75rem; letter-spacing: 0.05em; background: #fff; border: 1px solid #e5e7eb; border-radius: 9999px; transition: all 0.2s; white-space: nowrap; color: #4b5563; }
@@ -29,22 +24,8 @@
     .dropdown-item { display: block; width: 100%; text-align: left; padding: 0.6rem 1.25rem; font-size: 0.8rem; color: #4b5563; transition: background 0.2s; }
     .dropdown-item:hover { background: #f9fafb; color: #000; }
     .dropdown-item.active { background: #f3f4f6; font-weight: 600; color: #000; }
-    
-    /* Custom Slim Scrollbar Khusus untuk Sidebar */
-    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-    /* Scrollbar Hidden tapi tetap bisa di-scroll */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* Modal Animation */
-    .modal-overlay { opacity: 0; transition: opacity 0.4s ease; }
-    .modal-content { opacity: 0; transform: translateY(20px) scale(0.98); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    .modal-active .modal-overlay { opacity: 1; }
-    .modal-active .modal-content { opacity: 1; transform: translateY(0) scale(1); }
 </style>
 
 <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-screen">
@@ -81,175 +62,89 @@
             </form>
         </div>
 
+        <div class="flex-1 max-w-[1400px] mx-auto w-full">
+            {{-- Horizontal Sticky Filter Bar --}}
+            <div class="sticky top-20 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 flex-wrap pb-1 md:pb-0">
+                        <div class="flex items-center gap-2 mr-2">
+                            <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            <span class="text-[10px] tracking-widest text-gray-500 font-medium uppercase">Filters</span>
+                        </div>
 
-        <div class="flex flex-col lg:flex-row gap-10">
-            
-            {{-- Sidebar Filters (Dengan Scroll Independen) --}}
-            <aside class="lg:w-64 shrink-0">
-                {{-- Penambahan max-h-[calc(100vh-8rem)], overflow-y-auto, dan custom-scrollbar di sini --}}
-                <div class="bg-white p-6 border border-gray-100 shadow-sm sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xs tracking-[0.25em] font-medium">FILTERS</h2>
+                        {{-- Category Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('category') }}' }">
+                                Category <span class="text-black font-semibold ml-1">{{ request('category') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
+                                <button type="button" onclick="setFilter('category','')" class="dropdown-item {{ !request('category') ? 'active' : '' }}">All Categories</button>
+                                @foreach($categories as $cat)
+                                <button type="button" onclick="setFilter('category','{{ $cat }}')" class="dropdown-item {{ request('category') == $cat ? 'active' : '' }}">{{ strtoupper($cat) }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Gender Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('gender') }}' }">
+                                Gender <span class="text-black font-semibold ml-1">{{ request('gender') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
+                                <button type="button" onclick="setFilter('gender','')" class="dropdown-item {{ !request('gender') ? 'active' : '' }}">All Genders</button>
+                                @foreach($genders as $g)
+                                <button type="button" onclick="setFilter('gender','{{ $g }}')" class="dropdown-item {{ request('gender') == $g ? 'active' : '' }}">{{ strtoupper($g) }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Size Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('size') }}' }">
+                                Size <span class="text-black font-semibold ml-1">{{ request('size') ?: '' }}</span>
+                                <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content left-0 min-w-[280px]" style="display: none;">
+                                <div class="grid grid-cols-3 gap-2 p-4">
+                                    <button type="button" onclick="setFilter('size','')" class="size-btn {{ !request('size') ? 'active' : '' }}">ALL</button>
+                                    @foreach($sizes as $s)
+                                    <button type="button" onclick="setFilter('size','{{ $s }}')" class="size-btn {{ request('size') == $s ? 'active' : '' }}">{{ strtoupper($s) }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        
                         @if(request('category') || request('gender') || request('size') || request('search'))
-                        <a href="{{ route('collection') }}" class="text-[10px] tracking-widest text-gray-400 hover:text-black transition-colors uppercase">Clear All</a>
+                        <a href="{{ route('collection') }}" class="text-[10px] tracking-widest text-gray-500 hover:text-black transition-colors uppercase ml-2 underline underline-offset-4">Clear Filters</a>
                         @endif
                     </div>
 
-                    {{-- Category Filter --}}
-                    <div class="sidebar-section">
-                        <h3 class="sidebar-title">Category</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="setFilter('category','')" class="filter-chip {{ !request('category') ? 'active' : '' }}">ALL</button>
-                            @foreach($categories as $cat)
-                            <button type="button" onclick="setFilter('category','{{ $cat }}')" class="filter-chip {{ request('category') == $cat ? 'active' : '' }}">{{ strtoupper($cat) }}</button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Gender Filter --}}
-                    <div class="sidebar-section">
-                        <h3 class="sidebar-title">Gender</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="setFilter('gender','')" class="filter-chip {{ !request('gender') ? 'active' : '' }}">ALL</button>
-                            @foreach($genders as $g)
-                            <button type="button" onclick="setFilter('gender','{{ $g }}')" class="filter-chip {{ request('gender') == $g ? 'active' : '' }}">{{ strtoupper($g) }}</button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Size Filter --}}
-                    <div class="sidebar-section">
-                        <h3 class="sidebar-title">Size</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="setFilter('size','')" class="filter-chip {{ !request('size') ? 'active' : '' }}">ALL</button>
-                            @foreach($sizes as $s)
-                            <button type="button" onclick="setFilter('size','{{ $s }}')" class="filter-chip {{ request('size') == $s ? 'active' : '' }}">{{ strtoupper($s) }}</button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Sort --}}
-                    <div class="pb-2">
-                        <h3 class="sidebar-title">Sort By</h3>
-                        <select onchange="setFilter('sort', this.value)" class="w-full border border-gray-300 px-3 py-2.5 text-xs tracking-wider focus:outline-none focus:border-black bg-white cursor-pointer hover:border-gray-400 transition-colors">
-                            <option value="newest" {{ request('sort','newest')=='newest'?'selected':'' }}>Newest First</option>
-                            <option value="price_low" {{ request('sort')=='price_low'?'selected':'' }}>Price: Low → High</option>
-                            <option value="price_high" {{ request('sort')=='price_high'?'selected':'' }}>Price: High → Low</option>
-                            <option value="name_asc" {{ request('sort')=='name_asc'?'selected':'' }}>Name: A → Z</option>
-                            <option value="name_desc" {{ request('sort')=='name_desc'?'selected':'' }}>Name: Z → A</option>
-                        </select>
-                    </div>
-                </div>
-            </aside>
-
-            {{-- Products Section --}}
-            <div class="flex-1">
-                
-                {{-- Results Count & Active Filters --}}
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <p class="text-xs tracking-widest text-gray-400">
-                        SHOWING <span class="text-black font-medium">{{ $products->count() }}</span> {{ Str::plural('PRODUCT', $products->count()) }}
-                    </p>
-                    <div class="flex gap-2 flex-wrap">
-                        @if(request('category'))
-                        <span class="inline-flex items-center gap-1 bg-black text-white text-[10px] tracking-wider px-3 py-1">
-                            {{ request('category') }}
-                            <button onclick="setFilter('category','')" class="ml-1 hover:text-gray-300 transition-colors">&times;</button>
-                        </span>
-                        @endif
-                        @if(request('gender'))
-                        <span class="inline-flex items-center gap-1 bg-black text-white text-[10px] tracking-wider px-3 py-1">
-                            {{ request('gender') }}
-                            <button onclick="setFilter('gender','')" class="ml-1 hover:text-gray-300 transition-colors">&times;</button>
-                        </span>
-                        @endif
-                        @if(request('size'))
-                        <span class="inline-flex items-center gap-1 bg-black text-white text-[10px] tracking-wider px-3 py-1">
-                            Size: {{ request('size') }}
-                            <button onclick="setFilter('size','')" class="ml-1 hover:text-gray-300 transition-colors">&times;</button>
-                        </span>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Horizontal Sticky Filter Bar (Mobile/Tablet specific if needed) --}}
-                <div class="lg:hidden sticky top-20 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div class="flex items-center gap-2 flex-wrap pb-1 md:pb-0">
-                            <div class="flex items-center gap-2 mr-2">
-                                <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                                <span class="text-[10px] tracking-widest text-gray-500 font-medium uppercase">Filters</span>
-                            </div>
-
-                            {{-- Category Dropdown --}}
-                            <div x-data="{ open: false }" class="relative">
-                                <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('category') }}' }">
-                                    Category <span class="text-black font-semibold ml-1">{{ request('category') ?: '' }}</span>
-                                    <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
-                                    <button type="button" onclick="setFilter('category','')" class="dropdown-item {{ !request('category') ? 'active' : '' }}">All Categories</button>
-                                    @foreach($categories as $cat)
-                                    <button type="button" onclick="setFilter('category','{{ $cat }}')" class="dropdown-item {{ request('category') == $cat ? 'active' : '' }}">{{ strtoupper($cat) }}</button>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            {{-- Gender Dropdown --}}
-                            <div x-data="{ open: false }" class="relative">
-                                <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('gender') }}' }">
-                                    Gender <span class="text-black font-semibold ml-1">{{ request('gender') ?: '' }}</span>
-                                    <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                <div x-show="open" x-transition class="dropdown-content left-0" style="display: none;">
-                                    <button type="button" onclick="setFilter('gender','')" class="dropdown-item {{ !request('gender') ? 'active' : '' }}">All Genders</button>
-                                    @foreach($genders as $g)
-                                    <button type="button" onclick="setFilter('gender','{{ $g }}')" class="dropdown-item {{ request('gender') == $g ? 'active' : '' }}">{{ strtoupper($g) }}</button>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            {{-- Size Dropdown --}}
-                            <div x-data="{ open: false }" class="relative">
-                                <button @click="open = !open" @click.away="open = false" class="filter-btn" :class="{ 'active': '{{ request('size') }}' }">
-                                    Size <span class="text-black font-semibold ml-1">{{ request('size') ?: '' }}</span>
-                                    <svg class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                <div x-show="open" x-transition class="dropdown-content left-0 min-w-[280px]" style="display: none;">
-                                    <div class="grid grid-cols-3 gap-2 p-4">
-                                        <button type="button" onclick="setFilter('size','')" class="size-btn {{ !request('size') ? 'active' : '' }}">ALL</button>
-                                        @foreach($sizes as $s)
-                                        <button type="button" onclick="setFilter('size','{{ $s }}')" class="size-btn {{ request('size') == $s ? 'active' : '' }}">{{ strtoupper($s) }}</button>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            @if(request('category') || request('gender') || request('size') || request('search'))
-                            <a href="{{ route('collection') }}" class="text-[10px] tracking-widest text-gray-500 hover:text-black transition-colors uppercase ml-2 underline underline-offset-4">Clear Filters</a>
-                            @endif
-                        </div>
-
-                        {{-- Mobile Sort Dropdown --}}
-                        <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
-                            <div x-data="{ open: false }" class="relative">
-                                <button @click="open = !open" @click.away="open = false" class="text-xs tracking-wider font-medium flex items-center gap-1.5 hover:text-gray-600 transition-colors uppercase">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
-                                    Sort By
-                                </button>
-                                <div x-show="open" x-transition class="dropdown-content right-0 left-auto" style="display: none;">
-                                    <button type="button" onclick="setFilter('sort','newest')" class="dropdown-item {{ request('sort','newest')=='newest' ? 'active' : '' }}">Newest First</button>
-                                    <button type="button" onclick="setFilter('sort','price_low')" class="dropdown-item {{ request('sort')=='price_low' ? 'active' : '' }}">Price: Low → High</button>
-                                    <button type="button" onclick="setFilter('sort','price_high')" class="dropdown-item {{ request('sort')=='price_high' ? 'active' : '' }}">Price: High → Low</button>
-                                    <button type="button" onclick="setFilter('sort','name_asc')" class="dropdown-item {{ request('sort')=='name_asc' ? 'active' : '' }}">Name: A → Z</button>
-                                    <button type="button" onclick="setFilter('sort','name_desc')" class="dropdown-item {{ request('sort')=='name_desc' ? 'active' : '' }}">Name: Z → A</button>
-                                </div>
+                    <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
+                        <span class="text-xs text-gray-500 whitespace-nowrap"><span class="text-black font-medium">{{ $products->count() }}</span> Results</span>
+                        
+                        {{-- Sort Dropdown --}}
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false" class="text-xs tracking-wider font-medium flex items-center gap-1.5 hover:text-gray-600 transition-colors uppercase">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                                Sort By
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-content right-0 left-auto" style="display: none;">
+                                <button type="button" onclick="setFilter('sort','newest')" class="dropdown-item {{ request('sort','newest')=='newest' ? 'active' : '' }}">Newest First</button>
+                                <button type="button" onclick="setFilter('sort','price_low')" class="dropdown-item {{ request('sort')=='price_low' ? 'active' : '' }}">Price: Low → High</button>
+                                <button type="button" onclick="setFilter('sort','price_high')" class="dropdown-item {{ request('sort')=='price_high' ? 'active' : '' }}">Price: High → Low</button>
+                                <button type="button" onclick="setFilter('sort','name_asc')" class="dropdown-item {{ request('sort')=='name_asc' ? 'active' : '' }}">Name: A → Z</button>
+                                <button type="button" onclick="setFilter('sort','name_desc')" class="dropdown-item {{ request('sort')=='name_desc' ? 'active' : '' }}">Name: Z → A</button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {{-- Products Grid --}}
+            {{-- Products Grid --}}
+            <div class="w-full">
+
                 @if($products->isEmpty())
                 <div class="text-center py-24">
                     <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,9 +154,7 @@
                     <a href="{{ route('collection') }}" class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR FILTERS</a>
                 </div>
                 @else
-                
-                {{-- BEST PRACTICE: Hanya satu deklarasi Grid --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     @foreach($products as $index => $product)
                     <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
                         <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5">
@@ -344,22 +237,20 @@
                 <div class="w-16 h-px bg-gray-200 mb-6"></div>
                 <p id="modalDescription" class="text-gray-600 text-sm leading-relaxed mb-6"></p>
 
-            {{-- Size Selector --}}
-            <div id="modalSizeSection" class="mb-8">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">SELECT SIZE</span>
-                    <span id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-500"></span>
+                {{-- Size Selector --}}
+                <div id="modalSizeSection" class="mb-6">
+                    <span class="text-xs tracking-[0.2em] block mb-3">SELECT SIZE</span>
+                    <div id="modalSizes" class="flex flex-wrap gap-2"></div>
+                    <p id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-400 mt-2"></p>
                 </div>
-                <div id="modalSizes" class="flex flex-wrap gap-2"></div>
-            </div>
 
-            <div class="mb-8">
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">QUANTITY</span>
-                    <input type="number" id="modalQuantity" value="1" min="1" disabled class="w-20 border border-gray-200 px-3 py-2.5 text-center text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed focus:border-black focus:outline-none transition-colors">
+                <div class="mb-6">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs tracking-[0.2em]">QTY</span>
+                        <input type="number" id="modalQuantity" value="1" min="1" disabled class="w-20 border border-gray-200 px-3 py-2 text-center disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    </div>
+                    <p id="qtyWarning" class="text-xs text-red-500 mt-2" style="display: none;">Purchase has reached the maximum limit!</p>
                 </div>
-                <p id="qtyWarning" class="text-[10px] text-red-500 mt-2 tracking-wider" style="display: none;">Purchase has reached the maximum stock limit.</p>
-            </div>
 
                 <form id="modalAddToCartForm" action="" method="POST">
                     @csrf
@@ -399,33 +290,56 @@ document.getElementById('searchInput').addEventListener('input', function() {
     searchTimer = setTimeout(() => { document.getElementById('mainFilterForm').submit(); }, 600);
 });
 
-// Quantity Logic
+// Quantity sync with max stock enforcement
 let prevQtyValue = 1;
+
 const qtyInput = document.getElementById('modalQuantity');
 
-function handleQtyChange(e) {
-    const max = parseInt(qtyInput.max) || 0;
-    let val = parseInt(qtyInput.value) || 1;
+qtyInput.addEventListener('focus', function() {
+    prevQtyValue = parseInt(this.value) || 1;
+});
+
+qtyInput.addEventListener('input', function() {
+    const max = parseInt(this.max) || 0;
+    let val = parseInt(this.value) || 1;
     const warning = document.getElementById('qtyWarning');
 
-    if (val >= max) {
+    if (val > max) {
         val = max;
-        qtyInput.value = max;
+        this.value = max;
+        warning.style.display = 'block';
+    } else if (val >= max && prevQtyValue >= max) {
         warning.style.display = 'block';
     } else if (val < 1) {
         val = 1;
-        qtyInput.value = 1;
+        this.value = 1;
         warning.style.display = 'none';
     } else {
         warning.style.display = 'none';
     }
     prevQtyValue = val;
     document.getElementById('modalQuantityInput').value = val;
-}
+});
 
-qtyInput.addEventListener('focus', function() { prevQtyValue = parseInt(this.value) || 1; });
-qtyInput.addEventListener('input', handleQtyChange);
-qtyInput.addEventListener('change', handleQtyChange);
+qtyInput.addEventListener('change', function() {
+    const max = parseInt(this.max) || 0;
+    let val = parseInt(this.value) || 1;
+    const warning = document.getElementById('qtyWarning');
+
+    if (val >= max) {
+        val = max;
+        this.value = max;
+        warning.style.display = 'block';
+    } else if (val < 1) {
+        val = 1;
+        this.value = 1;
+        warning.style.display = 'none';
+    } else {
+        warning.style.display = 'none';
+    }
+    prevQtyValue = val;
+    document.getElementById('modalQuantityInput').value = val;
+});
 
 qtyInput.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowUp') {
@@ -441,9 +355,6 @@ qtyInput.addEventListener('keydown', function(e) {
         document.getElementById('qtyWarning').style.display = 'none';
     }
 });
-
-// Modal Logic
-const modalContainer = document.getElementById('quickViewModal');
 
 function openQuickView(productId) {
     const product = products.find(p => p.id === productId);
@@ -496,13 +407,19 @@ function openQuickView(productId) {
     // Stock info
     const totalStock = variants.reduce((s, v) => s + v.stock, 0);
     document.getElementById('modalQuantity').max = totalStock;
-    const stockDiv = document.getElementById('modalStock');
-    stockDiv.innerHTML = totalStock > 0
-        ? '<span class="text-xs tracking-[0.2em] text-green-600">IN STOCK (' + totalStock + ' available)</span>'
-        : '<span class="text-xs tracking-[0.2em] text-red-500">SOLD OUT</span>';
+    document.getElementById('qtyWarning').style.display = 'none';
 
-    document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : (totalStock > 0 ? 'In Stock' : 'Sold Out');
+    // Disable QTY input until a size is selected (if product has variants)
+    const qtyEl = document.getElementById('modalQuantity');
+    if (variants.length > 0) {
+        qtyEl.disabled = true;
+    } else {
+        qtyEl.disabled = totalStock <= 0;
+    }
 
+    document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : '';
+
+    // Disable buttons if variants exist but none selected, or if sold out
     updateActionButtons(variants.length > 0 ? false : totalStock > 0);
 
     document.getElementById('quickViewModal').classList.remove('hidden');
@@ -516,12 +433,10 @@ function selectSize(btn, sizeLabel, stock) {
     document.getElementById('modalSizeInput').value = sizeLabel;
     document.getElementById('modalQuantity').max = stock;
     document.getElementById('modalQuantity').value = '1';
+    document.getElementById('modalQuantity').disabled = false;
     document.getElementById('modalQuantityInput').value = '1';
-    
-    document.getElementById('sizeStockInfo').textContent = stock + ' available';
-    document.getElementById('sizeStockInfo').className = 'text-[10px] tracking-wider text-green-600';
+    document.getElementById('sizeStockInfo').textContent = stock + ' available in size ' + sizeLabel;
     document.getElementById('qtyWarning').style.display = 'none';
-    
     updateActionButtons(true);
 }
 

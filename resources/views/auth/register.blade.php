@@ -119,14 +119,52 @@
         text-transform: none;
     }
 
+    .back-btn {
+        position: absolute;
+        top: 2rem;
+        left: 2rem;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        transition: opacity 0.3s ease;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .back-btn:hover {
+        opacity: 0.8;
+    }
+
+    /* Hide default browser password reveal icon */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none;
+    }
+
     @media (max-width: 991px) {
         .editorial-panel { display: none; }
         .form-panel { flex: 0 0 100%; }
         html, body { overflow: auto; }
+        .back-btn {
+            color: #333;
+            text-shadow: none;
+        }
     }
 </style>
 
 <div class="login-wrapper">
+    <a href="{{ route('home') }}" class="back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Home
+    </a>
     <!-- SISI KIRI: Editorial Space -->
     <div class="editorial-panel">
         <div>
@@ -148,27 +186,63 @@
 
                 <div style="margin-bottom: 1.25rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Full Name</label>
-                    <input type="text" name="name" placeholder="Enter your name" required>
+                    <input type="text" name="name" value="{{ old('name') }}" placeholder="Enter your name" required>
+                    @error('name')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 1.25rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Email Address</label>
-                    <input type="email" name="email" placeholder="email@example.com" required>
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="email@example.com" required>
+                    @error('email')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 1.25rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Phone Number</label>
-                    <input type="text" name="phone_number" placeholder="0812..." required>
+                    <input type="text" name="phone_number" value="{{ old('phone_number') }}" placeholder="0812..." required>
+                    @error('phone_number')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 1.25rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Password</label>
-                    <input type="password" name="password" placeholder="Minimum 8 characters" required>
+                    <div style="position: relative;">
+                        <input type="password" name="password" id="passwordInput" placeholder="Minimum 8 characters" required style="padding-right: 2.5rem;">
+                        <button type="button" id="togglePassword" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #adb5bd; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                            <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="eyeOffIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    @error('password')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 2rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Confirm Password</label>
-                    <input type="password" name="password_confirmation" placeholder="Repeat password" required>
+                    <div style="position: relative;">
+                        <input type="password" name="password_confirmation" id="passwordConfirmInput" placeholder="Repeat password" required style="padding-right: 2.5rem;">
+                        <button type="button" id="togglePasswordConfirm" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #adb5bd; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                            <svg id="eyeIconConfirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="eyeOffIconConfirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-vesta">
@@ -183,4 +257,54 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Main Password
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('passwordInput');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+        if(togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                if(type === 'text') {
+                    eyeIcon.style.display = 'none';
+                    eyeOffIcon.style.display = 'block';
+                    togglePassword.style.color = '#333';
+                } else {
+                    eyeIcon.style.display = 'block';
+                    eyeOffIcon.style.display = 'none';
+                    togglePassword.style.color = '#adb5bd';
+                }
+            });
+        }
+
+        // Confirm Password
+        const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
+        const passwordConfirmInput = document.getElementById('passwordConfirmInput');
+        const eyeIconConfirm = document.getElementById('eyeIconConfirm');
+        const eyeOffIconConfirm = document.getElementById('eyeOffIconConfirm');
+
+        if(togglePasswordConfirm && passwordConfirmInput) {
+            togglePasswordConfirm.addEventListener('click', function() {
+                const type = passwordConfirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordConfirmInput.setAttribute('type', type);
+                
+                if(type === 'text') {
+                    eyeIconConfirm.style.display = 'none';
+                    eyeOffIconConfirm.style.display = 'block';
+                    togglePasswordConfirm.style.color = '#333';
+                } else {
+                    eyeIconConfirm.style.display = 'block';
+                    eyeOffIconConfirm.style.display = 'none';
+                    togglePasswordConfirm.style.color = '#adb5bd';
+                }
+            });
+        }
+    });
+</script>
 @endsection

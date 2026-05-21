@@ -11,15 +11,32 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('transactions', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('product_id')->constrained()->onDelete('cascade'); // Terhubung ke produk
-    $table->integer('quantity');
-    $table->decimal('total_price', 15, 2); // IDR 1.000.000.00 dst
-    $table->string('customer_name')->nullable();
-    $table->enum('status', ['pending', 'completed', 'cancelled'])->default('pending');
-    $table->timestamps();
-});
+        Schema::create('transactions', function (Blueprint $table) {
+            $table->id();
+
+            // 1. RELASI 
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+
+            // 2. DETAIL DASAR
+            $table->integer('quantity');
+            $table->decimal('total_price', 15, 2);
+            $table->string('customer_name');
+
+            // 3. STATUS LOGISTIK & PEMBAYARAN (Diperbarui dengan alur baru)
+            $table->enum('status', [
+                'pending', 
+                'processing', 
+                'shipped', 
+                'delivered', 
+                'success',    // Dipertahankan untuk kompatibilitas Midtrans
+                'failed',     // Dipertahankan untuk kompatibilitas Midtrans
+                'expired', 
+                'cancelled'
+            ])->default('pending');
+
+            $table->timestamps();
+        });
     }
 
     /**

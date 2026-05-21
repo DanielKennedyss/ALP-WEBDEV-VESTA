@@ -21,7 +21,7 @@
                 </a>
             </div>
         @else
-            @php $total = 0; @endphp
+            @php $subtotal = 0; @endphp
             <div class="space-y-0">
                 {{-- Table Header --}}
                 <div class="hidden md:grid grid-cols-12 gap-4 pb-4 border-b border-black">
@@ -31,16 +31,16 @@
                     <div class="col-span-2 text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium text-right">Subtotal</div>
                 </div>
 
+                {{-- Cart Items --}}
                 @foreach($cart as $cart_key => $item)
                     @php
-                        $subtotal = $item['price'] * $item['quantity'];
-                        $total += $subtotal;
+                        $itemSubtotal = $item['price'] * $item['quantity'];
+                        $subtotal += $itemSubtotal;
                         $product = $cartProducts[$cart_key] ?? null;
                     @endphp
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 py-8 border-b border-gray-100 items-center">
                         {{-- Product Info (Image + Name) --}}
                         <div class="col-span-6 flex items-center gap-5">
-                            {{-- Product Image --}}
                             <div class="w-24 h-32 bg-gray-100 shrink-0 overflow-hidden">
                                 @if($product && $product->image_path)
                                     <img src="{{ $product->image_path }}" alt="{{ $item['name'] }}" class="w-full h-full object-cover">
@@ -55,7 +55,6 @@
                             <div>
                                 <h3 class="text-sm tracking-wide font-medium">{{ $item['name'] }}</h3>
                                 <p class="text-xs text-gray-400 mt-1">IDR {{ number_format($item['price'], 0, ',', '.') }}</p>
-                                {{-- Mobile: Remove button --}}
                                 <form action="{{ route('cart.remove', $cart_key) }}" method="POST" class="mt-2">
                                     @csrf
                                     <button type="submit" class="text-[10px] tracking-widest text-gray-400 hover:text-red-500 uppercase transition-colors">Remove</button>
@@ -98,28 +97,80 @@
                             </div>
                         </div>
 
-                        {{-- Subtotal --}}
+                        {{-- Subtotal per Item --}}
                         <div class="col-span-2 text-right">
-                            <span class="text-sm font-medium">IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
+                            <span class="text-sm font-medium">IDR {{ number_format($itemSubtotal, 0, ',', '.') }}</span>
                         </div>
                     </div>
                 @endforeach
             </div>
 
-            {{-- Cart Summary --}}
-            <div class="mt-12 border-t border-black pt-8">
-                <div class="flex flex-col items-end gap-6">
-                    <div class="flex items-baseline gap-6">
-                        <span class="text-xs tracking-[0.2em] text-gray-400 uppercase">Total</span>
-                        <span class="text-2xl font-serif">IDR {{ number_format($total, 0, ',', '.') }}</span>
+            {{-- Cart Summary & Discounts --}}
+            <div class="mt-12 border-t border-black pt-8 grid grid-cols-1 md:grid-cols-2 gap-12">
+                
+                {{-- Left Side: Vouchers & Points --}}
+                <div class="space-y-8">
+                    {{-- Voucher Code --}}
+                    <div>
+                        <label class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium block mb-3">Promo Code</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="voucher_code_input" placeholder="ENTER CODE" class="w-full border border-gray-200 px-4 py-3 text-xs tracking-widest uppercase focus:outline-none focus:border-black">
+                            <button type="button" id="apply_voucher_btn" class="bg-black text-white text-[10px] tracking-widest uppercase px-6 py-3 hover:bg-gray-800 transition-colors">
+                                Apply
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex gap-4">
-                        <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] border border-black px-8 py-4 hover:bg-black hover:text-white transition-colors">
+
+                    {{-- Loyalty Points --}}
+                    @if(auth()->check() && auth()->user()->loyalty_points > 0)
+                    <div class="bg-stone-50 p-6 border border-gray-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-[10px] tracking-[0.2em] text-gray-800 uppercase font-bold">Privilege Points</label>
+                            <span class="text-[10px] text-gray-500 tracking-wider">Available: {{ number_format(auth()->user()->loyalty_points) }} PTS</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" id="points_input" min="0" max="{{ auth()->user()->loyalty_points }}" placeholder="0" class="w-full border border-gray-200 px-4 py-3 text-xs tracking-widest focus:outline-none focus:border-black" oninput="this.value = !!this.value && Math.abs(this.value) >= 0 ? Math.min(Math.abs(this.value), {{ auth()->user()->loyalty_points }}) : null">
+                            <button type="button" id="apply_points_btn" class="bg-white text-black border border-black text-[10px] tracking-widest uppercase px-6 py-3 hover:bg-black hover:text-white transition-colors">
+                                Redeem
+                            </button>
+                        </div>
+                        <span class="text-[9px] text-gray-400 tracking-wider block mt-2">*1 Point = IDR 1.000 discount</span>
+                        <span id="points_message" class="text-[10px] tracking-wider block mt-2 hidden"></span>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Right Side: Totals & Checkout --}}
+                <div class="flex flex-col items-end gap-4">
+                    <div class="w-full max-w-sm space-y-3 mb-4">
+                        <div class="flex justify-between text-sm text-gray-500">
+                            <span>Subtotal</span>
+                            <span>IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
+                        </div>
+                        <div id="row_discount_points" class="flex justify-between text-sm text-green-600 hidden">
+                            <span>Points Redeemed</span>
+                            <span id="display_discount_points">- IDR 0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-baseline gap-6 mb-2">
+                        <span class="text-xs tracking-[0.2em] text-gray-400 uppercase">Grand Total</span>
+                        <span id="display_grand_total" class="text-3xl font-serif">IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    </div>
+
+                    <div class="flex gap-4 w-full justify-end mt-4">
+                        <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] border border-black px-8 py-4 hover:bg-black hover:text-white transition-colors text-center">
                             CONTINUE SHOPPING
                         </a>
-                        <form action="{{ route('checkout') }}" method="POST">
+                        
+                        {{-- Final Checkout Form --}}
+                        <form action="{{ route('checkout') }}" method="POST" id="checkout_form">
                             @csrf
-                            <button type="submit" class="bg-black text-white text-xs tracking-[0.2em] px-8 py-4 hover:bg-gray-800 transition-colors">
+                            {{-- Hidden inputs untuk mengirim data diskon ke Controller --}}
+                            <input type="hidden" name="points_to_redeem" id="hidden_points" value="0">
+                            <input type="hidden" name="voucher_code" id="hidden_voucher" value="">
+                            
+                            <button type="submit" class="bg-black text-white text-xs tracking-[0.2em] px-8 py-4 hover:bg-gray-800 transition-colors w-full">
                                 CHECKOUT
                             </button>
                         </form>
@@ -129,4 +180,65 @@
         @endif
     </div>
 </div>
+
+{{-- Script Kalkulasi Realtime --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const subtotal = {{ $subtotal ?? 0 }}; 
+        let pointsDiscount = 0;
+
+        const pointsInput = document.getElementById('points_input');
+        const applyPointsBtn = document.getElementById('apply_points_btn');
+        const pointsMessage = document.getElementById('points_message');
+        const displayDiscountPoints = document.getElementById('display_discount_points');
+        const rowDiscountPoints = document.getElementById('row_discount_points');
+        const displayGrandTotal = document.getElementById('display_grand_total');
+        
+        // Target input tersembunyi di form checkout
+        const hiddenPoints = document.getElementById('hidden_points');
+
+        if(applyPointsBtn) {
+            applyPointsBtn.addEventListener('click', function() {
+                let points = parseInt(pointsInput.value) || 0;
+                
+                if (points <= 0) {
+                    pointsDiscount = 0;
+                    hiddenPoints.value = 0;
+                    rowDiscountPoints.classList.add('hidden');
+                    pointsMessage.classList.add('hidden');
+                    updateGrandTotal();
+                    return;
+                }
+
+                // Kalkulasi 1 Poin = Rp 1.000
+                pointsDiscount = points * 1000;
+
+                if (pointsDiscount > subtotal) {
+                    pointsMessage.textContent = "Discount cannot exceed the subtotal.";
+                    pointsMessage.className = "text-[10px] text-red-600 tracking-wider block mt-2";
+                    pointsMessage.classList.remove('hidden');
+                    return;
+                }
+
+                pointsMessage.textContent = `Successfully applied ${points} points (IDR ${pointsDiscount.toLocaleString('id-ID')})`;
+                pointsMessage.className = "text-[10px] text-green-600 tracking-wider block mt-2";
+                pointsMessage.classList.remove('hidden');
+
+                displayDiscountPoints.textContent = `- IDR ${pointsDiscount.toLocaleString('id-ID')}`;
+                rowDiscountPoints.classList.remove('hidden');
+                
+                // Set value ke hidden input agar dikirim ke backend saat submit
+                hiddenPoints.value = points;
+
+                updateGrandTotal();
+            });
+        }
+
+        function updateGrandTotal() {
+            let finalTotal = subtotal - pointsDiscount;
+            if (finalTotal < 0) finalTotal = 0;
+            displayGrandTotal.textContent = `IDR ${finalTotal.toLocaleString('id-ID')}`;
+        }
+    });
+</script>
 @endsection

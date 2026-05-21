@@ -40,6 +40,7 @@ public function store(Request $request)
     \Illuminate\Support\Facades\Auth::login($user);
 
     // 4. Redirect ke Dashboard
-    return redirect()->route('dashboard');
+
+return redirect()->route('home');
 }
 }

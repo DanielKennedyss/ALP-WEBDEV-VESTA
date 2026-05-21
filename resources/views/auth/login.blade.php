@@ -148,14 +148,52 @@
         color: #333;
     }
 
+    .back-btn {
+        position: absolute;
+        top: 2rem;
+        left: 2rem;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        transition: opacity 0.3s ease;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .back-btn:hover {
+        opacity: 0.8;
+    }
+
+    /* Hide default browser password reveal icon */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none;
+    }
+
     @media (max-width: 991px) {
         .editorial-panel { display: none; }
         .form-panel { flex: 0 0 100%; }
         html, body { overflow: auto; }
+        .back-btn {
+            color: #333;
+            text-shadow: none;
+        }
     }
 </style>
 
 <div class="login-wrapper">
+    <a href="{{ route('home') }}" class="back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Home
+    </a>
     <!-- SISI KIRI: Editorial Space -->
     <div class="editorial-panel">
         <div>
@@ -177,7 +215,10 @@
 
                 <div style="margin-bottom: 1.5rem;">
                     <label class="label-caps" style="display: block; margin-bottom: 0.5rem;">Email Address</label>
-                    <input type="email" name="email" placeholder="enter your email" required autofocus>
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="enter your email" required autofocus>
+                    @error('email')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
@@ -185,7 +226,22 @@
                         <label class="label-caps" style="margin-bottom: 0;">Password</label>
                         <a href="#" class="forgot-link">Forgot?</a>
                     </div>
-                    <input type="password" name="password" placeholder="enter your password" required>
+                    <div style="position: relative;">
+                        <input type="password" name="password" id="passwordInput" placeholder="enter your password" required style="padding-right: 2.5rem;">
+                        <button type="button" id="togglePassword" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #adb5bd; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                            <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="eyeOffIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    @error('password')
+                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div style="display: flex; align-items: center; margin-bottom: 2rem;">
@@ -205,4 +261,30 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('passwordInput');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+        if(togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                if(type === 'text') {
+                    eyeIcon.style.display = 'none';
+                    eyeOffIcon.style.display = 'block';
+                    togglePassword.style.color = '#333';
+                } else {
+                    eyeIcon.style.display = 'block';
+                    eyeOffIcon.style.display = 'none';
+                    togglePassword.style.color = '#adb5bd';
+                }
+            });
+        }
+    });
+</script>
 @endsection

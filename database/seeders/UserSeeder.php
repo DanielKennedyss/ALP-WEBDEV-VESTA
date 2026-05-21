@@ -13,23 +13,83 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Bersihkan data lama agar tidak duplikat (Opsional tapi bagus untuk testing)
-        User::truncate();
+        // --- INTERNAL STAFF ---
 
-        // Akun Owner (Daniel)
+        // 1. Akun Owner (Daniel)
         User::create([
             'name' => 'Daniel Roger Kennedy',
             'email' => 'daniel@vesta.com',
             'password' => Hash::make('password123'),
             'role' => 'owner',
+            'status' => 'active',
         ]);
 
-        // Akun Admin untuk VESTA
+        // 2. Akun Manager (Nicho)
+        User::create([
+            'name' => 'Nicho',
+            'email' => 'nicho@vesta.com',
+            'password' => Hash::make('password123'),
+            'role' => 'manager',
+            'status' => 'active',
+        ]);
+
+        // 3. Akun Staff
+        User::create([
+            'name' => 'Jordan',
+            'email' => 'jordan@vesta.com',
+            'password' => Hash::make('password123'),
+            'role' => 'staff',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'name' => 'Rere',
+            'email' => 'rere@vesta.com',
+            'password' => Hash::make('password123'),
+            'role' => 'staff',
+            'status' => 'active',
+        ]);
+
         User::create([
             'name' => 'Staff Admin Vesta',
             'email' => 'admin@vesta.com',
             'password' => Hash::make('password123'),
-            'role' => 'admin',
+            'role' => 'staff',
+            'status' => 'active',
         ]);
+
+        // --- CUSTOMERS (Dibutuhkan oleh TransactionSeeder) ---
+
+        // 4. Akun Customer Spesifik (Untuk Testing Login Profil)
+        User::create([
+            'name' => 'Ella Customer',
+            'email' => 'ella@gmail.com',
+            'password' => Hash::make('password123'),
+            'role' => 'customer',
+            'status' => 'active',
+            'membership_level' => 'gold', // Menyesuaikan dengan migrasi VESTA
+        ]);
+
+        User::create([
+            'name' => 'Angie Customer',
+            'email' => 'angie@gmail.com',
+            'password' => Hash::make('password123'),
+            'role' => 'customer',
+            'status' => 'active',
+            'membership_level' => 'silver',
+        ]);
+
+        // 5. Menambahkan 5 Customer Acak Tambahan
+        $fakeCustomers = ['Qis', 'Budi Santoso', 'Siti Sarah', 'Jessica Wong', 'Ahmad'];
+        foreach ($fakeCustomers as $name) {
+            User::create([
+                'name' => $name,
+                'email' => strtolower(str_replace(' ', '', $name)) . '@example.com',
+                'password' => Hash::make('password123'),
+                'role' => 'customer',
+                'status' => 'active',
+                'membership_level' => 'bronze',
+            ]);
+        }
     }
 }
