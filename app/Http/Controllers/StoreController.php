@@ -620,4 +620,105 @@ class StoreController extends Controller
         }
         return redirect()->back();
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * Get Wishlist Items (JSON response)
+     */
+    public function get_wishlist()
+    {
+        if (!Auth::check()) {
+            return response()->json([]);
+        }
+
+        $user = Auth::user();
+        $products = Product::join('wishlists', 'products.id', '=', 'wishlists.product_id')
+            ->where('wishlists.user_id', $user->id)
+            ->select('products.*')
+            ->with(['category'])
+            ->get();
+
+        return response()->json($products);
+    }
+
+    /**
+     * Toggle Wishlist Item (JSON response)
+     */
+    public function toggle_wishlist($product_id)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $user = Auth::user();
+        $product = Product::findOrFail($product_id);
+
+        $wishlist = DB::table('wishlists')
+            ->where('user_id', $user->id)
+            ->where('product_id', $product_id)
+            ->first();
+
+        if ($wishlist) {
+            DB::table('wishlists')
+                ->where('user_id', $user->id)
+                ->where('product_id', $product_id)
+                ->delete();
+            $status = 'removed';
+        } else {
+            DB::table('wishlists')->insert([
+                'user_id' => $user->id,
+                'product_id' => $product_id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            $status = 'added';
+        }
+
+        $count = DB::table('wishlists')->where('user_id', $user->id)->count();
+
+        return response()->json([
+            'status' => $status,
+            'count' => $count
+        ]);
+    }
+
+    /**
+     * Sync Wishlist Items from LocalStorage on Login (JSON response)
+     */
+    public function sync_wishlist(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $user = Auth::user();
+        $productIds = $request->input('product_ids', []);
+
+        foreach ($productIds as $id) {
+            $exists = Product::find($id);
+            if ($exists) {
+                $alreadyInWishlist = DB::table('wishlists')
+                    ->where('user_id', $user->id)
+                    ->where('product_id', $id)
+                    ->exists();
+                if (!$alreadyInWishlist) {
+                    DB::table('wishlists')->insert([
+                        'user_id' => $user->id,
+                        'product_id' => $id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+        }
+
+        $count = DB::table('wishlists')->where('user_id', $user->id)->count();
+
+        return response()->json([
+            'status' => 'synced',
+            'count' => $count
+        ]);
+    }
+>>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 }
