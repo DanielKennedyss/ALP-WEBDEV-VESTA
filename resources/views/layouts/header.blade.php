@@ -14,26 +14,6 @@
 
             <!-- Right Icons -->
             <div class="flex items-center gap-6">
-                @auth
-                    <a href="{{ route('profile') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">
-                        ACCOUNT
-                    </a>
-                    <form action="{{ route('logout') }}" method="POST" class="inline m-0">
-                        @csrf
-                        <button type="submit" class="text-xs tracking-[0.2em] text-red-600 hover:text-red-700 transition-colors uppercase">
-                            Logout
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors border border-current px-4 py-2">
-                        LOGIN
-                    </a>
-                @endauth
-
-<<<<<<< HEAD
-=======
-            <!-- Right Icons -->
-            <div class="flex items-center gap-6">
                 <!-- Wishlist Button -->
                 <button onclick="openWishlistModal()" class="hover:text-gray-600 transition-colors relative" aria-label="Wishlist" id="wishlist-trigger-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" id="navbar-wishlist-icon" class="h-5 w-5 stroke-current transition-all duration-300 origin-center" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,7 +40,6 @@
                     </a>
                 @endauth
 
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                 <a href="{{ route('cart.view') }}" class="hover:text-gray-600 transition-colors relative">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -73,9 +52,6 @@
             </div>
         </div>
     </div>
-<<<<<<< HEAD
-</nav>
-=======
 </nav>
 
 <!-- Wishlist Drawer -->
@@ -452,4 +428,3 @@
     // Auto load
     document.addEventListener('DOMContentLoaded', initWishlist);
 </script>
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026

@@ -620,8 +620,6 @@ class StoreController extends Controller
         }
         return redirect()->back();
     }
-<<<<<<< HEAD
-=======
 
     /**
      * Get Wishlist Items (JSON response)
@@ -720,5 +718,4 @@ class StoreController extends Controller
             'count' => $count
         ]);
     }
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 }

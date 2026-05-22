@@ -2,30 +2,20 @@
 
 @section('content')
 <style>
-<<<<<<< HEAD
     /* CSS Custom untuk Luxury Feel */
     .filter-chip { padding: 0.5rem 1rem; font-size: 0.75rem; letter-spacing: 0.1em; border: 1px solid #d1d5db; transition: all 0.3s; cursor: pointer; user-select: none; background: #fff; color: #4b5563; }
     .filter-chip:hover { border-color: #000; color: #000; }
     .filter-chip.active { background: #000; color: #fff; border-color: #000; }
     
-=======
-    .filter-chip { padding: 0.5rem 1rem; font-size: 0.75rem; letter-spacing: 0.1em; border: 1px solid #d1d5db; transition: all 0.3s; cursor: pointer; user-select: none; background: #fff; color: #4b5563; }
-    .filter-chip:hover { border-color: #000; color: #000; }
-    .filter-chip.active { background: #000; color: #fff; border-color: #000; }
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     .size-btn { width: 3rem; height: 3rem; border: 1px solid #d1d5db; font-size: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; transition: all 0.3s; cursor: pointer; background: #fff; }
     .size-btn:hover:not(.disabled) { border-color: #000; }
     .size-btn.active { background: #000; color: #fff; border-color: #000; }
     .size-btn.disabled { border-color: #e5e7eb; color: #d1d5db; cursor: not-allowed; text-decoration: line-through; }
-<<<<<<< HEAD
     
-=======
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     .gender-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.625rem; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 2px; }
     .gender-male { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
     .gender-female { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
     .gender-unisex { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
-<<<<<<< HEAD
     
     /* Animasi Staggered untuk Product Card */
     .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
@@ -33,10 +23,6 @@
 
     .sidebar-section { border-bottom: 1px solid #f3f4f6; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
     .sidebar-title { font-size: 10px; letter-spacing: 0.3em; color: #9ca3af; text-transform: uppercase; margin-bottom: 1rem; font-weight: 500; }
-=======
-    .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.6s ease forwards; opacity: 0; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     
     /* Horizontal Filter Styles */
     .filter-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-size: 0.75rem; letter-spacing: 0.05em; background: #fff; border: 1px solid #e5e7eb; border-radius: 9999px; transition: all 0.2s; white-space: nowrap; color: #4b5563; }
@@ -46,7 +32,6 @@
     .dropdown-item { display: block; width: 100%; text-align: left; padding: 0.6rem 1.25rem; font-size: 0.8rem; color: #4b5563; transition: background 0.2s; }
     .dropdown-item:hover { background: #f9fafb; color: #000; }
     .dropdown-item.active { background: #f3f4f6; font-weight: 600; color: #000; }
-<<<<<<< HEAD
     
     /* Custom Slim Scrollbar Khusus untuk Sidebar */
     .custom-scrollbar::-webkit-scrollbar { width: 3px; }
@@ -63,18 +48,11 @@
     .modal-content { opacity: 0; transform: translateY(20px) scale(0.98); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     .modal-active .modal-overlay { opacity: 1; }
     .modal-active .modal-content { opacity: 1; transform: translateY(0) scale(1); }
-=======
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 </style>
 
 <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-screen">
     <div class="max-w-[1400px] mx-auto">
-<<<<<<< HEAD
         
-=======
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
         {{-- Page Header --}}
         <div class="text-center mb-12">
             <span class="text-xs tracking-[0.3em] text-gray-400 uppercase">Our Selection</span>
@@ -85,7 +63,6 @@
         {{-- Search Bar --}}
         <div class="max-w-2xl mx-auto mb-10">
             <form id="mainFilterForm" action="{{ route('collection') }}" method="GET">
-<<<<<<< HEAD
                 <div class="relative group">
                     <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
                         placeholder="Search by name, description, or SKU..."
@@ -95,17 +72,6 @@
                     </svg>
                     @if(request('search'))
                     <a href="{{ route('collection') }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors">
-=======
-                <div class="relative">
-                    <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
-                        placeholder="Search by name, description, or SKU..."
-                        class="w-full border border-gray-300 pl-12 pr-4 py-3.5 text-sm focus:outline-none focus:border-black transition-colors bg-white">
-                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    @if(request('search'))
-                    <a href="{{ route('collection') }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                     @endif
@@ -119,7 +85,6 @@
             </form>
         </div>
 
-<<<<<<< HEAD
 
         <div class="flex flex-col lg:flex-row gap-10">
             
@@ -283,7 +248,411 @@
                                     <button type="button" onclick="setFilter('sort','name_asc')" class="dropdown-item {{ request('sort')=='name_asc' ? 'active' : '' }}">Name: A → Z</button>
                                     <button type="button" onclick="setFilter('sort','name_desc')" class="dropdown-item {{ request('sort')=='name_desc' ? 'active' : '' }}">Name: Z → A</button>
                                 </div>
-=======
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Products Grid --}}
+                @if($products->isEmpty())
+                <div class="text-center py-24 bg-white border border-gray-100">
+                    <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <p class="text-sm tracking-widest text-gray-400 uppercase mb-4">No products found</p>
+                    <a href="{{ route('collection') }}" class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR FILTERS</a>
+                </div>
+                @else
+                
+                {{-- BEST PRACTICE: Hanya satu deklarasi Grid --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12">
+                    @foreach($products as $index => $product)
+                    <article class="product-card group relative flex flex-col justify-between" style="animation-delay: {{ $index * 0.1 }}s">
+                        
+                        {{-- Image Wrapper: Wajib relative agar element di dalamnya (badge) tidak berhamburan --}}
+                        <div class="relative overflow-hidden bg-gray-100 aspect-[3/4] mb-5">
+                            @if($product->image_path)
+                                <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
+                                    class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" loading="lazy">
+                            @else
+                                <div class="w-full h-full flex items-center justify-center text-gray-300">
+                                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                            @endif
+
+                            {{-- Gender Badge --}}
+                            <div class="absolute top-3 left-3 z-10">
+                                @php $gc = strtolower($product->gender ?? ''); @endphp
+                                <span class="gender-badge {{ $gc=='male'?'gender-male':($gc=='female'?'gender-female':'gender-unisex') }} shadow-sm">
+                                    @if($gc=='male')♂ @elseif($gc=='female')♀ @else⚥ @endif
+                                    {{ $product->gender }}
+                                </span>
+                            </div>
+
+                            {{-- Available Sizes Badge --}}
+                            @if($product->variants->count())
+                            <div class="absolute top-3 right-3 z-10">
+                                <div class="flex gap-1">
+                                    @foreach($product->variants->take(4) as $v)
+                                    <span class="bg-white/95 backdrop-blur-sm text-[9px] tracking-wider px-1.5 py-0.5 shadow-sm {{ $v->stock <= 0 ? 'line-through text-gray-400' : 'text-black font-medium' }}">{{ $v->size_label }}</span>
+                                    @endforeach
+                                    @if($product->variants->count() > 4)
+                                    <span class="bg-white/95 backdrop-blur-sm text-[9px] tracking-wider px-1.5 py-0.5 shadow-sm">+{{ $product->variants->count() - 4 }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
+
+                            {{-- Sold Out Overlay --}}
+                            @if($product->total_stock == 0)
+                            <div class="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-20">
+                                <span class="bg-black text-white text-[10px] tracking-[0.3em] px-6 py-2">SOLD OUT</span>
+                            </div>
+                            @endif
+
+                            {{-- Quick View Button Overlay --}}
+                            <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out z-30">
+                                <button onclick="openQuickView({{ $product->id }})" class="w-full bg-white/95 backdrop-blur-md text-black text-[10px] font-medium tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300 border-t border-gray-100">
+                                    QUICK VIEW
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Product Info --}}
+                        <div class="flex flex-col text-left">
+                            <span class="text-[9px] tracking-[0.2em] text-gray-400 mb-1.5 uppercase">{{ $product->category->name ?? 'Collection' }}</span>
+                            <h3 class="text-xs tracking-wider mb-2 font-medium text-gray-900 group-hover:underline underline-offset-4 line-clamp-2 min-h-[34px]">{{ $product->name }}</h3>
+                            <p class="text-sm font-serif text-gray-900">IDR {{ number_format($product->price, 0, ',', '.') }}</p>
+                        </div>
+                    </article>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- QUICK VIEW MODAL (Dengan Smooth Animation) --}}
+<div id="quickViewModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 md:p-8" aria-hidden="true">
+    {{-- Backdrop --}}
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onclick="closeQuickView()"></div>
+    
+    {{-- Modal Box --}}
+    <div id="modalBox" class="relative w-full max-w-5xl bg-white overflow-hidden shadow-2xl modal-content max-h-full flex flex-col md:flex-row">
+        
+        <button onclick="closeQuickView()" class="absolute top-4 right-4 md:top-6 md:right-6 z-[110] bg-white/80 md:bg-transparent p-2 hover:text-gray-500 transition-colors rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        {{-- Modal Image Area --}}
+        <div class="w-full md:w-1/2 bg-gray-50 h-[40vh] md:h-[80vh] shrink-0 relative">
+            <img id="modalImage" src="" alt="" class="absolute inset-0 w-full h-full object-cover">
+        </div>
+
+        {{-- Modal Content Area --}}
+        <div class="w-full md:w-1/2 p-6 md:p-12 lg:p-14 flex flex-col justify-center overflow-y-auto max-h-[60vh] md:max-h-[80vh]">
+            <span id="modalCategory" class="text-[10px] tracking-[0.3em] text-gray-400 uppercase mb-3 block"></span>
+            <h2 id="modalName" class="text-2xl md:text-3xl lg:text-4xl font-serif tracking-wide mb-4 text-gray-900 leading-tight"></h2>
+
+            <div id="modalGender" class="mb-4"></div>
+
+            <p id="modalPrice" class="text-xl md:text-2xl font-light mb-6 text-gray-900"></p>
+            <div class="w-12 h-px bg-gray-300 mb-6"></div>
+            <p id="modalDescription" class="text-gray-500 text-xs leading-relaxed mb-8"></p>
+
+            {{-- Size Selector --}}
+            <div id="modalSizeSection" class="mb-8">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">SELECT SIZE</span>
+                    <span id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-500"></span>
+                </div>
+                <div id="modalSizes" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="mb-8">
+                <div class="flex items-center gap-4">
+                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">QUANTITY</span>
+                    <input type="number" id="modalQuantity" value="1" min="1" disabled class="w-20 border border-gray-200 px-3 py-2.5 text-center text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed focus:border-black focus:outline-none transition-colors">
+                </div>
+                <p id="qtyWarning" class="text-[10px] text-red-500 mt-2 tracking-wider" style="display: none;">Purchase has reached the maximum stock limit.</p>
+            </div>
+
+            <form id="modalAddToCartForm" action="" method="POST" class="mt-auto">
+                @csrf
+                <input type="hidden" name="quantity" id="modalQuantityInput" value="1">
+                <input type="hidden" name="size" id="modalSizeInput" value="">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit" id="addToCartBtn" class="flex-1 bg-black text-white text-[10px] font-medium tracking-[0.2em] py-4 px-6 hover:bg-gray-800 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+                        ADD TO CART
+                    </button>
+                    <button type="button" onclick="buyNow()" id="buyNowBtn" class="flex-1 border border-black text-black text-[10px] font-medium tracking-[0.2em] py-4 px-6 hover:bg-black hover:text-white transition-colors disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+                        BUY NOW
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="productsData">{!! json_encode($products) !!}</script>
+
+<script>
+const products = JSON.parse(document.getElementById('productsData').textContent);
+let currentModalProductId = null;
+let selectedSize = null;
+
+// Filter system
+function setFilter(name, value) {
+    document.getElementById('filter' + name.charAt(0).toUpperCase() + name.slice(1)).value = value;
+    document.getElementById('mainFilterForm').submit();
+}
+
+// Debounced search
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { document.getElementById('mainFilterForm').submit(); }, 600);
+});
+
+// Quantity Logic
+let prevQtyValue = 1;
+const qtyInput = document.getElementById('modalQuantity');
+
+function handleQtyChange(e) {
+    const max = parseInt(qtyInput.max) || 0;
+    let val = parseInt(qtyInput.value) || 1;
+    const warning = document.getElementById('qtyWarning');
+
+    if (val >= max) {
+        val = max;
+        qtyInput.value = max;
+        warning.style.display = 'block';
+    } else if (val < 1) {
+        val = 1;
+        qtyInput.value = 1;
+        warning.style.display = 'none';
+    } else {
+        warning.style.display = 'none';
+    }
+    prevQtyValue = val;
+    document.getElementById('modalQuantityInput').value = val;
+}
+
+qtyInput.addEventListener('focus', function() { prevQtyValue = parseInt(this.value) || 1; });
+qtyInput.addEventListener('input', handleQtyChange);
+qtyInput.addEventListener('change', handleQtyChange);
+
+qtyInput.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowUp') {
+        const max = parseInt(this.max) || 0;
+        const val = parseInt(this.value) || 1;
+        if (val >= max) {
+            e.preventDefault();
+            this.value = max;
+            document.getElementById('qtyWarning').style.display = 'block';
+            document.getElementById('modalQuantityInput').value = max;
+        }
+    } else if (e.key === 'ArrowDown') {
+        document.getElementById('qtyWarning').style.display = 'none';
+    }
+});
+
+// Modal Logic
+const modalContainer = document.getElementById('quickViewModal');
+
+function openQuickView(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    currentModalProductId = productId;
+    selectedSize = null;
+
+    // Set Form Action
+    document.getElementById('modalAddToCartForm').action = '/cart/add/' + productId;
+    
+    // Set Data
+    document.getElementById('modalImage').src = product.image_path || '';
+    document.getElementById('modalImage').alt = product.name;
+    document.getElementById('modalCategory').textContent = product.category ? product.category.name : '';
+    document.getElementById('modalName').textContent = product.name;
+    document.getElementById('modalPrice').textContent = 'IDR ' + new Intl.NumberFormat('id-ID').format(product.price);
+    document.getElementById('modalDescription').textContent = product.description || 'No description available.';
+    document.getElementById('modalQuantity').value = '1';
+    document.getElementById('modalQuantityInput').value = '1';
+    document.getElementById('modalSizeInput').value = '';
+
+    // Gender badge
+    const genderDiv = document.getElementById('modalGender');
+    const g = (product.gender || '').toLowerCase();
+    const symbol = g === 'male' ? '♂' : g === 'female' ? '♀' : '⚥';
+    const cls = g === 'male' ? 'gender-male' : g === 'female' ? 'gender-female' : 'gender-unisex';
+    genderDiv.innerHTML = '<span class="gender-badge ' + cls + '">' + symbol + ' ' + (product.gender || 'Unisex') + '</span>';
+
+    // Size buttons
+    const sizesDiv = document.getElementById('modalSizes');
+    const sizeSection = document.getElementById('modalSizeSection');
+    const variants = product.variants || [];
+
+    if (variants.length > 0) {
+        sizeSection.style.display = 'block';
+        sizesDiv.innerHTML = '';
+        variants.forEach(v => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'size-btn' + (v.stock <= 0 ? ' disabled' : '');
+            btn.textContent = v.size_label;
+            btn.dataset.size = v.size_label;
+            btn.dataset.stock = v.stock;
+            if (v.stock > 0) {
+                btn.onclick = function() { selectSize(this, v.size_label, v.stock); };
+            }
+            sizesDiv.appendChild(btn);
+        });
+    } else {
+        sizeSection.style.display = 'none';
+    }
+
+    // Stock info
+    const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : product.total_stock;
+    document.getElementById('modalQuantity').max = totalStock;
+    document.getElementById('qtyWarning').style.display = 'none';
+
+    // Disable QTY input until a size is selected (if product has variants)
+    const qtyEl = document.getElementById('modalQuantity');
+    if (variants.length > 0) {
+        qtyEl.disabled = true;
+    } else {
+        qtyEl.disabled = totalStock <= 0;
+    }
+
+    document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : (totalStock > 0 ? 'In Stock' : 'Sold Out');
+
+    updateActionButtons(variants.length > 0 ? false : totalStock > 0);
+
+    // Show Modal with Animation
+    modalContainer.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Trigger reflow to ensure animation runs
+    void modalContainer.offsetWidth; 
+    modalContainer.classList.add('modal-active');
+}
+
+function selectSize(btn, sizeLabel, stock) {
+    selectedSize = sizeLabel;
+    document.querySelectorAll('#modalSizes .size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    document.getElementById('modalSizeInput').value = sizeLabel;
+    document.getElementById('modalQuantity').max = stock;
+    document.getElementById('modalQuantity').value = '1';
+    document.getElementById('modalQuantity').disabled = false;
+    document.getElementById('modalQuantityInput').value = '1';
+    
+    document.getElementById('sizeStockInfo').textContent = stock + ' available';
+    document.getElementById('sizeStockInfo').className = 'text-[10px] tracking-wider text-green-600';
+    document.getElementById('qtyWarning').style.display = 'none';
+    
+    updateActionButtons(true);
+}
+
+function updateActionButtons(enabled) {
+    document.getElementById('addToCartBtn').disabled = !enabled;
+    document.getElementById('buyNowBtn').disabled = !enabled;
+}
+
+function buyNow() {
+    if (!currentModalProductId) return;
+    document.getElementById('modalQuantityInput').value = document.getElementById('modalQuantity').value;
+    const form = document.getElementById('modalAddToCartForm');
+    form.action = '/direct-checkout/' + currentModalProductId;
+    form.submit();
+}
+
+function closeQuickView() {
+    modalContainer.classList.remove('modal-active');
+    // Tunggu animasi selesai baru hidden display-nya
+    setTimeout(() => {
+        modalContainer.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 400); // Sesuai dengan durasi CSS transition (0.4s)
+}
+
+document.addEventListener('keydown', e => { 
+    if (e.key === 'Escape' && modalContainer.classList.contains('modal-active')) {
+        closeQuickView(); 
+    }
+});
+</script>
+@endsection
+@extends('base.base')
+
+@section('content')
+<style>
+    .filter-chip { padding: 0.5rem 1rem; font-size: 0.75rem; letter-spacing: 0.1em; border: 1px solid #d1d5db; transition: all 0.3s; cursor: pointer; user-select: none; background: #fff; color: #4b5563; }
+    .filter-chip:hover { border-color: #000; color: #000; }
+    .filter-chip.active { background: #000; color: #fff; border-color: #000; }
+    .size-btn { width: 3rem; height: 3rem; border: 1px solid #d1d5db; font-size: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; transition: all 0.3s; cursor: pointer; background: #fff; }
+    .size-btn:hover:not(.disabled) { border-color: #000; }
+    .size-btn.active { background: #000; color: #fff; border-color: #000; }
+    .size-btn.disabled { border-color: #e5e7eb; color: #d1d5db; cursor: not-allowed; text-decoration: line-through; }
+    .gender-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.625rem; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 2px; }
+    .gender-male { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .gender-female { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .gender-unisex { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .product-card { display: flex; flex-direction: column; cursor: pointer; animation: fadeUp 0.6s ease forwards; opacity: 0; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    
+    /* Horizontal Filter Styles */
+    .filter-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-size: 0.75rem; letter-spacing: 0.05em; background: #fff; border: 1px solid #e5e7eb; border-radius: 9999px; transition: all 0.2s; white-space: nowrap; color: #4b5563; }
+    .filter-btn:hover { border-color: #9ca3af; color: #000; }
+    .filter-btn.active { border-color: #000; color: #000; font-weight: 500; }
+    .dropdown-content { position: absolute; top: 100%; margin-top: 0.5rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); min-width: 200px; z-index: 50; padding: 0.5rem 0; overflow: hidden; }
+    .dropdown-item { display: block; width: 100%; text-align: left; padding: 0.6rem 1.25rem; font-size: 0.8rem; color: #4b5563; transition: background 0.2s; }
+    .dropdown-item:hover { background: #f9fafb; color: #000; }
+    .dropdown-item.active { background: #f3f4f6; font-weight: 600; color: #000; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+
+<div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-screen">
+    <div class="max-w-[1400px] mx-auto">
+        {{-- Page Header --}}
+        <div class="text-center mb-12">
+            <span class="text-xs tracking-[0.3em] text-gray-400 uppercase">Our Selection</span>
+            <h1 class="text-4xl md:text-5xl font-serif tracking-[0.15em] mt-4">THE COLLECTION</h1>
+            <div class="w-16 h-px bg-black mx-auto mt-6"></div>
+        </div>
+
+        {{-- Search Bar --}}
+        <div class="max-w-2xl mx-auto mb-10">
+            <form id="mainFilterForm" action="{{ route('collection') }}" method="GET">
+                <div class="relative">
+                    <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
+                        placeholder="Search by name, description, or SKU..."
+                        class="w-full border border-gray-300 pl-12 pr-4 py-3.5 text-sm focus:outline-none focus:border-black transition-colors bg-white">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    @if(request('search'))
+                    <a href="{{ route('collection') }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </a>
+                    @endif
+                </div>
+
+                {{-- Hidden inputs for all filters --}}
+                <input type="hidden" name="category" id="filterCategory" value="{{ request('category') }}">
+                <input type="hidden" name="gender" id="filterGender" value="{{ request('gender') }}">
+                <input type="hidden" name="size" id="filterSize" value="{{ request('size') }}">
+                <input type="hidden" name="sort" id="filterSort" value="{{ request('sort', 'newest') }}">
+            </form>
+        </div>
+
         <div class="flex-1 max-w-[1400px] mx-auto w-full">
             {{-- Horizontal Sticky Filter Bar --}}
             <div class="sticky top-20 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
@@ -358,17 +727,10 @@
                                 <button type="button" onclick="setFilter('sort','price_high')" class="dropdown-item {{ request('sort')=='price_high' ? 'active' : '' }}">Price: High → Low</button>
                                 <button type="button" onclick="setFilter('sort','name_asc')" class="dropdown-item {{ request('sort')=='name_asc' ? 'active' : '' }}">Name: A → Z</button>
                                 <button type="button" onclick="setFilter('sort','name_desc')" class="dropdown-item {{ request('sort')=='name_desc' ? 'active' : '' }}">Name: Z → A</button>
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                             </div>
                         </div>
                     </div>
                 </div>
-<<<<<<< HEAD
-
-                {{-- Products Grid --}}
-                @if($products->isEmpty())
-                <div class="text-center py-24 bg-white border border-gray-100">
-=======
             </div>
 
             {{-- Products Grid --}}
@@ -376,7 +738,6 @@
 
                 @if($products->isEmpty())
                 <div class="text-center py-24">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                     <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
@@ -384,73 +745,22 @@
                     <a href="{{ route('collection') }}" class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR FILTERS</a>
                 </div>
                 @else
-<<<<<<< HEAD
-                
-                {{-- BEST PRACTICE: Hanya satu deklarasi Grid --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12">
-                    @foreach($products as $index => $product)
-                    <article class="product-card group relative flex flex-col justify-between" style="animation-delay: {{ $index * 0.1 }}s">
-                        
-                        {{-- Image Wrapper: Wajib relative agar element di dalamnya (badge) tidak berhamburan --}}
-                        <div class="relative overflow-hidden bg-gray-100 aspect-[3/4] mb-5">
-                            @if($product->image_path)
-                                <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
-                                    class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" loading="lazy">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center text-gray-300">
-                                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                            @endif
-=======
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     @foreach($products as $index => $product)
                     <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
                         <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer" onclick="openQuickView({{ $product->id }})">
                             <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
                                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 
                             {{-- Gender Badge --}}
                             <div class="absolute top-3 left-3 z-10">
                                 @php $gc = strtolower($product->gender ?? ''); @endphp
-<<<<<<< HEAD
-                                <span class="gender-badge {{ $gc=='male'?'gender-male':($gc=='female'?'gender-female':'gender-unisex') }} shadow-sm">
-=======
                                 <span class="gender-badge {{ $gc=='male'?'gender-male':($gc=='female'?'gender-female':'gender-unisex') }}">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                                     @if($gc=='male')♂ @elseif($gc=='female')♀ @else⚥ @endif
                                     {{ $product->gender }}
                                 </span>
                             </div>
 
-<<<<<<< HEAD
-                            {{-- Available Sizes Badge --}}
-                            @if($product->variants->count())
-                            <div class="absolute top-3 right-3 z-10">
-                                <div class="flex gap-1">
-                                    @foreach($product->variants->take(4) as $v)
-                                    <span class="bg-white/95 backdrop-blur-sm text-[9px] tracking-wider px-1.5 py-0.5 shadow-sm {{ $v->stock <= 0 ? 'line-through text-gray-400' : 'text-black font-medium' }}">{{ $v->size_label }}</span>
-                                    @endforeach
-                                    @if($product->variants->count() > 4)
-                                    <span class="bg-white/95 backdrop-blur-sm text-[9px] tracking-wider px-1.5 py-0.5 shadow-sm">+{{ $product->variants->count() - 4 }}</span>
-                                    @endif
-                                </div>
-                            </div>
-                            @endif
-
-                            {{-- Sold Out Overlay --}}
-                            @if($product->total_stock == 0)
-                            <div class="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-20">
-                                <span class="bg-black text-white text-[10px] tracking-[0.3em] px-6 py-2">SOLD OUT</span>
-                            </div>
-                            @endif
-
-                            {{-- Quick View Button Overlay --}}
-                            <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out z-30">
-                                <button onclick="openQuickView({{ $product->id }})" class="w-full bg-white/95 backdrop-blur-md text-black text-[10px] font-medium tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300 border-t border-gray-100">
-=======
                             @if($product->total_stock == 0)
                             <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
                                 <span class="text-white text-xs tracking-[0.3em] border border-white px-6 py-3">SOLD OUT</span>
@@ -459,19 +769,11 @@
 
                             <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
                                 <button onclick="openQuickView({{ $product->id }})" class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                                     QUICK VIEW
                                 </button>
                             </div>
                         </div>
 
-<<<<<<< HEAD
-                        {{-- Product Info --}}
-                        <div class="flex flex-col text-left">
-                            <span class="text-[9px] tracking-[0.2em] text-gray-400 mb-1.5 uppercase">{{ $product->category->name ?? 'Collection' }}</span>
-                            <h3 class="text-xs tracking-wider mb-2 font-medium text-gray-900 group-hover:underline underline-offset-4 line-clamp-2 min-h-[34px]">{{ $product->name }}</h3>
-                            <p class="text-sm font-serif text-gray-900">IDR {{ number_format($product->price, 0, ',', '.') }}</p>
-=======
                         <div class="relative w-full flex flex-col items-center text-center pt-2">
                             <span class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">{{ $product->category->name ?? '' }}</span>
                             <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">{{ $product->name }}</h3>
@@ -489,7 +791,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
                             </button>
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                         </div>
                     </article>
                     @endforeach
@@ -500,77 +801,16 @@
     </div>
 </div>
 
-<<<<<<< HEAD
-{{-- QUICK VIEW MODAL (Dengan Smooth Animation) --}}
-<div id="quickViewModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 md:p-8" aria-hidden="true">
-    {{-- Backdrop --}}
-    <div id="modalBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onclick="closeQuickView()"></div>
-    
-    {{-- Modal Box --}}
-    <div id="modalBox" class="relative w-full max-w-5xl bg-white overflow-hidden shadow-2xl modal-content max-h-full flex flex-col md:flex-row">
-        
-        <button onclick="closeQuickView()" class="absolute top-4 right-4 md:top-6 md:right-6 z-[110] bg-white/80 md:bg-transparent p-2 hover:text-gray-500 transition-colors rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-=======
 {{-- QUICK VIEW MODAL --}}
 <div id="quickViewModal" class="fixed inset-0 z-[100] hidden" aria-hidden="true">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeQuickView()"></div>
     <div class="absolute inset-4 md:inset-10 lg:inset-16 bg-white overflow-hidden flex items-center justify-center">
         <button onclick="closeQuickView()" class="absolute top-6 right-6 z-10 hover:text-gray-600 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
             </svg>
         </button>
 
-<<<<<<< HEAD
-        {{-- Modal Image Area --}}
-        <div class="w-full md:w-1/2 bg-gray-50 h-[40vh] md:h-[80vh] shrink-0 relative">
-            <img id="modalImage" src="" alt="" class="absolute inset-0 w-full h-full object-cover">
-        </div>
-
-        {{-- Modal Content Area --}}
-        <div class="w-full md:w-1/2 p-6 md:p-12 lg:p-14 flex flex-col justify-center overflow-y-auto max-h-[60vh] md:max-h-[80vh]">
-            <span id="modalCategory" class="text-[10px] tracking-[0.3em] text-gray-400 uppercase mb-3 block"></span>
-            <h2 id="modalName" class="text-2xl md:text-3xl lg:text-4xl font-serif tracking-wide mb-4 text-gray-900 leading-tight"></h2>
-
-            <div id="modalGender" class="mb-4"></div>
-
-            <p id="modalPrice" class="text-xl md:text-2xl font-light mb-6 text-gray-900"></p>
-            <div class="w-12 h-px bg-gray-300 mb-6"></div>
-            <p id="modalDescription" class="text-gray-500 text-xs leading-relaxed mb-8"></p>
-
-            {{-- Size Selector --}}
-            <div id="modalSizeSection" class="mb-8">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">SELECT SIZE</span>
-                    <span id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-500"></span>
-                </div>
-                <div id="modalSizes" class="flex flex-wrap gap-2"></div>
-            </div>
-
-            <div class="mb-8">
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-gray-900">QUANTITY</span>
-                    <input type="number" id="modalQuantity" value="1" min="1" disabled class="w-20 border border-gray-200 px-3 py-2.5 text-center text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed focus:border-black focus:outline-none transition-colors">
-                </div>
-                <p id="qtyWarning" class="text-[10px] text-red-500 mt-2 tracking-wider" style="display: none;">Purchase has reached the maximum stock limit.</p>
-            </div>
-
-            <form id="modalAddToCartForm" action="" method="POST" class="mt-auto">
-                @csrf
-                <input type="hidden" name="quantity" id="modalQuantityInput" value="1">
-                <input type="hidden" name="size" id="modalSizeInput" value="">
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <button type="submit" id="addToCartBtn" class="flex-1 bg-black text-white text-[10px] font-medium tracking-[0.2em] py-4 px-6 hover:bg-gray-800 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
-                        ADD TO CART
-                    </button>
-                    <button type="button" onclick="buyNow()" id="buyNowBtn" class="flex-1 border border-black text-black text-[10px] font-medium tracking-[0.2em] py-4 px-6 hover:bg-black hover:text-white transition-colors disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent">
-                        BUY NOW
-                    </button>
-                </div>
-            </form>
-=======
         <div class="w-full h-full grid grid-cols-1 md:grid-cols-2">
             <div class="bg-gray-100 overflow-hidden">
                 <img id="modalImage" src="" alt="" class="w-full h-full object-cover">
@@ -616,7 +856,6 @@
                     </div>
                 </form>
             </div>
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
         </div>
     </div>
 </div>
@@ -641,24 +880,6 @@ document.getElementById('searchInput').addEventListener('input', function() {
     searchTimer = setTimeout(() => { document.getElementById('mainFilterForm').submit(); }, 600);
 });
 
-<<<<<<< HEAD
-// Quantity Logic
-let prevQtyValue = 1;
-const qtyInput = document.getElementById('modalQuantity');
-
-function handleQtyChange(e) {
-    const max = parseInt(qtyInput.max) || 0;
-    let val = parseInt(qtyInput.value) || 1;
-    const warning = document.getElementById('qtyWarning');
-
-    if (val >= max) {
-        val = max;
-        qtyInput.value = max;
-        warning.style.display = 'block';
-    } else if (val < 1) {
-        val = 1;
-        qtyInput.value = 1;
-=======
 // Quantity sync with max stock enforcement
 let prevQtyValue = 1;
 
@@ -682,20 +903,12 @@ qtyInput.addEventListener('input', function() {
     } else if (val < 1) {
         val = 1;
         this.value = 1;
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
         warning.style.display = 'none';
     } else {
         warning.style.display = 'none';
     }
     prevQtyValue = val;
     document.getElementById('modalQuantityInput').value = val;
-<<<<<<< HEAD
-}
-
-qtyInput.addEventListener('focus', function() { prevQtyValue = parseInt(this.value) || 1; });
-qtyInput.addEventListener('input', handleQtyChange);
-qtyInput.addEventListener('change', handleQtyChange);
-=======
 });
 
 qtyInput.addEventListener('change', function() {
@@ -717,7 +930,6 @@ qtyInput.addEventListener('change', function() {
     prevQtyValue = val;
     document.getElementById('modalQuantityInput').value = val;
 });
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 
 qtyInput.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowUp') {
@@ -734,28 +946,14 @@ qtyInput.addEventListener('keydown', function(e) {
     }
 });
 
-<<<<<<< HEAD
-// Modal Logic
-const modalContainer = document.getElementById('quickViewModal');
-
-=======
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 function openQuickView(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
     currentModalProductId = productId;
     selectedSize = null;
 
-<<<<<<< HEAD
-    // Set Form Action
-    document.getElementById('modalAddToCartForm').action = '/cart/add/' + productId;
-    
-    // Set Data
-    document.getElementById('modalImage').src = product.image_path || '';
-=======
     document.getElementById('modalAddToCartForm').action = '/cart/add/' + productId;
     document.getElementById('modalImage').src = product.image_path;
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     document.getElementById('modalImage').alt = product.name;
     document.getElementById('modalCategory').textContent = product.category ? product.category.name : '';
     document.getElementById('modalName').textContent = product.name;
@@ -797,11 +995,7 @@ function openQuickView(productId) {
     }
 
     // Stock info
-<<<<<<< HEAD
-    const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : product.total_stock;
-=======
     const totalStock = variants.reduce((s, v) => s + v.stock, 0);
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     document.getElementById('modalQuantity').max = totalStock;
     document.getElementById('qtyWarning').style.display = 'none';
 
@@ -813,19 +1007,6 @@ function openQuickView(productId) {
         qtyEl.disabled = totalStock <= 0;
     }
 
-<<<<<<< HEAD
-    document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : (totalStock > 0 ? 'In Stock' : 'Sold Out');
-
-    updateActionButtons(variants.length > 0 ? false : totalStock > 0);
-
-    // Show Modal with Animation
-    modalContainer.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    
-    // Trigger reflow to ensure animation runs
-    void modalContainer.offsetWidth; 
-    modalContainer.classList.add('modal-active');
-=======
     document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : '';
 
     // Disable buttons if variants exist but none selected, or if sold out
@@ -833,32 +1014,19 @@ function openQuickView(productId) {
 
     document.getElementById('quickViewModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 }
 
 function selectSize(btn, sizeLabel, stock) {
     selectedSize = sizeLabel;
     document.querySelectorAll('#modalSizes .size-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-<<<<<<< HEAD
-    
-=======
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     document.getElementById('modalSizeInput').value = sizeLabel;
     document.getElementById('modalQuantity').max = stock;
     document.getElementById('modalQuantity').value = '1';
     document.getElementById('modalQuantity').disabled = false;
     document.getElementById('modalQuantityInput').value = '1';
-<<<<<<< HEAD
-    
-    document.getElementById('sizeStockInfo').textContent = stock + ' available';
-    document.getElementById('sizeStockInfo').className = 'text-[10px] tracking-wider text-green-600';
-    document.getElementById('qtyWarning').style.display = 'none';
-    
-=======
     document.getElementById('sizeStockInfo').textContent = stock + ' available in size ' + sizeLabel;
     document.getElementById('qtyWarning').style.display = 'none';
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
     updateActionButtons(true);
 }
 
@@ -876,21 +1044,6 @@ function buyNow() {
 }
 
 function closeQuickView() {
-<<<<<<< HEAD
-    modalContainer.classList.remove('modal-active');
-    // Tunggu animasi selesai baru hidden display-nya
-    setTimeout(() => {
-        modalContainer.classList.add('hidden');
-        document.body.style.overflow = '';
-    }, 400); // Sesuai dengan durasi CSS transition (0.4s)
-}
-
-document.addEventListener('keydown', e => { 
-    if (e.key === 'Escape' && modalContainer.classList.contains('modal-active')) {
-        closeQuickView(); 
-    }
-});
-=======
     document.getElementById('quickViewModal').classList.add('hidden');
     document.body.style.overflow = '';
 }
@@ -942,6 +1095,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQuickView(); });
->>>>>>> c72a573c4253ff62d9998bc73cb5dc7dfbd6c026
 </script>
 @endsection
