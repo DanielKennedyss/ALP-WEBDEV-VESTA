@@ -10,15 +10,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->validateCsrfTokens(except: [
-            'direct-checkout',
-            'direct-checkout/*',
-            'cart/add',
-            'cart/add/*',
-            'checkout',
-        ]);
+    ->withMiddleware(function (Middleware $middleware) {
+        //
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

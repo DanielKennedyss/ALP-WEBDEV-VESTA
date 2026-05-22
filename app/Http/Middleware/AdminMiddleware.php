@@ -4,26 +4,26 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
 class AdminMiddleware
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        // 1. Cek apakah user sudah login
+        // 1. Pastikan user sudah login
         if (Auth::check()) {
-            $role = Auth::user()->role;
-
-            // 2. Izinkan Owner, Manager, dan Staff masuk ke area /admin
-            $authorizedRoles = ['owner', 'manager', 'staff'];
-
-            if (in_array($role, $authorizedRoles)) {
+            $user = Auth::user();
+            
+            // 2. Izinkan masuk jika rolenya adalah internal staff VESTA
+            if (in_array($user->role, ['owner', 'manager', 'staff'])) {
                 return $next($request);
             }
+            
+            // 3. Jika customer biasa yang nyasar ke rute admin, lempar ke profil
+            return redirect()->route('profile');
         }
 
-        // 3. Jika bukan personil internal (misal: Customer), arahkan ke home dengan pesan error
-        return redirect('/')->with('error', 'Akses ditolak. Anda tidak memiliki izin administratif.');
+        // 4. Jika belum login sama sekali, lempar ke login
+        return redirect()->route('login');
     }
 }

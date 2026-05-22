@@ -28,6 +28,7 @@ class User extends Authenticatable
         'loyalty_points', 
         'total_spending', 
         'status',
+        'google_id',
     ];
 
     /**
@@ -47,9 +48,9 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'total_spending' => 'decimal:2',
-        'loyalty_points' => 'integer',
+        'password'          => 'hashed', // Mengotomatiskan hashing string password saat mutation
+        'total_spending'    => 'decimal:2',
+        'loyalty_points'    => 'integer',
     ];
 
     /**
@@ -67,8 +68,16 @@ class User extends Authenticatable
     }
 
     /**
+     * RELASI: One-to-Many ke model LoyaltyPointHistory
+     */
+    public function loyaltyHistories(): HasMany
+    {
+        return $this->hasMany(LoyaltyPointHistory::class)->latest();
+    }
+
+    /**
      * --------------------------------------------------------------------------
-     * ACCESSORS & MUTATORS (Laravel 11 Style)
+     * ACCESSORS & MUTATORS (Laravel Style)
      * --------------------------------------------------------------------------
      */
 
@@ -80,7 +89,7 @@ class User extends Authenticatable
     {
         return (float) $this->transactions()
             ->whereIn('status', ['success', 'settlement', 'paid'])
-            ->where('created_at', '>=', now()->subYear()) // 365 hari terakhir dari detik ini
+            ->where('created_at', '>=', now()->subYear())
             ->sum('total_price');
     }
 
@@ -111,7 +120,6 @@ class User extends Authenticatable
     {
         $spending = $this->annual_spending;
 
-        // Klasifikasi tier berdasarkan batas minimum pengeluaran tahunan VESTA
         if ($spending >= 30000000) {
             $tier = 'platinum';
         } elseif ($spending >= 15000000) {
@@ -122,7 +130,6 @@ class User extends Authenticatable
             $tier = 'bronze';
         }
 
-        // Simpan langsung perubahan tier ke database jika ada perbedaan
         if ($this->membership_level !== $tier) {
             $this->update(['membership_level' => $tier]);
         }
@@ -152,8 +159,4 @@ class User extends Authenticatable
     { 
         return $this->role === 'customer'; 
     }
-    public function loyaltyHistories()
-{
-    return $this->hasMany(LoyaltyPointHistory::class)->latest();
-}
 }

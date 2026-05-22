@@ -21,29 +21,31 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // --- PERUBAHAN DI SINI ---
             $user = Auth::user();
 
-            // Jika yang login adalah Owner atau Admin
-            if ($user->role === 'owner' || $user->role === 'admin') {
+            // Selaraskan dengan role internal VESTA: owner, manager, staff
+            if (in_array($user->role, ['owner', 'manager', 'staff'])) {
                 return redirect()->route('admin.dashboard');
+                
             }
 
-            // Jika customer biasa
-            return redirect()->intended('dashboard');
-            // -------------------------
+            // Jika customer biasa, bawa ke profile
+            return redirect()->route('profile'); 
         }
 
-        return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
+        // Jika salah password/email, kembalikan dengan pesan error
+        return back()->withErrors([
+            'email' => 'Email atau password yang Anda masukkan salah.'
+        ])->onlyInput('email');
     }
-public function logout(Request $request)
-{
-    auth()->logout();
 
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
+    public function logout(Request $request)
+    {
+        auth()->logout();
 
-    // Ubah redirect ke route login
-    return redirect()->route('login');
-}
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
 }
