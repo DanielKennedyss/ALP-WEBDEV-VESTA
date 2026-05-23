@@ -41,10 +41,12 @@
                 <div class="flex gap-2">
                     <input type="text" id="voucher_code" placeholder="ENTER VOUCHER CODE"
                            class="w-full border border-stone-200 px-5 py-4 text-[11px] tracking-widest uppercase focus:outline-none focus:border-black transition-all">
-                    <button type="button" class="bg-stone-900 text-white text-[10px] tracking-[0.2em] px-8 py-4 hover:bg-black transition-all uppercase">
-                        Apply
+                    <button type="button" id="apply_voucher_btn" onclick="applyVoucher()" class="bg-stone-900 text-white text-[10px] tracking-[0.2em] px-8 py-4 hover:bg-black transition-all duration-300 uppercase active:scale-95 shrink-0 flex items-center justify-center min-w-[120px]">
+                        <span id="btn_text">Apply</span>
+                        <span id="btn_spinner" class="hidden animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                     </button>
                 </div>
+                <div id="voucher_message" class="text-[11px] tracking-wide mt-3 hidden transition-all duration-300 transform translate-y-[-5px]"></div>
             </div>
         </div>
 
@@ -72,6 +74,10 @@
                     <span>Subtotal</span>
                     <span>IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
                 </div>
+                <div id="voucher_discount_row" class="flex justify-between text-stone-900 font-medium hidden border-b border-stone-100 pb-2 border-dashed">
+                    <span class="flex items-center gap-1">Voucher Discount (<span id="active_voucher_badge" class="uppercase tracking-wider font-bold"></span>)</span>
+                    <span>-IDR <span id="voucher_discount_val">0</span></span>
+                </div>
                 <div id="points_discount_row" class="flex justify-between text-emerald-600 font-medium hidden">
                     <span>Points Discount</span>
                     <span>-IDR <span id="points_discount_val">0</span></span>
@@ -85,7 +91,8 @@
             <form action="{{ route('checkout.process') }}" method="POST" class="mt-8">
                 @csrf
                 <input type="hidden" id="points_input_hidden" name="points_to_redeem" value="0">
-                <button type="submit" class="w-full bg-black text-white text-[11px] tracking-[0.3em] py-5 hover:bg-stone-800 transition-all uppercase shadow-lg shadow-stone-200">
+                <input type="hidden" id="voucher_code_hidden" name="applied_voucher_code" value="">
+                <button type="submit" class="w-full bg-black text-white text-[11px] tracking-[0.3em] py-5 hover:bg-stone-800 transition-all uppercase shadow-lg shadow-stone-200 active:scale-[0.99] duration-200">
                     Place Order & Pay
                 </button>
             </form>
@@ -96,12 +103,16 @@
 <style>
     .animate-fade-in { animation: fadeIn 0.8s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
+    .message-pop { animation: msgPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes msgPop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <script>
     const baseSubtotal = {{ $subtotal }};
     const userPoints = {{ auth()->user()->loyalty_points ?? 0 }};
+    
+    let activeVoucherDiscount = 0;
 
     function calculateTotal() {
         const checkbox = document.getElementById('use_points');
@@ -110,11 +121,13 @@
         const finalTotalVal = document.getElementById('final_total_val');
         const hiddenInput = document.getElementById('points_input_hidden');
 
+        let currentSubtotalAfterVoucher = baseSubtotal - activeVoucherDiscount;
+
         let pointsToUse = 0;
         let discountAmount = 0;
 
         if (checkbox && checkbox.checked) {
-            let maxAllowedDiscount = Math.max(0, baseSubtotal - 1000);
+            let maxAllowedDiscount = Math.max(0, currentSubtotalAfterVoucher - 1000);
             let maxPointsNeeded = Math.floor(maxAllowedDiscount / 1000);
             pointsToUse = Math.min(userPoints, maxPointsNeeded);
             discountAmount = pointsToUse * 1000;
@@ -126,9 +139,87 @@
             hiddenInput.value = 0;
         }
 
-        let finalTotal = baseSubtotal - discountAmount;
+        let finalTotal = currentSubtotalAfterVoucher - discountAmount;
+        
         discountVal.textContent = discountAmount.toLocaleString('id-ID');
         finalTotalVal.textContent = 'IDR ' + finalTotal.toLocaleString('id-ID');
+    }
+
+    function applyVoucher() {
+        const inputField = document.getElementById('voucher_code');
+        const btnText = document.getElementById('btn_text');
+        const btnSpinner = document.getElementById('btn_spinner');
+        const msgBox = document.getElementById('voucher_message');
+        
+        const voucherRow = document.getElementById('voucher_discount_row');
+        const voucherVal = document.getElementById('voucher_discount_val');
+        const voucherBadge = document.getElementById('active_voucher_badge');
+        const hiddenVoucherInput = document.getElementById('voucher_code_hidden');
+        
+        const code = inputField.value.trim();
+        
+        if (!code) {
+            msgBox.className = "text-[11px] tracking-wide mt-3 text-red-600 message-pop";
+            msgBox.textContent = "Please enter a valid voucher code first.";
+            msgBox.classList.remove('hidden');
+            return;
+        }
+
+        // Jalankan Micro UI Interaction Loading
+        btnText.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+        msgBox.classList.add('hidden');
+
+        // Menggunakan URL absolut direct string untuk mengeliminasi resiko redirection 405 oleh Nginx/Herd
+// Solusi Teraman: Menggunakan URL relatif absolut untuk memotong intersepsi port Nginx Herd
+        // REVISI FINAL: Mengunci URL ke domain absolut untuk menghentikan pengalihan query string oleh Laravel Herd
+        fetch('http://vesta-webdev.test/checkout/apply-voucher', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({ voucher_code: code })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btnText.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
+            
+            if (data.success) {
+                activeVoucherDiscount = data.discount;
+                hiddenVoucherInput.value = code.toUpperCase();
+                
+                voucherBadge.textContent = code;
+                voucherVal.textContent = data.discount.toLocaleString('id-ID');
+                voucherRow.classList.remove('hidden');
+                
+                msgBox.className = "text-[11px] tracking-wide mt-3 text-stone-900 font-medium message-pop";
+                msgBox.textContent = data.message;
+                msgBox.classList.remove('hidden');
+                
+                calculateTotal();
+            } else {
+                activeVoucherDiscount = 0;
+                hiddenVoucherInput.value = "";
+                voucherRow.classList.add('hidden');
+                
+                msgBox.className = "text-[11px] tracking-wide mt-3 text-red-600 message-pop";
+                msgBox.textContent = data.message;
+                msgBox.classList.remove('hidden');
+                
+                calculateTotal();
+            }
+        })
+        .catch(error => {
+            btnText.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
+            msgBox.className = "text-[11px] tracking-wide mt-3 text-red-600 message-pop";
+            msgBox.textContent = "An internal error occurred. Please try again.";
+            msgBox.classList.remove('hidden');
+            console.error("Voucher AJAX Error:", error);
+        });
     }
 </script>
 @endsection

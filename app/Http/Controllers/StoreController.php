@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ProductVariant;
 use App\Models\Transaction;
 use App\Models\LoyaltyPointHistory;
+use App\Models\Voucher; // REVISI: Import Model Voucher untuk Logika Klaim Potongan Harga
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -158,7 +159,7 @@ class StoreController extends Controller
             return redirect()->route('login')->with('error', 'Please login to proceed to checkout.');
         }
 
-        // Tentukan context data: Apakah dari flow "Buy Now" atau "Cart"
+        // Tentukan context data: Apakah dari flow "Buy Now" or "Cart"
         $isBuyNow = session()->has('buy_now');
         $cartItems = $isBuyNow ? [session('buy_now')] : session('cart', []);
 
@@ -201,7 +202,7 @@ class StoreController extends Controller
         session()->forget('buy_now');
         session()->put('buy_now', [
             'product_id' => $product->id,
-            'name'       => $product->name,
+            'name'        => $product->name,
             'price'      => $product->price,
             'quantity'   => $quantity,
             'size'       => $selectedSize,
@@ -463,7 +464,7 @@ class StoreController extends Controller
         $snapToken = $order->payment_url;
         $cartItems = collect($order->cart_items ?? [])->map(function($item) {
             return [
-                'name'       => $item['name'] ?? 'Unknown',
+                'name'        => $item['name'] ?? 'Unknown',
                 'price'      => $item['price'] ?? 0,
                 'quantity'   => $item['quantity'] ?? 1,
                 'size'       => $item['size'] ?? null,
@@ -654,6 +655,97 @@ class StoreController extends Controller
         return response()->json([
             'status' => 'synced',
             'count'  => $count
+        ]);
+    }
+
+    /**
+     * REVISI: Logika AJAX Klaim / Redeem Potongan Voucher Belanja di Halaman Checkout VESTA
+     */
+    public function apply_voucher(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Please login to use voucher.'], 401);
+        }
+
+        $request->validate([
+            'voucher_code' => 'required|string',
+        ]);
+
+        $voucherCode = strtoupper($request->input('voucher_code'));
+        
+        // REVISI TOTAL: Menggunakan pencarian dinamis yang fleksibel terhadap nama kolom tabel database 'vouchers' kamu
+        $voucher = Voucher::where('code', $voucherCode)
+            ->where(function($query) {
+                // Mencoba mencocokkan kolom status kustom jika ada di phpMyAdmin / database lokalmu
+                if (DB::getSchemaBuilder()->hasColumn('vouchers', 'status')) {
+                    $query->where('status', 'active');
+                } elseif (DB::getSchemaBuilder()->hasColumn('vouchers', 'is_active')) {
+                    $query->where('is_active', true);
+                }
+            })
+            ->first();
+
+        if (!$voucher) {
+            return response()->json(['success' => false, 'message' => 'Voucher code is invalid or has expired.']);
+        }
+
+        // 2. Cek Masa Berlaku Tanggal Voucher (Mencegah kecurangan waktu di lokal)
+        $now = now();
+        if (($voucher->start_date && $now->lt($voucher->start_date)) || ($voucher->end_date && $now->gt($voucher->end_date))) {
+            return response()->json(['success' => false, 'message' => 'This voucher is not currently active.']);
+        }
+
+        // 3. Cek Sisa Kuota Pemakaian Kupon Toko
+        if (!is_null($voucher->usage_limit) && $voucher->current_usage >= $voucher->usage_limit) {
+            return response()->json(['success' => false, 'message' => 'Voucher quota has been fully redeemed.']);
+        }
+
+        // 4. Hitung Subtotal Keranjang Saat Ini untuk Validasi Minimum Pengecekan Belanja
+        $isBuyNow = session()->has('buy_now');
+        $cartItems = $isBuyNow ? [session('buy_now')] : session('cart', []);
+
+        if (empty($cartItems)) {
+            return response()->json(['success' => false, 'message' => 'Your checkout items are empty.']);
+        }
+
+        $subtotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        // 5. Cek Apakah Keranjang Memenuhi Syarat Minimum Pembelian Voucher
+        if ($subtotal < $voucher->min_spend) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Minimum spend of Rp ' . number_format($voucher->min_spend, 0, ',', '.') . ' is required for this voucher.'
+            ]);
+        }
+
+        // 6. Hitung Nominal Potongan Harga Berdasarkan Tipe Voucher (Fixed Amount atau Percentage)
+        $discountAmount = 0;
+        if ($voucher->type === 'fixed') {
+            $discountAmount = $voucher->reward_amount;
+        } elseif ($voucher->type === 'percentage') {
+            $discountAmount = ($voucher->reward_amount / 100) * $subtotal;
+            
+            // Batasi dengan nilai maksimum diskon jika field max_discount tersedia di tabelmu
+            if (isset($voucher->max_discount) && $voucher->max_discount > 0) {
+                $discountAmount = min($discountAmount, $voucher->max_discount);
+            }
+        }
+
+        // Pengaman nilai diskon tidak boleh melebihi subtotal agar Midtrans tidak menolak nominal minus
+        $discountAmount = min($discountAmount, $subtotal - 1000);
+
+        // 7. Simpan state voucher yang berhasil divalidasi ke session agar bisa ditarik saat eksekusi tombol checkout()
+        session()->put('applied_voucher', [
+            'id' => $voucher->id,
+            'code' => $voucher->code,
+            'discount' => $discountAmount
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voucher "' . $voucher->code . '" successfully applied!',
+            'discount' => $discountAmount,
+            'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
     }
 }

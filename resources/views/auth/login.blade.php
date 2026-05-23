@@ -36,9 +36,46 @@
     .form-minimal input {
         border: none; border-bottom: 1px solid #dee2e6; border-radius: 0;
         padding: 0.75rem 0; font-size: 1rem; color: #333; background: transparent; width: 100%;
+        transition: border-color 0.3s ease;
     }
     .form-minimal input:focus { border-bottom: 2px solid #000; outline: none; }
     
+    /* VESTA Premium Reset Password Link & Animation */
+    .forgot-password-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.5rem;
+    }
+    .forgot-link {
+        font-size: 11px;
+        color: #868e96;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        position: relative;
+        transition: color 0.3s ease;
+        padding-bottom: 2px;
+    }
+    .forgot-link:hover {
+        color: #000;
+    }
+    .forgot-link::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        transform: scaleX(0);
+        height: 1px;
+        bottom: 0;
+        left: 0;
+        background-color: #000;
+        transform-origin: bottom right;
+        transition: transform 0.25s ease-out;
+    }
+    .forgot-link:hover::after {
+        transform: scaleX(1);
+        transform-origin: bottom left;
+    }
+
     .btn-vesta {
         background: #000; color: #fff; padding: 1rem; font-size: 10px; font-weight: 700;
         letter-spacing: 0.3em; text-transform: uppercase; width: 100%; transition: all 0.3s; cursor: pointer; border: none;
@@ -100,6 +137,13 @@
                     </div>
                 @endif
 
+                {{-- Menampilkan pesan sukses setelah update password baru --}}
+                @if (session('status'))
+                    <div style="background-color: #e3faf2; border: 1px solid #a9e34b; color: #0ca678; padding: 10px; border-radius: 4px; margin-bottom: 1rem; font-size: 12px; text-align: center; font-weight: 500;">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
                 <div style="margin-bottom: 1.5rem;">
                     <input type="email" name="email" value="{{ old('email') }}" placeholder="Email Address" required autofocus>
                     {{-- Menampilkan error khusus input email --}}
@@ -107,7 +151,13 @@
                         <span class="error-text">{{ $message }}</span>
                     @enderror
                 </div>
+                
                 <div style="margin-bottom: 2rem;">
+                    {{-- REVISI: Tombol Reset Password dengan Animasi Underline VESTA --}}
+                    <div class="forgot-password-container">
+                        <a href="{{ route('password.request') }}" class="forgot-link">Forgot Password?</a>
+                    </div>
+                    
                     <input type="password" name="password" placeholder="Password" required>
                     {{-- Menampilkan error khusus input password --}}
                     @error('password')

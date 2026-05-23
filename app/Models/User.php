@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name', 
         'email', 
         'password', 
+        'otp_code',         // REVISI: Kolom OTP kustom
+        'otp_expires_at',   // REVISI: Masa berlaku OTP kustom
         'phone_number', 
         'avatar',
         'role', 
@@ -48,7 +50,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed', // Mengotomatiskan hashing string password saat mutation
+        'otp_expires_at'    => 'datetime', // REVISI: Otomatis cast menjadi instance Carbon/Datetime
+        'password'          => 'hashed',   // Mengotomatiskan hashing string password saat mutation
         'total_spending'    => 'decimal:2',
         'loyalty_points'    => 'integer',
     ];

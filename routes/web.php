@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\AuthOtpController; // REVISI: Import Controller OTP Baru
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
@@ -11,6 +12,10 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Middleware\AdminMiddleware;
+use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
+use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
+use Illuminate\Support\Facades\Mail;
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes (Front-end)
@@ -26,8 +31,9 @@ Route::middleware(['web'])->group(function () {
     Route::get('/about', function () { return view('about'); })->name('about');
     Route::get('/contact', function () { return view('contact'); })->name('contact');
     
+    // REVISI: Mengubah fungsionalitas kirim pesan agar mengirim ke email toko DAN balasan otomatis ke customer sekaligus
     Route::post('/contact', function (\Illuminate\Http\Request $request) {
-        $request->validate([
+        $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
             'email'      => 'required|email|max:255',
@@ -35,7 +41,15 @@ Route::middleware(['web'])->group(function () {
             'subject'    => 'required|string',
             'message'    => 'required|string|max:5000',
         ]);
-        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully.');
+        
+        // 1. Mengirim email rangkuman tiket bantuan ke vestaclothingg@gmail.com
+        Mail::to('vestaclothingg@gmail.com')->send(new ContactInquiryMail($validatedData));
+
+        // 2. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
+        $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
+        Mail::to($validatedData['email'])->send(new ContactAutoResponseMail($customerName));
+
+        return redirect()->back()->with('success', 'Thank you! Your inquiry has been sent to our team successfully.');
     })->name('contact.submit');
 
     Route::controller(StoreController::class)->group(function () {
@@ -63,7 +77,7 @@ Route::middleware(['web'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Guest Routes (Login / Register)
+| Guest Routes (Login / Register / Forgot Password)
 |--------------------------------------------------------------------------
 */
 
@@ -73,6 +87,12 @@ Route::middleware('guest')->group(function () {
     
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
+
+    // REVISI: Tambahan Rute Lupa Password via OTP (Brevo / Gmail SMTP)
+    Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
+    Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
+    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.update');
 });
 
 /*
@@ -86,12 +106,20 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleC
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes (Customer & Admin)
+| Authenticated Routes (Customer & Admin & OTP Verification)
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // REVISI PINDAH TEMPAT: Rute Klaim Voucher ditaruh di bawah kawalan Middleware Auth agar Session Cookie aman 100%
+    Route::post('/checkout/apply-voucher', [StoreController::class, 'apply_voucher'])->name('checkout.applyVoucher');
+
+    // REVISI: Tambahan Rute Verifikasi & Resend OTP Akun (Brevo / Gmail SMTP)
+    Route::get('/verify-otp', [AuthOtpController::class, 'showVerifyForm'])->name('otp.verify.form');
+    Route::post('/verify-otp', [AuthOtpController::class, 'verifyOtp'])->name('otp.verify.submit');
+    Route::post('/resend-otp', [AuthOtpController::class, 'sendVerificationOtp'])->name('otp.resend');
 
     Route::get('/profile', function () {
         $user = auth()->user();
