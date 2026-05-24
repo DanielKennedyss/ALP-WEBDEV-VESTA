@@ -1,15 +1,19 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\ProductVariant;
 use App\Models\Transaction;
 use App\Models\LoyaltyPointHistory;
+use App\Models\Voucher; // REVISI: Import Model Voucher untuk Logika Klaim Potongan Harga
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+
 class StoreController extends Controller
 {
     /**
@@ -20,12 +24,14 @@ class StoreController extends Controller
         $products = Product::with(['category', 'variants'])->get();
         return view('home', compact('products'));
     }
+
     /**
      * Halaman Koleksi dengan Filter & Search
      */
     public function collection(Request $request)
     {
         $query = Product::with(['category', 'variants']);
+
         // Search by product name, description, or SKU
         if ($request->filled('search')) {
             $search = $request->search;
@@ -35,12 +41,14 @@ class StoreController extends Controller
                   ->orWhere('sku', 'like', '%' . $search . '%');
             });
         }
+
         // Filter by category
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->category);
             });
         }
+
         // Filter by gender
         if ($request->filled('gender')) {
             $selectedGender = $request->gender;
@@ -50,12 +58,14 @@ class StoreController extends Controller
                 $query->where('gender', $selectedGender);
             }
         }
+
         // Filter by size
         if ($request->filled('size')) {
             $query->whereHas('variants', function ($q) use ($request) {
                 $q->where('size_label', $request->size);
             });
         }
+
         // Sorting Logic
         $sort = $request->input('sort', 'newest');
         switch ($sort) {
@@ -65,12 +75,15 @@ class StoreController extends Controller
             case 'name_desc': $query->orderBy('name', 'desc'); break;
             default: $query->orderBy('created_at', 'desc'); break;
         }
+
         $products = $query->get();
         $categories = Category::orderBy('name')->pluck('name');
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
+
         return view('store.collection', compact('products', 'categories', 'genders', 'sizes'));
     }
+
     /**
      * Tambah ke Keranjang (Session Based)
      */
@@ -79,10 +92,13 @@ class StoreController extends Controller
         if (!Auth::check()) {
             return redirect()->back()->with('error', 'Please login or sign up first to add items to your cart.');
         }
+
         $product = Product::with('variants')->findOrFail($product_id);
         $quantity = $request->input('quantity', 1);
         $selectedSize = $request->input('size', null);
+
         if ($quantity < 1) return redirect()->back()->with('error', 'Quantity must be at least 1.');
+
         // Cek Stok Berdasarkan Ukuran
         if ($selectedSize) {
             $variant = $product->variants->where('size_label', $selectedSize)->first();
@@ -91,13 +107,16 @@ class StoreController extends Controller
         } else {
             $availableStock = $product->total_stock;
         }
+
         $cartKey = $selectedSize ? $product_id . '-' . $selectedSize : (string) $product_id;
         $cart = session()->get('cart', []);
         $existingQuantity = isset($cart[$cartKey]) ? $cart[$cartKey]['quantity'] : 0;
         $totalQuantity = $existingQuantity + $quantity;
+
         if ($totalQuantity > $availableStock) {
             return redirect()->back()->with('error', 'Requested quantity exceeds stock.');
         }
+
         $cart[$cartKey] = [
             'product_id' => $product->id,
             'name' => $product->name,
@@ -106,12 +125,25 @@ class StoreController extends Controller
             'size' => $selectedSize,
             'image_path' => $product->image_path,
         ];
+
         session()->put('cart', $cart);
         return redirect()->back()->with('success', $product->name . ' added to cart.');
     }
-    public function view_cart()
+
+    /**
+     * Tampilan Halaman Cart (Keranjang)
+     */
+    public function view_cart(Request $request)
     {
-        $cart = session()->get('cart', []);
+        if ($request->has('cancel_buy_now')) {
+            session()->forget('buy_now');
+            session()->forget('applied_voucher');
+            return redirect()->route('cart.view');
+        }
+
+        $isBuyNow = session()->has('buy_now');
+        $cart = $isBuyNow ? ['buy_now' => session('buy_now')] : session('cart', []);
+        
         $cartProducts = [];
         $subtotal = 0;
         
@@ -119,72 +151,175 @@ class StoreController extends Controller
             $cartProducts[$key] = Product::with('variants')->find($item['product_id']);
             $subtotal += ($item['price'] * $item['quantity']);
         }
+
+        $user = Auth::user();
         
-        return view('store.cart', compact('cart', 'cartProducts', 'subtotal'));
+        return view('store.cart', compact('cart', 'cartProducts', 'subtotal', 'isBuyNow', 'user'));
     }
+
     /**
-     * Proses Checkout Utama (Terintegrasi dengan Poin VESTA)
+     * Halaman Review Checkout Terpadu (Langkah Penengah Sebelum Pembayaran)
+     */
+    public function view_checkout()
+    {
+        return redirect()->route('cart.view');
+    }
+
+    /**
+     * Direct Checkout (Beli Sekarang) - Dialihkan Sebagai Handler State Session Review
+     */
+    public function direct_checkout(Request $request, $product_id)
+    {
+        if (!Auth::check()) {
+            return redirect()->back()->with('error', 'Please login or sign up first to buy products.');
+        }
+
+        $product = Product::with('variants')->findOrFail($product_id);
+        $quantity = (int) $request->input('quantity', 1);
+        $selectedSize = $request->input('size', null);
+
+        if ($selectedSize) {
+            $variant = $product->variants->where('size_label', $selectedSize)->first();
+            if (!$variant) return redirect()->back()->with('error', 'Size not available.');
+            $availableStock = $variant->stock;
+        } else {
+            $availableStock = $product->total_stock;
+        }
+
+        if ($quantity < 1 || $quantity > $availableStock) {
+            return redirect()->back()->with('error', 'Requested quantity is invalid or exceeds available stock.');
+        }
+
+        // Simpan data ke session temporary 'buy_now'
+        session()->forget('buy_now');
+        session()->put('buy_now', [
+            'product_id' => $product->id,
+            'name'        => $product->name,
+            'price'      => $product->price,
+            'quantity'   => $quantity,
+            'size'       => $selectedSize,
+            'image_path' => $product->image_path ?? null,
+        ]);
+
+        // Arahkan langsung ke halaman review checkout
+        return redirect()->route('checkout.view');
+    }
+
+    /**
+     * Proses Pembuatan Transaksi Utama & Integrasi Midtrans Token
      */
     public function checkout(Request $request)
     {
-        $cart = session('cart', []);
-        if (empty($cart)) return redirect()->back()->with('error', 'Cart is empty!');
         $user = Auth::user();
+        if (!$user) return redirect()->back()->with('error', 'Unauthenticated context.');
+
+        // Ambil session berdasarkan alur pembeliannya
+        $isBuyNow = session()->has('buy_now');
+        $cart = $isBuyNow ? [session('buy_now')] : session('cart', []);
+
+        if (empty($cart)) return redirect()->back()->with('error', 'Transaction session has expired or is empty.');
         
         // 1. Kalkulasi Harga Asli (Subtotal)
         $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
         
-        // 2. Kalkulasi Potongan Poin
+        // 2. Ambil & Kalkulasi Voucher Diskon jika ada di Session
+        $discountVoucher = 0;
+        $voucherId = null;
+        if (session()->has('applied_voucher')) {
+            $appliedVoucher = session('applied_voucher');
+            $voucher = Voucher::find($appliedVoucher['id']);
+            if ($voucher && !$voucher->isExpired() && !$voucher->isSoldOut()) {
+                $discountVoucher = (int) $voucher->calculateDiscount($subtotal);
+                $voucherId = $voucher->id;
+            }
+        }
+
+        // Harga setelah dipotong voucher
+        $priceAfterVoucher = max(0, $subtotal - $discountVoucher);
+
+        // 3. Kalkulasi Potongan Poin Loyalty
         $pointsToRedeem = (int) $request->input('points_to_redeem', 0);
         $discountPoints = 0;
         $pointsRedeemed = 0;
-        if ($user && $pointsToRedeem > 0) {
+
+        if ($pointsToRedeem > 0) {
             $pointsRedeemed = min($pointsToRedeem, $user->loyalty_points);
-            $discountPoints = $pointsRedeemed * 1000; // 1 Poin = Rp 1.000
-            // Cegah minus jika diskon poin melebihi subtotal
-            if ($discountPoints > $subtotal) {
-                $discountPoints = $subtotal;
-                $pointsRedeemed = $subtotal / 1000;
+            $discountPoints = $pointsRedeemed * 1000; // Skema: 1 Poin = Rp 1.000
+            
+            // Pengaman: Jika diskon poin melebihi harga setelah voucher, sisakan nominal aman Rp 1.000 untuk tagihan Midtrans
+            if ($discountPoints >= $priceAfterVoucher) {
+                $discountPoints = max(0, $priceAfterVoucher - 1000);
+                $pointsRedeemed = ceil($discountPoints / 1000);
             }
         }
-        // 3. Harga Final
-        $totalPrice = max(0, $subtotal - $discountPoints);
+
+        // 4. Ambil Data Pengiriman RajaOngkir
+        $shippingAddress = $request->input('shipping_address', null);
+        $shippingCourier = $request->input('shipping_courier', null);
+        $shippingService = $request->input('shipping_service', null);
+        $shippingCost = (int) $request->input('shipping_cost', 0);
+
+        // 5. Harga Final Setelah Potongan Voucher, Poin, & Ditambah Ongkir
+        $totalPrice = max(1000, $priceAfterVoucher - $discountPoints + $shippingCost);
+
         DB::beginTransaction();
         try {
-            // 4. Potong poin user (Lock)
+            // 6. Potong poin user di database (Menggunakan Fresh Lock)
             if ($pointsRedeemed > 0) {
+                $user = $user->fresh();
+                if ($user->loyalty_points < $pointsRedeemed) {
+                    throw new \Exception('Manipulated or insufficient loyalty points value.');
+                }
                 $user->decrement('loyalty_points', $pointsRedeemed);
             }
-            // Build cart_items for stock tracking
+
+            // Naikkan kuota pemakaian voucher di database
+            if ($voucherId) {
+                $voucher = Voucher::find($voucherId);
+                if ($voucher) {
+                    $voucher->increment('used_quota');
+                }
+            }
+
+            // Membangun array data produk untuk JSON tracking database
             $stockItems = collect($cart)->map(function($item) {
                 return [
                     'product_id' => $item['product_id'],
-                    'name' => $item['name'],
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'size' => $item['size'] ?? null,
+                    'name'       => $item['name'],
+                    'price'      => $item['price'],
+                    'quantity'   => $item['quantity'],
+                    'size'       => $item['size'] ?? null,
                     'image_path' => $item['image_path'] ?? null,
                 ];
             })->values()->toArray();
-            // 5. Buat Transaksi Baru
+
+            // 7. Buat Record Transaksi di Database Lokal VESTA
             $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+            $firstProductId = collect($cart)->first()['product_id'] ?? 0;
+
             $order = Transaction::create([
-                'user_id'          => Auth::id(), 
+                'user_id'          => $user->id, 
                 'invoice_number'   => $invoiceNumber,
-                'product_id'       => $cart[key($cart)]['product_id'] ?? 0,
+                'product_id'       => $firstProductId,
                 'quantity'         => collect($cart)->sum('quantity'),
                 'subtotal'         => $subtotal,
+                'discount_voucher' => $discountVoucher,
                 'discount_points'  => $discountPoints,
                 'points_redeemed'  => $pointsRedeemed,
+                'shipping_address' => $shippingAddress,
+                'shipping_courier' => $shippingCourier,
+                'shipping_service' => $shippingService,
+                'shipping_cost'    => $shippingCost,
                 'total_price'      => $totalPrice,
                 'cart_items'       => $stockItems,
-                'customer_name'    => Auth::check() ? $user->name : 'Guest',
-                'customer_email'   => Auth::check() ? $user->email : null,
+                'customer_name'    => $user->name,
+                'customer_email'   => $user->email,
                 'status'           => 'pending',
                 'payment_url'      => null,
                 'paid_at'          => null,
             ]);
-            // 6. Catat Mutasi Poin ke Ledger History
+
+            // 8. Catat Mutasi Poin ke Ledger History Auditing
             if ($pointsRedeemed > 0) {
                 LoyaltyPointHistory::create([
                     'user_id'        => $user->id,
@@ -194,163 +329,87 @@ class StoreController extends Controller
                     'description'    => "Redeemed points for Order #" . $invoiceNumber,
                 ]);
             }
-            // 7. Midtrans Integration (Gunakan Helper)
+
+            // 9. Midtrans Integration Assembly Payload
             $this->initMidtrans();
             $item_details = [];
-            foreach ($cart as $product_id => $item) {
+            foreach ($cart as $key => $item) {
                 $item_details[] = [
-                    'id' => $product_id,
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'name' => substr($item['name'], 0, 50),
+                    'id'       => (string) $item['product_id'],
+                    'price'    => (int) $item['price'],
+                    'quantity' => (int) $item['quantity'],
+                    'name'     => substr($item['name'], 0, 50),
                 ];
             }
-            // Tambahkan minus item untuk potongan diskon poin agar ditagih Midtrans secara akurat
+
+            // Menambahkan item minus di Midtrans Invoice sebagai visual pemotong diskon voucher
+            if ($discountVoucher > 0) {
+                $item_details[] = [
+                    'id'       => 'DISC-VOUCHER',
+                    'price'    => -(int) $discountVoucher,
+                    'quantity' => 1,
+                    'name'     => 'Promo Voucher Discount',
+                ];
+            }
+
+            // Menambahkan item minus di Midtrans Invoice sebagai visual pemotong diskon poin
             if ($discountPoints > 0) {
                 $item_details[] = [
                     'id'       => 'DISC-POINTS',
-                    'price'    => -$discountPoints,
+                    'price'    => -(int) $discountPoints,
                     'quantity' => 1,
                     'name'     => 'Privilege Points Discount',
                 ];
             }
+
+            // Menambahkan item shipping cost di Midtrans Invoice
+            if ($shippingCost > 0) {
+                $item_details[] = [
+                    'id'       => 'SHIPPING-COST',
+                    'price'    => (int) $shippingCost,
+                    'quantity' => 1,
+                    'name'     => 'Shipping (' . strtoupper($shippingCourier) . ' - ' . $shippingService . ')',
+                ];
+            }
+
             $params = [
-                'transaction_details' => ['order_id' => $order->invoice_number, 'gross_amount' => $totalPrice],
-                'item_details' => $item_details,
-                'customer_details' => [
-                    'first_name' => Auth::check() ? Auth::user()->name : 'Guest',
-                    'email' => Auth::check() ? Auth::user()->email : 'guest@example.com',
+                'transaction_details' => ['order_id' => $order->invoice_number, 'gross_amount' => (int) $totalPrice],
+                'item_details'        => $item_details,
+                'customer_details'    => [
+                    'first_name' => $user->name,
+                    'email'      => $user->email,
                 ],
                 'callbacks' => ['finish' => route('payment_return', $order->id)],
             ];
+
+            // Request Token dari Gateway Midtrans Snap API
             $snapToken = \Midtrans\Snap::getSnapToken($params);
             $order->update(['payment_url' => $snapToken]);
+            
             DB::commit();
-            // Format cart untuk halaman pembayaran
+
+            // Format mapping arrays untuk view layout template pembayaran
             $cartItems = collect($stockItems)->map(function($item) {
                 $item['subtotal'] = $item['price'] * $item['quantity'];
                 return $item;
             })->toArray();
-            session()->forget('cart');
+
+            // Bersihkan session data berdasarkan jenis flow belanja yang aktif
+            if ($isBuyNow) {
+                session()->forget('buy_now');
+            } else {
+                session()->forget('cart');
+            }
+
             return view('store.payment', compact('snapToken', 'order', 'cartItems'));
             
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Checkout Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Checkout failed: ' . $e->getMessage());
+            Log::error('Unified Checkout Execution Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Checkout workflow failed: ' . $e->getMessage());
         }
     }
-    /**
-     * Direct Checkout (Beli Sekarang)
-     */
-    public function direct_checkout(Request $request, $product_id)
-    {
-        if (!Auth::check()) {
-            return redirect()->back()->with('error', 'Please login or sign up first to buy products.');
-        }
-        $product = Product::with('variants')->findOrFail($product_id);
-        $quantity = $request->input('quantity', 1);
-        $user = Auth::user();
-        if ($quantity < 1 || $quantity > $product->total_stock) {
-            return redirect()->back()->with('error', 'Invalid quantity.');
-        }
-        // 1. Kalkulasi Harga Asli (Subtotal)
-        $subtotal = $product->price * $quantity;
-        // 2. Kalkulasi Potongan Poin
-        $pointsToRedeem = (int) $request->input('points_to_redeem', 0);
-        $discountPoints = 0;
-        $pointsRedeemed = 0;
-        if ($user && $pointsToRedeem > 0) {
-            $pointsRedeemed = min($pointsToRedeem, $user->loyalty_points);
-            $discountPoints = $pointsRedeemed * 1000;
-            if ($discountPoints > $subtotal) {
-                $discountPoints = $subtotal;
-                $pointsRedeemed = $subtotal / 1000;
-            }
-        }
-        // 3. Harga Final
-        $totalPrice = max(0, $subtotal - $discountPoints);
-        DB::beginTransaction();
-        try {
-            // 4. Potong poin user
-            if ($pointsRedeemed > 0) {
-                $user->decrement('loyalty_points', $pointsRedeemed);
-            }
-            $customerName = Auth::check() ? Auth::user()->name : 'Guest';
-            $customerEmail = Auth::check() ? Auth::user()->email : null;
-            $selectedSize = $request->input('size', null);
-            $stockItems = [[
-                'product_id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'quantity' => $quantity,
-                'size' => $selectedSize,
-                'image_path' => $product->image_path ?? null,
-            ]];
-            $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-            $order = Transaction::create([
-                'user_id'          => Auth::id(),
-                'invoice_number'   => $invoiceNumber,
-                'product_id'       => $product->id,
-                'quantity'         => $quantity,
-                'subtotal'         => $subtotal,
-                'discount_points'  => $discountPoints,
-                'points_redeemed'  => $pointsRedeemed,
-                'total_price'      => $totalPrice, 
-                'cart_items'       => $stockItems,
-                'customer_name'    => $customerName,
-                'customer_email'   => $customerEmail,
-                'status'           => 'pending',
-                'payment_url'      => null,
-                'paid_at'          => null,
-            ]);
-            // 5. Catat Mutasi Poin ke Ledger History
-            if ($pointsRedeemed > 0) {
-                LoyaltyPointHistory::create([
-                    'user_id'        => $user->id,
-                    'transaction_id' => $order->id,
-                    'type'           => 'redeem',
-                    'points'         => $pointsRedeemed,
-                    'description'    => "Redeemed points for Direct Checkout #" . $invoiceNumber,
-                ]);
-            }
-            $this->initMidtrans();
-            $item_details = [[
-                'id' => $product->id,
-                'price' => $product->price,
-                'quantity' => $quantity,
-                'name' => substr($product->name, 0, 50),
-            ]];
-            if ($discountPoints > 0) {
-                $item_details[] = [
-                    'id'       => 'DISC-POINTS',
-                    'price'    => -$discountPoints,
-                    'quantity' => 1,
-                    'name'     => 'Privilege Points Discount',
-                ];
-            }
-            $params = [
-                'transaction_details' => ['order_id' => $order->invoice_number, 'gross_amount' => $totalPrice],
-                'item_details' => $item_details,
-                'customer_details' => [
-                    'first_name' => $customerName,
-                    'email' => $customerEmail ?? 'guest@example.com',
-                ],
-                'callbacks' => ['finish' => route('payment_return', $order->id)],
-            ];
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
-            $order->update(['payment_url' => $snapToken]);
-            DB::commit();
-            
-            $cartItems = $stockItems;
-            $cartItems[0]['subtotal'] = $totalPrice;
-            return view('store.payment', compact('snapToken', 'order', 'cartItems'));
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Direct Checkout Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Checkout failed: ' . $e->getMessage());
-        }
-    }
+
     /**
      * Sinkronisasi Status Pembayaran dengan Midtrans
      */
@@ -360,6 +419,7 @@ class StoreController extends Controller
         if ($order->status === 'success') {
             return redirect()->route('profile')->with('success', 'Payment Successful! Thank you.');
         }
+
         $this->initMidtrans();
         try {
             $statusResponse = \Midtrans\Transaction::status($order->invoice_number);
@@ -381,11 +441,13 @@ class StoreController extends Controller
         } catch (\Exception $e) {
             Log::error('Payment Status Error: ' . $e->getMessage());
         }
+
         if ($order->status == 'success') {
             return redirect()->route('profile')->with('success', 'Payment Successful! Thank you.');
         }
         return redirect()->route('profile')->with('error', 'Payment status: ' . $order->status);
     }
+
     /**
      * Callback from Midtrans Snap JS
      */
@@ -394,6 +456,7 @@ class StoreController extends Controller
         $order = Transaction::findOrFail($order_id);
         $callbackStatus = $request->input('status', 'pending');
         $oldStatus = $order->status;
+
         if ($callbackStatus === 'success' && $oldStatus !== 'success') {
             $order->status = 'success';
             $order->paid_at = now();
@@ -402,9 +465,11 @@ class StoreController extends Controller
             // GARDA PENGAMAN REFUND POIN
             $this->handleFailedTransactionRefund($order, $oldStatus, $order->status);
         }
+
         $order->save();
         return response()->json(['status' => $order->status]);
     }
+
     /**
      * Helper Method untuk Refund Poin
      */
@@ -427,6 +492,7 @@ class StoreController extends Controller
             }
         }
     }
+
     /**
      * Retry payment for pending orders
      */
@@ -436,22 +502,26 @@ class StoreController extends Controller
         if ($order->status === 'success') {
             return redirect()->route('profile')->with('success', 'This order has already been paid.');
         }
+
         if (!$order->payment_url) {
             return redirect()->route('profile')->with('error', 'No payment token available for this order.');
         }
+
         $snapToken = $order->payment_url;
         $cartItems = collect($order->cart_items ?? [])->map(function($item) {
             return [
-                'name' => $item['name'] ?? 'Unknown',
-                'price' => $item['price'] ?? 0,
-                'quantity' => $item['quantity'] ?? 1,
-                'size' => $item['size'] ?? null,
+                'name'        => $item['name'] ?? 'Unknown',
+                'price'      => $item['price'] ?? 0,
+                'quantity'   => $item['quantity'] ?? 1,
+                'size'       => $item['size'] ?? null,
                 'image_path' => $item['image_path'] ?? null,
-                'subtotal' => ($item['price'] ?? 0) * ($item['quantity'] ?? 1),
+                'subtotal'   => ($item['price'] ?? 0) * ($item['quantity'] ?? 1),
             ];
         })->toArray();
+
         return view('store.payment', compact('snapToken', 'order', 'cartItems'));
     }
+
     /**
      * Konfigurasi Internal Midtrans (DRY Principle)
      */
@@ -467,10 +537,12 @@ class StoreController extends Controller
             CURLOPT_SSL_VERIFYHOST => 0,
         ];
     }
+
     public function payment_return($order_id)
     {
         return request()->has('order_id') ? $this->payment_status($order_id) : redirect()->route('payment_status', $order_id);
     }
+
     /**
      * Update Cart Item Quantity
      */
@@ -484,6 +556,7 @@ class StoreController extends Controller
                 session()->put('cart', $cart);
                 return redirect()->back()->with('success', 'Item removed from cart.');
             }
+
             // Check stock limit
             $product = Product::with('variants')->find($cart[$cart_key]['product_id']);
             if ($product) {
@@ -494,15 +567,18 @@ class StoreController extends Controller
                 } else {
                     $maxStock = $product->total_stock;
                 }
+
                 if ($newQuantity > $maxStock) {
                     return redirect()->back()->with('error', 'Quantity exceeds available stock.');
                 }
             }
+
             $cart[$cart_key]['quantity'] = $newQuantity;
             session()->put('cart', $cart);
         }
         return redirect()->back();
     }
+
     /**
      * Update Cart Item Size
      */
@@ -513,6 +589,7 @@ class StoreController extends Controller
             $item = $cart[$cart_key];
             $newSize = $request->input('new_size');
             $newKey = $item['product_id'] . '-' . $newSize;
+
             // If the new size key already exists, merge quantities
             if (isset($cart[$newKey]) && $newKey !== $cart_key) {
                 $cart[$newKey]['quantity'] += $item['quantity'];
@@ -526,6 +603,7 @@ class StoreController extends Controller
         }
         return redirect()->back();
     }
+
     public function remove_from_cart($cart_key)
     {
         $cart = session()->get('cart', []);
@@ -535,6 +613,7 @@ class StoreController extends Controller
         }
         return redirect()->back();
     }
+
     /**
      * Get Wishlist Items (JSON response)
      */
@@ -551,6 +630,7 @@ class StoreController extends Controller
             ->get();
         return response()->json($products);
     }
+
     /**
      * Toggle Wishlist Item (JSON response)
      */
@@ -565,6 +645,7 @@ class StoreController extends Controller
             ->where('user_id', $user->id)
             ->where('product_id', $product_id)
             ->first();
+
         if ($wishlist) {
             DB::table('wishlists')
                 ->where('user_id', $user->id)
@@ -573,19 +654,21 @@ class StoreController extends Controller
             $status = 'removed';
         } else {
             DB::table('wishlists')->insert([
-                'user_id' => $user->id,
+                'user_id'    => $user->id,
                 'product_id' => $product_id,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
             $status = 'added';
         }
+
         $count = DB::table('wishlists')->where('user_id', $user->id)->count();
         return response()->json([
             'status' => $status,
-            'count' => $count
+            'count'  => $count
         ]);
     }
+
     /**
      * Sync Wishlist Items from LocalStorage on Login (JSON response)
      */
@@ -596,6 +679,7 @@ class StoreController extends Controller
         }
         $user = Auth::user();
         $productIds = $request->input('product_ids', []);
+
         foreach ($productIds as $id) {
             $exists = Product::find($id);
             if ($exists) {
@@ -605,7 +689,7 @@ class StoreController extends Controller
                     ->exists();
                 if (!$alreadyInWishlist) {
                     DB::table('wishlists')->insert([
-                        'user_id' => $user->id,
+                        'user_id'    => $user->id,
                         'product_id' => $id,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -616,7 +700,72 @@ class StoreController extends Controller
         $count = DB::table('wishlists')->where('user_id', $user->id)->count();
         return response()->json([
             'status' => 'synced',
-            'count' => $count
+            'count'  => $count
+        ]);
+    }
+
+    /**
+     * REVISI: Logika AJAX Klaim / Redeem Potongan Voucher Belanja di Halaman Checkout VESTA
+     */
+    public function apply_voucher(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Please login to use voucher.'], 401);
+        }
+
+        $request->validate([
+            'voucher_code' => 'required|string',
+        ]);
+
+        $voucherCode = strtoupper($request->input('voucher_code'));
+        
+        $voucher = Voucher::where('code', $voucherCode)->first();
+
+        if (!$voucher) {
+            return response()->json(['success' => false, 'message' => 'Voucher code is invalid.']);
+        }
+
+        // Check if expired
+        if ($voucher->isExpired()) {
+            return response()->json(['success' => false, 'message' => 'This voucher has expired.']);
+        }
+
+        // Check quota
+        if ($voucher->isSoldOut()) {
+            return response()->json(['success' => false, 'message' => 'Voucher quota has been fully redeemed.']);
+        }
+
+        // Subtotal calculation
+        $isBuyNow = session()->has('buy_now');
+        $cartItems = $isBuyNow ? [session('buy_now')] : session('cart', []);
+
+        if (empty($cartItems)) {
+            return response()->json(['success' => false, 'message' => 'Your checkout items are empty.']);
+        }
+
+        $subtotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        // Calculate discount
+        $discountAmount = (int) $voucher->calculateDiscount($subtotal);
+
+        // Security: discount cannot exceed subtotal - 1000 to keep Midtrans happy
+        $discountAmount = min($discountAmount, $subtotal - 1000);
+        if ($discountAmount < 0) {
+            $discountAmount = 0;
+        }
+
+        // Save state voucher to session
+        session()->put('applied_voucher', [
+            'id' => $voucher->id,
+            'code' => $voucher->code,
+            'discount' => $discountAmount
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voucher "' . $voucher->code . '" successfully applied!',
+            'discount' => $discountAmount,
+            'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
     }
 }

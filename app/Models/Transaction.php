@@ -26,6 +26,10 @@ class Transaction extends Model
         'total_price', 
         'customer_name', 
         'customer_email', 
+        'shipping_address',
+        'shipping_courier',
+        'shipping_service',
+        'shipping_cost',
         'payment_url', 
         'paid_at', 
         'status'
@@ -40,13 +44,14 @@ class Transaction extends Model
     {
         return [
             'subtotal'         => 'decimal:2', 
-        'discount_voucher' => 'decimal:2', 
-        'discount_points'  => 'decimal:2',  
-        'points_redeemed'  => 'integer',  
-            'total_price' => 'decimal:2',
-            'paid_at'     => 'datetime',
-            'quantity'    => 'integer',
-            'cart_items'  => 'array',
+            'discount_voucher' => 'decimal:2', 
+            'discount_points'  => 'decimal:2',  
+            'points_redeemed'  => 'integer',  
+            'total_price'      => 'decimal:2',
+            'shipping_cost'    => 'decimal:2',
+            'paid_at'          => 'datetime',
+            'quantity'         => 'integer',
+            'cart_items'       => 'array',
         ];
     }
 
@@ -153,6 +158,11 @@ class Transaction extends Model
     public function user(): BelongsTo 
     { 
         return $this->belongsTo(User::class); 
+    }
+
+    public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProductReview::class);
     }
 
     /**

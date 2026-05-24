@@ -1,6 +1,9 @@
 @extends('layouts.admin')
 
 @section('admin_content')
+@php
+    $determinedSizeType = $product->variants->contains(fn($v) => $v->size_label === 'One Size') ? 'one_size' : 'custom';
+@endphp
 <div class="mb-5">
     <h6 class="text-muted text-uppercase small tracking-widest mb-2" style="font-size: 10px; font-weight: 700;">Inventory Management</h6>
     <h1 class="fw-normal tracking-tighter" style="font-size: 2.5rem;">Edit Product</h1>
@@ -74,12 +77,12 @@
                     <div class="d-flex gap-4 mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="size_type" id="sizeTypeOneSize" value="one_size" 
-                                   {{ old('size_type', $product->size_type) == 'one_size' ? 'checked' : '' }} required>
+                                   {{ old('size_type', $determinedSizeType) == 'one_size' ? 'checked' : '' }} required>
                             <label class="form-check-label small fw-medium" for="sizeTypeOneSize">One Size / No Size</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="size_type" id="sizeTypeCustom" value="custom" 
-                                   {{ old('size_type', $product->size_type) == 'custom' ? 'checked' : '' }}>
+                                   {{ old('size_type', $determinedSizeType) == 'custom' ? 'checked' : '' }}>
                             <label class="form-check-label small fw-medium" for="sizeTypeCustom">Custom</label>
                         </div>
                     </div>
@@ -115,10 +118,10 @@
                         $variant = $product->variants->where('size_label', $size)->first();
                         $isChecked = (is_array(old('sizes')) && in_array($size, old('sizes'))) || ($variant && !old('sizes'));
                     @endphp
-                    <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-light rounded size-row" id="sizeRow{{ $size }}">
+                    <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-light rounded size-row" id="sizeRow{{ $size }}" style="opacity: {{ ($determinedSizeType == 'custom' && $isChecked) ? '1' : '0.5' }}">
                         <div class="form-check pt-1" style="min-width: 60px;">
                             <input class="form-check-input size-checkbox" type="checkbox" name="sizes[]" value="{{ $size }}" 
-                                   id="sizeCheck{{ $size }}" {{ $isChecked ? 'checked' : '' }} disabled>
+                                   id="sizeCheck{{ $size }}" {{ $isChecked ? 'checked' : '' }} {{ $determinedSizeType == 'custom' ? '' : 'disabled' }}>
                             <label class="form-check-label small fw-bold" for="sizeCheck{{ $size }}">{{ $size }}</label>
                         </div>
                         <div class="flex-grow-1">
@@ -126,12 +129,12 @@
                                 <div class="col-6">
                                     <label class="form-label text-muted" style="font-size: 9px;">Stock</label>
                                     <input type="number" name="stock_{{ $size }}" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none size-input" 
-                                           value="{{ old("stock_{$size}", $variant->stock ?? 0) }}" min="0" disabled>
+                                           value="{{ old("stock_{$size}", $variant->stock ?? 0) }}" min="0" {{ ($determinedSizeType == 'custom' && $isChecked) ? '' : 'disabled' }}>
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label text-muted" style="font-size: 9px;">Min. Stock</label>
                                     <input type="number" name="min_stock_{{ $size }}" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 shadow-none size-input" 
-                                           value="{{ old("min_stock_{$size}", $variant->min_stock ?? 5) }}" min="1" disabled>
+                                           value="{{ old("min_stock_{$size}", $variant->min_stock ?? 5) }}" min="1" {{ ($determinedSizeType == 'custom' && $isChecked) ? '' : 'disabled' }}>
                                 </div>
                             </div>
                         </div>

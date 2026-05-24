@@ -1,3 +1,15 @@
+@php
+    $serverWishlistCount = 0;
+    $serverWishlistItems = [];
+    if (auth()->check()) {
+        $serverWishlistItems = \App\Models\Product::join('wishlists', 'products.id', '=', 'wishlists.product_id')
+            ->where('wishlists.user_id', auth()->id())
+            ->select('products.*')
+            ->with(['category'])
+            ->get();
+        $serverWishlistCount = $serverWishlistItems->count();
+    }
+@endphp
 <nav
     class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
@@ -20,13 +32,15 @@
                 <button onclick="openWishlistModal()" class="hover:text-gray-600 transition-colors relative"
                     aria-label="Wishlist" id="wishlist-trigger-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" id="navbar-wishlist-icon"
-                        class="h-5 w-5 stroke-current transition-all duration-300 origin-center" fill="none"
+                        class="h-6 w-6 stroke-current transition-all duration-300 origin-center {{ $serverWishlistCount > 0 ? 'text-red-500' : '' }}" 
+                        fill="{{ $serverWishlistCount > 0 ? '#ef4444' : 'none' }}"
+                        style="fill: {{ $serverWishlistCount > 0 ? '#ef4444' : 'none' }}"
                         viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                     <span id="wishlist-count"
-                        class="absolute -top-2 -right-2 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                        class="absolute -top-2 -right-2 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center {{ $serverWishlistCount > 0 ? '' : 'hidden' }}">{{ $serverWishlistCount }}</span>
                 </button>
                 @auth
                     @php
@@ -48,7 +62,7 @@
                     </a>
                 @endauth
                 <a href="{{ route('cart.view') }}" class="hover:text-gray-600 transition-colors relative">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -112,7 +126,7 @@
 <script>
     // Wishlist global JS
     const IS_AUTHENTICATED = @json(auth()->check());
-    let wishlistItems = [];
+    let wishlistItems = @json($serverWishlistItems);
 
     // Branded VESTA dynamic toast notifications
     function showVestaToast(message, type = 'error') {
@@ -151,11 +165,14 @@
                 try {
                     await syncLocalWishlistToDb(localIds);
                     localStorage.removeItem('vesta_wishlist'); // clean up local storage once synced
+                    await fetchWishlistFromDb();
                 } catch (e) {
                     console.error('Error syncing wishlist:', e);
+                    await fetchWishlistFromDb();
                 }
+            } else {
+                updateWishlistCountUI();
             }
-            await fetchWishlistFromDb();
         }
 
         // Sync any heart buttons on the collection page if active

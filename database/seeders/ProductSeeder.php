@@ -23,6 +23,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $outerwear,
                 'gender' => 'Male',
                 'price' => 2500000,
+                'weight' => 800, // 800 grams
                 'image_path' => 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80',
                 'description' => 'Luxurious midnight velvet blazer with silk lining. Perfect for evening occasions and formal events.',
                 // Custom sizes: S, M, L, XL
@@ -38,6 +39,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $pants,
                 'gender' => 'Male',
                 'price' => 1200000,
+                'weight' => 500, // 500 grams
                 'image_path' => 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&q=80',
                 'description' => 'Classic oxford tailored trousers with perfect fit. Premium wool blend for ultimate comfort.',
                 'variants' => [
@@ -52,6 +54,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $clothing,
                 'gender' => 'Unisex',
                 'price' => 850000,
+                'weight' => 300, // 300 grams
                 'image_path' => 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&q=80',
                 'description' => 'Premium linen shirt with relaxed fit. Breathable fabric for effortless summer style.',
                 'variants' => [
@@ -66,6 +69,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $dress,
                 'gender' => 'Female',
                 'price' => 3200000,
+                'weight' => 600, // 600 grams
                 'image_path' => 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80',
                 'description' => 'Stunning evening dress with flowing silhouette. Perfect for gala events and special occasions.',
                 'variants' => [
@@ -79,6 +83,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $accessories,
                 'gender' => 'Male',
                 'price' => 750000,
+                'weight' => 100, // 100 grams
                 'image_path' => 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
                 'description' => 'Signature monogram silk tie. Versatile accessory for any formal outfit.',
                 // Accessories = One Size
@@ -91,6 +96,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $accessories,
                 'gender' => 'Unisex',
                 'price' => 1500000,
+                'weight' => 200, // 200 grams
                 'image_path' => 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&q=80',
                 'description' => 'Classic fedora hat in premium wool.',
                 'variants' => [
@@ -101,7 +107,8 @@ class ProductSeeder extends Seeder
                 'name' => 'Oversized Wool Coat',
                 'category_id' => $outerwear,
                 'gender' => 'Female',
-                'price' => 4500000,
+                'price' => 4500005,
+                'weight' => 1200, // 1200 grams
                 'image_path' => 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=600&q=80',
                 'description' => 'Luxurious oversized wool coat with premium craftsmanship. A winter essential.',
                 'variants' => [
@@ -115,6 +122,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $accessories,
                 'gender' => 'Unisex',
                 'price' => 950000,
+                'weight' => 150, // 150 grams
                 'image_path' => 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
                 'description' => 'Premium full-grain leather belt with signature buckle. Timeless accessory for every wardrobe.',
                 'variants' => [
@@ -139,6 +147,7 @@ class ProductSeeder extends Seeder
                 'category_id' => $productData['category_id'],
                 'gender' => $productData['gender'],
                 'price' => $productData['price'],
+                'weight' => $productData['weight'],
                 'image_path' => $productData['image_path'],
                 'description' => $productData['description'],
                 'created_at' => now(),

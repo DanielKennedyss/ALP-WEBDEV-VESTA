@@ -1,143 +1,172 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\AuthOtpController; // REVISI: Import Controller OTP Baru
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
-use App\Http\Controllers\Admin\VoucherController; // <--- BEST PRACTICE: Import namespace controller voucher baru
+use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Middleware\AdminMiddleware;
+use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
+use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
+use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\ProfileController;
+
 /*
 |--------------------------------------------------------------------------
-| Public Routes (E-commerce Front-end)
+| Public Routes (Front-end)
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', function () {
     $products = \App\Models\Product::orderBy('created_at', 'desc')->take(8)->get();
     return view('home', compact('products'));
 })->name('home');
+
 Route::middleware(['web'])->group(function () {
     Route::get('/about', function () { return view('about'); })->name('about');
     Route::get('/contact', function () { return view('contact'); })->name('contact');
+    
+    // REVISI: Mengubah fungsionalitas kirim pesan agar mengirim ke email toko DAN balasan otomatis ke customer sekaligus
     Route::post('/contact', function (\Illuminate\Http\Request $request) {
-        $request->validate([
+        $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'subject' => 'required|string',
-            'message' => 'required|string|max:5000',
+            'last_name'  => 'required|string|max:255',
+            'email'      => 'required|email|max:255',
+            'phone'      => 'nullable|string|max:20',
+            'subject'    => 'required|string',
+            'message'    => 'required|string|max:5000',
         ]);
-        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully. Our team will contact you shortly.');
+        
+        // 1. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
+        Mail::to('evanvarian39@gmail.com')->send(new ContactInquiryMail($validatedData));
+
+        // 2. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
+        $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
+        Mail::to($validatedData['email'])->send(new ContactAutoResponseMail($customerName));
+
+        return redirect()->back()->with('success', 'Thank you! Your inquiry has been sent to our team successfully.');
     })->name('contact.submit');
-    Route::get('/collection', [StoreController::class, 'collection'])->name('collection');
-    Route::get('/cart', [StoreController::class, 'view_cart'])->name('cart.view');
-    
-    // Cart Actions
-    Route::post('/cart/add/{product_id}', [StoreController::class, 'add_to_cart'])->name('cart.add');
-    Route::post('/cart/remove/{cart_key}', [StoreController::class, 'remove_from_cart'])->name('cart.remove');
-    Route::post('/cart/update/{cart_key}', [StoreController::class, 'update_cart'])->name('cart.update');
-    Route::post('/cart/update-size/{cart_key}', [StoreController::class, 'update_cart_size'])->name('cart.update.size');
-    
-    // Checkout & Payment
-    Route::post('/direct-checkout/{product_id}', [StoreController::class, 'direct_checkout'])->name('direct.checkout');
-    Route::post('/checkout', [StoreController::class, 'checkout'])->name('checkout');
-    Route::get('/payment/return/{order_id}', [StoreController::class, 'payment_return'])->name('payment_return');
-    Route::get('/payment/status/{order_id}', [StoreController::class, 'payment_status'])->name('payment_status');
-    Route::post('/payment/callback/{order_id}', [StoreController::class, 'payment_callback'])->name('payment.callback');
-    Route::get('/payment/retry/{order_id}', [StoreController::class, 'payment_retry'])->name('payment.retry');
-    // Wishlist Actions
-    Route::get('/wishlist/items', [StoreController::class, 'get_wishlist'])->name('wishlist.items');
-    Route::post('/wishlist/toggle/{product_id}', [StoreController::class, 'toggle_wishlist'])->name('wishlist.toggle');
-    Route::post('/wishlist/sync', [StoreController::class, 'sync_wishlist'])->name('wishlist.sync');
+
+    Route::controller(StoreController::class)->group(function () {
+        Route::get('/collection', 'collection')->name('collection');
+        Route::get('/cart', 'view_cart')->name('cart.view');
+        Route::post('/cart/add/{product_id}', 'add_to_cart')->name('cart.add');
+        Route::post('/cart/remove/{cart_key}', 'remove_from_cart')->name('cart.remove');
+        Route::post('/cart/update/{cart_key}', 'update_cart')->name('cart.update');
+        Route::post('/cart/update-size/{cart_key}', 'update_cart_size')->name('cart.update.size');
+        
+        Route::post('/direct-checkout/{product_id}', 'direct_checkout')->name('direct.checkout');
+        Route::get('/checkout', 'view_checkout')->name('checkout.view');
+        Route::post('/checkout/process', 'checkout')->name('checkout.process');
+
+        // Shipping Routes (RajaOngkir Proxy)
+        Route::get('/shipping/provinces', [ShippingController::class, 'get_provinces'])->name('shipping.provinces');
+        Route::get('/shipping/cities/{province_id}', [ShippingController::class, 'get_cities'])->name('shipping.cities');
+        Route::post('/shipping/cost', [ShippingController::class, 'get_shipping_cost'])->name('shipping.cost');
+        
+        Route::get('/payment/return/{order_id}', 'payment_return')->name('payment_return');
+        Route::get('/payment/status/{order_id}', 'payment_status')->name('payment_status');
+        Route::post('/payment/callback/{order_id}', 'payment_callback')->name('payment.callback');
+        Route::get('/payment/retry/{order_id}', 'payment_retry')->name('payment.retry');
+
+        Route::get('/wishlist/items', 'get_wishlist')->name('wishlist.items');
+        Route::post('/wishlist/toggle/{product_id}', 'toggle_wishlist')->name('wishlist.toggle');
+        Route::post('/wishlist/sync', 'sync_wishlist')->name('wishlist.sync');
+    });
 });
+
 /*
 |--------------------------------------------------------------------------
-| Guest Routes (Login / Register)
+| Guest Routes (Login / Register / Forgot Password)
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'authenticate']);
     
-    // Registrasi Akun Baru Vesta
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
+
+    // REVISI: Tambahan Rute Lupa Password via OTP (Brevo / Gmail SMTP)
+    Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
+    Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
+    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.update');
 });
+
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes (Customer & Admin)
+| Google Open Authentication Routes (Harus di luar Guest Middleware)
 |--------------------------------------------------------------------------
 */
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes (Customer & Admin & OTP Verification)
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth')->group(function () {
-    // Global Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    /*
-     |--- Customer Side ---
-     | Route ini hanya bisa diakses oleh role 'customer'. 
-     | Jika Owner/Manager/Staff login, mereka tidak masuk ke sini.
-     */
+
+    // REVISI PINDAH TEMPAT: Rute Klaim Voucher ditaruh di bawah kawalan Middleware Auth agar Session Cookie aman 100%
+    Route::post('/checkout/apply-voucher', [StoreController::class, 'apply_voucher'])->name('checkout.applyVoucher');
+
+    // REVISI: Tambahan Rute Verifikasi & Resend OTP Akun (Brevo / Gmail SMTP)
+    Route::get('/verify-otp', [AuthOtpController::class, 'showVerifyForm'])->name('otp.verify.form');
+    Route::post('/verify-otp', [AuthOtpController::class, 'verifyOtp'])->name('otp.verify.submit');
+    Route::post('/resend-otp', [AuthOtpController::class, 'sendVerificationOtp'])->name('otp.resend');
+
     Route::get('/profile', function () {
         $user = auth()->user();
-        
-        // Proteksi: Jika admin personil mencoba akses profil customer, arahkan ke dashboard admin
         if (in_array($user->role, ['owner', 'manager', 'staff'])) {
             return redirect()->route('admin.dashboard');
         }
-        $transactions = \App\Models\Transaction::where('customer_name', $user->name)
-            ->with('product')
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
+        $transactions = \App\Models\Transaction::where('user_id', $user->id)
+            ->with(['product', 'reviews'])->orderBy('created_at', 'desc')->get();
         return view('profile', compact('transactions'));
     })->name('profile');
-    // Redirect dashboard lama ke profile customer
-    Route::get('/dashboard', function () {
-        return redirect()->route('profile');
+
+    Route::get('/profile/edit', function () {
+        return redirect()->route('profile')->with('open-profile-tab', true);
     });
-    /*
-     |--- Admin Panel Side (Owner, Manager, Staff) ---
-     | Menggunakan AdminMiddleware untuk memfilter personil internal.
-     */
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'changePassword'])->name('password.update');
+    Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.destroy');
+
+    Route::post('/profile/orders/{order}/receive', [StoreController::class, 'markAsReceived'])->name('profile.orders.receive');
+    Route::post('/profile/orders/{order}/review', [StoreController::class, 'submitReview'])->name('profile.orders.review');
+
+    Route::get('/dashboard', function () { return redirect()->route('profile'); });
+
     Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
-        
-        // Main Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
         
-        // Inventory & Product Management
-        Route::controller(ProductController::class)->group(function () {
-            Route::get('/inventory', 'index')->name('admin.inventory');
-            Route::get('/products/create', 'create')->name('admin.products.create');
-            Route::post('/products', 'store')->name('admin.products.store');
-            Route::get('/products/{product}/edit', 'edit')->name('admin.products.edit');
-            Route::put('/products/{product}', 'update')->name('admin.products.update');
-            Route::delete('/products/{product}', 'destroy')->name('admin.products.destroy');
-        });
-        // Transaction & Order Management
+        // Product Management
+        Route::resource('products', ProductController::class)->except(['show'])->names('admin.products');
+        Route::get('/inventory', [ProductController::class, 'index'])->name('admin.inventory');
+
+        // Transaction Management
         Route::controller(TransactionController::class)->group(function () {
             Route::get('/transactions', 'index')->name('admin.transactions.index');
             Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('admin.transactions.updateStatus');
         });
-        // ====== OPERATIONAL FITUR: Luxury Voucher Management ======
-        // Menggunakan Route::resource dengan kustomisasi penamaan alias rute 'admin.vouchers.*'
-        Route::resource('vouchers', VoucherController::class)->names([
-            'index'   => 'admin.vouchers.index',
-            'create'  => 'admin.vouchers.create',
-            'store'   => 'admin.vouchers.store',
-            'edit'    => 'admin.vouchers.edit',
-            'update'  => 'admin.vouchers.update',
-            'destroy' => 'admin.vouchers.destroy',
-        ]);
-        // Staff & Access Management (Hanya Owner yang bisa akses penuh biasanya)
-        Route::controller(StaffController::class)->group(function () {
-            Route::get('/staff', 'index')->name('admin.staff.index');
-            Route::get('/staff/create', 'create')->name('admin.staff.create');
-            Route::post('/staff', 'store')->name('admin.staff.store');
-            Route::get('/staff/{id}/edit', 'edit')->name('admin.staff.edit');
-            Route::put('/staff/{id}', 'update')->name('admin.staff.update');
-            Route::delete('/staff/{id}', 'destroy')->name('admin.staff.destroy');
-        });
+
+        // Voucher Management
+        Route::resource('vouchers', VoucherController::class)->names('admin.vouchers');
+
+        // Staff Management
+        Route::resource('staff', StaffController::class)->names('admin.staff');
     });
 });
