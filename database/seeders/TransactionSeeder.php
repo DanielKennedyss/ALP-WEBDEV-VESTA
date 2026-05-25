@@ -45,7 +45,7 @@ class TransactionSeeder extends Seeder
             $randomDate = Carbon::now()->subDays(rand(0, 60));
 
             // Status Mix: Prioritaskan 'success' agar statistik Total Spending muncul di profil
-            $statuses = ['success', 'success', 'success', 'pending', 'failed'];
+            $statuses = ['success', 'success', 'processing', 'shipped', 'delivered', 'pending', 'failed'];
             $status = $statuses[array_rand($statuses)];
 
             Transaction::create([
@@ -57,7 +57,7 @@ class TransactionSeeder extends Seeder
                 'customer_name'  => $user->name,
                 'customer_email' => $user->email,
                 'status'         => $status, 
-                'paid_at'        => $status === 'success' ? $randomDate : null,
+                'paid_at'        => in_array($status, ['success', 'processing', 'shipped', 'delivered']) ? $randomDate : null,
                 'created_at'     => $randomDate,
                 'updated_at'     => $randomDate,
             ]);

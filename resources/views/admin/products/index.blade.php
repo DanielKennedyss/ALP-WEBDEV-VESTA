@@ -54,9 +54,9 @@
                     <td class="fw-bold text-dark">IDR {{ number_format($product->price, 0, ',', '.') }}</td>
                     <td class="fw-medium">{{ $product->total_stock }}</td>
                     <td style="white-space: nowrap;">
-                        @if($product->total_stock <= 0)
+                        @if($product->isOutOfStock())
                             <span class="text-danger d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Out of Stock</span>
-                        @elseif($product->total_stock <= 10)
+                        @elseif($product->hasLowStock())
                             <span class="text-warning d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Low Stock</span>
                         @else
                             <span class="text-success d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Healthy</span>

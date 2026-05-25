@@ -15,6 +15,7 @@ class Product extends Model
         'sku',
         'description',
         'price',
+        'weight',
         'category_id',
         'gender',
         'image_path',
@@ -23,6 +24,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:0',
+        'weight' => 'integer',
     ];
 
     // Menambahkan total_stock ke JSON output secara otomatis

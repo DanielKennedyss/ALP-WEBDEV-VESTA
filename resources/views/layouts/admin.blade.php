@@ -40,13 +40,14 @@
         }
 
         .sidebar-brand {
-            font-weight: 700;
-            font-size: 1.4rem;
-            letter-spacing: -0.04em;
-            margin-bottom: 50px;
+            font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+            font-weight: 400;
+            font-size: 1.5rem;
+            letter-spacing: 0.35em;
             display: block;
             text-decoration: none;
             color: #000;
+            text-transform: uppercase;
             transition: opacity 0.3s ease;
         }
 
@@ -147,7 +148,7 @@
         /* Responsive Mobile */
         @media (max-width: 992px) {
             .sidebar { width: 85px; padding: 40px 12px; }
-            .sidebar-brand, .nav-label, .nav-link-admin span, .profile-text { display: none; }
+            .sidebar-brand, .nav-label, .nav-link-admin span, .profile-text, .home-btn, .sidebar-header-wrapper { display: none !important; }
             .main-content { margin-left: 85px; padding: 40px 20px; }
             .nav-link-admin { justify-content: center; padding: 15px 0; }
             .nav-link-admin i { margin-right: 0; font-size: 1.4rem; }
@@ -159,7 +160,12 @@
 
 <aside class="sidebar">
     <div class="flex-grow-1">
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-brand text-uppercase">Vesta</a>
+        <div class="d-flex align-items-center justify-content-between mb-5 sidebar-header-wrapper">
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-brand mb-0">VESTA</a>
+            <a href="/" class="btn btn-outline-dark btn-sm rounded-circle d-flex align-items-center justify-content-center home-btn" style="width: 32px; height: 32px;" title="Back to Home">
+                <i class="bi bi-house"></i>
+            </a>
+        </div>
         
         <nav>
             <span class="nav-label">General</span>

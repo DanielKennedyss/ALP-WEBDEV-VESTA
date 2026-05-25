@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthOtpController; // REVISI: Import Controller OTP Baru
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
@@ -15,6 +16,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
 use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,8 +44,8 @@ Route::middleware(['web'])->group(function () {
             'message'    => 'required|string|max:5000',
         ]);
         
-        // 1. Mengirim email rangkuman tiket bantuan ke vestaclothingg@gmail.com
-        Mail::to('vestaclothingg@gmail.com')->send(new ContactInquiryMail($validatedData));
+        // 1. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
+        Mail::to('evanvarian39@gmail.com')->send(new ContactInquiryMail($validatedData));
 
         // 2. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
         $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
@@ -63,6 +65,11 @@ Route::middleware(['web'])->group(function () {
         Route::post('/direct-checkout/{product_id}', 'direct_checkout')->name('direct.checkout');
         Route::get('/checkout', 'view_checkout')->name('checkout.view');
         Route::post('/checkout/process', 'checkout')->name('checkout.process');
+
+        // Shipping Routes (RajaOngkir Proxy)
+        Route::get('/shipping/provinces', [ShippingController::class, 'get_provinces'])->name('shipping.provinces');
+        Route::get('/shipping/cities/{province_id}', [ShippingController::class, 'get_cities'])->name('shipping.cities');
+        Route::post('/shipping/cost', [ShippingController::class, 'get_shipping_cost'])->name('shipping.cost');
         
         Route::get('/payment/return/{order_id}', 'payment_return')->name('payment_return');
         Route::get('/payment/status/{order_id}', 'payment_status')->name('payment_status');
@@ -127,9 +134,19 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('admin.dashboard');
         }
         $transactions = \App\Models\Transaction::where('user_id', $user->id)
-            ->with('product')->orderBy('created_at', 'desc')->get();
+            ->with(['product', 'reviews'])->orderBy('created_at', 'desc')->get();
         return view('profile', compact('transactions'));
     })->name('profile');
+
+    Route::get('/profile/edit', function () {
+        return redirect()->route('profile')->with('open-profile-tab', true);
+    });
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'changePassword'])->name('password.update');
+    Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.destroy');
+
+    Route::post('/profile/orders/{order}/receive', [StoreController::class, 'markAsReceived'])->name('profile.orders.receive');
+    Route::post('/profile/orders/{order}/review', [StoreController::class, 'submitReview'])->name('profile.orders.review');
 
     Route::get('/dashboard', function () { return redirect()->route('profile'); });
 
