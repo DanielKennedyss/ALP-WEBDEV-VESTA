@@ -133,73 +133,108 @@
                                         </td>
                                         <td class="py-6 pr-6 text-xs font-medium text-stone-900">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
                                         <td class="py-6 pr-6">
-                                            @if($order->status == 'pending')
-                                                <span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Belum Bayar</span>
-                                            @elseif(in_array($order->status, ['success', 'processing', 'settlement', 'paid']))
-                                                <span class="inline-block border border-blue-200 bg-blue-50 text-blue-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Dikemas</span>
-                                            @elseif($order->status == 'shipped')
-                                                <span class="inline-block border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Dikirim</span>
-                                            @elseif($order->status == 'delivered')
-                                                <span class="inline-block border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Diterima</span>
-                                            @elseif($order->status == 'completed')
-                                                <span class="inline-block border border-green-200 bg-green-50 text-green-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Selesai</span>
-                                            @else
-                                                <span class="inline-block border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">{{ $order->status }}</span>
-                                            @endif
+                                             @if($order->status == 'pending')
+                                                 <span class="inline-block border border-amber-200 bg-amber-50 text-amber-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">PENDING</span>
+                                             @elseif(in_array($order->status, ['success', 'processing', 'settlement', 'paid']))
+                                                 <span class="inline-block border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">PAID</span>
+                                             @elseif($order->status == 'shipped')
+                                                 <span class="inline-block border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Dikirim</span>
+                                             @elseif($order->status == 'delivered')
+                                                 <span class="inline-block border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Diterima</span>
+                                             @elseif($order->status == 'completed')
+                                                 <span class="inline-block border border-green-200 bg-green-50 text-green-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">Selesai</span>
+                                             @else
+                                                 <span class="inline-block border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold">{{ $order->status }}</span>
+                                             @endif
                                         </td>
                                         <td class="py-6">
-                                            @if($order->status == 'pending' && $order->payment_url)
-                                                <a href="{{ route('payment.retry', $order->id) }}" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-850 transition-colors">
-                                                    Pay Now
-                                                </a>
-                                            @elseif($order->status == 'shipped')
-                                                <form action="{{ route('profile.orders.receive', $order->id) }}" method="POST" class="inline-block m-0">
-                                                    @csrf
-                                                    <button type="submit" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors">
-                                                        Diterima
-                                                    </button>
-                                                </form>
-                                            @elseif(in_array($order->status, ['delivered', 'completed']))
-                                                @php
-                                                    $isReviewed = $order->reviews->isNotEmpty();
-                                                    $reviewItems = [];
-                                                    if ($order->cart_items && is_array($order->cart_items) && count($order->cart_items) > 0) {
-                                                        foreach ($order->cart_items as $item) {
-                                                            $reviewItems[] = [
-                                                                'product_id' => $item['product_id'],
-                                                                'name' => $item['name'],
-                                                                'size' => $item['size'] ?? null,
-                                                                'image_path' => $item['image_path'] ?? null
-                                                            ];
-                                                        }
-                                                    } else {
-                                                        $reviewItems[] = [
-                                                            'product_id' => $order->product_id,
-                                                            'name' => $order->product ? $order->product->name : 'Product',
-                                                            'size' => null,
-                                                            'image_path' => $order->product ? $order->product->image_path : null
-                                                        ];
-                                                    }
-                                                    $encodedItems = json_encode($reviewItems);
-                                                @endphp
-                                                
-                                                @if($isReviewed)
-                                                    <button disabled class="inline-block border border-stone-200 text-stone-400 text-[9px] tracking-[0.15em] uppercase px-4 py-2 cursor-not-allowed">
-                                                        Sudah Dinilai
-                                                    </button>
+                                            <div class="flex items-center gap-3">
+                                                @if($order->status == 'pending' && $order->payment_url)
+                                                    <a href="{{ route('payment.retry', $order->id) }}" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors">
+                                                        Pay Now
+                                                    </a>
+                                                    
+                                                    <form action="{{ route('profile.orders.cancel', $order->id) }}" method="POST" class="inline-block m-0" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan pesanan ini?');">
+                                                        @csrf
+                                                        <button type="submit" class="relative group flex items-center justify-center w-8 h-8 rounded-full border border-stone-200 bg-stone-50 text-stone-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 shadow-sm" title="Batalkan Pesanan">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                            <span class="absolute bottom-full mb-2 hidden group-hover:block bg-stone-900 text-white text-[8px] tracking-wider uppercase px-2 py-1 whitespace-nowrap rounded shadow-md z-10">
+                                                                Batalkan Pesanan
+                                                            </span>
+                                                        </button>
+                                                    </form>
+                                                @elseif(in_array($order->status, ['success', 'processing', 'settlement', 'paid', 'shipped', 'delivered', 'completed']))
+                                                    <a href="{{ route('profile.orders.track', $order->id) }}" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-850 transition-colors">
+                                                        Track
+                                                    </a>
+
+                                                    @if($order->status == 'shipped')
+                                                        <form action="{{ route('profile.orders.receive', $order->id) }}" method="POST" class="inline-block m-0 ml-2">
+                                                            @csrf
+                                                            <button type="submit" class="inline-block border border-black bg-white text-black text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-100 transition-colors">
+                                                                Diterima
+                                                            </button>
+                                                        </form>
+                                                    @elseif(in_array($order->status, ['delivered', 'completed']))
+                                                        @php
+                                                            $isReviewed = $order->reviews->isNotEmpty();
+                                                            $reviewItems = [];
+                                                            if ($order->cart_items && is_array($order->cart_items) && count($order->cart_items) > 0) {
+                                                                foreach ($order->cart_items as $item) {
+                                                                    $reviewItems[] = [
+                                                                        'product_id' => $item['product_id'],
+                                                                        'name' => $item['name'],
+                                                                        'size' => $item['size'] ?? null,
+                                                                        'image_path' => $item['image_path'] ?? null
+                                                                    ];
+                                                                }
+                                                            } else {
+                                                                $reviewItems[] = [
+                                                                    'product_id' => $order->product_id,
+                                                                    'name' => $order->product ? $order->product->name : 'Product',
+                                                                    'size' => null,
+                                                                    'image_path' => $order->product ? $order->product->image_path : null
+                                                                ];
+                                                            }
+                                                            $encodedItems = json_encode($reviewItems);
+                                                        @endphp
+                                                        
+                                                        @if($isReviewed)
+                                                            <button disabled class="inline-block border border-stone-200 text-stone-400 text-[9px] tracking-[0.15em] uppercase px-4 py-2 cursor-not-allowed ml-2">
+                                                                Sudah Dinilai
+                                                            </button>
+                                                        @else
+                                                            <button type="button" onclick="openReviewModal({{ $order->id }}, '{{ $order->invoice_number }}', {{ $encodedItems }})" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors ml-2">
+                                                                Beri Penilaian
+                                                            </button>
+                                                        @endif
+                                                    @endif
                                                 @else
-                                                    <button type="button" onclick="openReviewModal({{ $order->id }}, '{{ $order->invoice_number }}', {{ $encodedItems }})" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors">
-                                                        Beri Penilaian
-                                                    </button>
+                                                    <span class="text-[10px] tracking-wider text-stone-400">—</span>
                                                 @endif
-                                            @else
-                                                <span class="text-[10px] tracking-wider text-stone-400">—</span>
-                                            @endif
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Premium Refund Policy Notice Box -->
+                        <div class="mt-8 border border-stone-200 bg-stone-50/50 p-6 flex items-start gap-4">
+                            <div class="shrink-0 text-stone-900 mt-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.063.854l-.041.02a.75.75 0 01-1.063-.854zm0 3h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h5 class="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-900 mb-1">Informasi Pengembalian Dana (Refund Policy)</h5>
+                                <p class="text-xs text-stone-500 leading-relaxed">
+                                    Jika Anda ingin melakukan refund atau pengembalian dana setelah pembayaran berhasil, silakan hubungi kami melalui email resmi di <a href="mailto:evanvarian39@gmail.com" class="text-stone-900 underline underline-offset-2 hover:text-stone-700 transition-colors">evanvarian39@gmail.com</a>.
+                                </p>
+                            </div>
                         </div>
                     @endif
                 </div>

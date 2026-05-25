@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ProductVariant;
 use App\Models\Transaction;
 use App\Models\LoyaltyPointHistory;
+use App\Models\ProductReview;
 use App\Models\Voucher; // REVISI: Import Model Voucher untuk Logika Klaim Potongan Harga
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -767,5 +768,93 @@ class StoreController extends Controller
             'discount' => $discountAmount,
             'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
+    }
+
+    /**
+     * Cancel a pending order
+     */
+    public function cancelOrder(Transaction $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($order->status !== 'pending') {
+            return redirect()->back()->with('error', 'Only pending orders can be cancelled.');
+        }
+
+        $oldStatus = $order->status;
+        $order->status = 'cancelled';
+
+        // Refund points if any points were redeemed
+        $this->handleFailedTransactionRefund($order, $oldStatus, 'cancelled');
+
+        $order->save();
+
+        return redirect()->back()->with('success', 'Order #' . $order->invoice_number . ' has been cancelled successfully.');
+    }
+
+    /**
+     * View tracking status of an order
+     */
+    public function trackOrder(Transaction $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        return view('store.track', compact('order'));
+    }
+
+    /**
+     * Mark shipped order as received
+     */
+    public function markAsReceived(Transaction $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($order->status !== 'shipped') {
+            return redirect()->back()->with('error', 'Only shipped orders can be marked as received.');
+        }
+
+        $order->status = 'delivered';
+        $order->save();
+
+        return redirect()->back()->with('success', 'Order #' . $order->invoice_number . ' has been marked as received.');
+    }
+
+    /**
+     * Submit reviews for products in a transaction
+     */
+    public function submitReview(Request $request, Transaction $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if (!in_array($order->status, ['delivered', 'completed'])) {
+            return redirect()->back()->with('error', 'You can only review items on delivered or completed orders.');
+        }
+
+        $request->validate([
+            'reviews' => 'required|array',
+            'reviews.*.product_id' => 'required|exists:products,id',
+            'reviews.*.rating' => 'required|integer|min:1|max:5',
+            'reviews.*.comment' => 'nullable|string|max:1000',
+        ]);
+
+        foreach ($request->input('reviews') as $reviewData) {
+            ProductReview::create([
+                'user_id' => Auth::id(),
+                'product_id' => $reviewData['product_id'],
+                'transaction_id' => $order->id,
+                'rating' => $reviewData['rating'],
+                'comment' => $reviewData['comment'] ?? null,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Thank you for your review!');
     }
 }

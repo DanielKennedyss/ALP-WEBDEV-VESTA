@@ -145,6 +145,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/password', [ProfileController::class, 'changePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.destroy');
 
+    Route::post('/profile/orders/{order}/cancel', [StoreController::class, 'cancelOrder'])->name('profile.orders.cancel');
+    Route::get('/profile/orders/{order}/track', [StoreController::class, 'trackOrder'])->name('profile.orders.track');
     Route::post('/profile/orders/{order}/receive', [StoreController::class, 'markAsReceived'])->name('profile.orders.receive');
     Route::post('/profile/orders/{order}/review', [StoreController::class, 'submitReview'])->name('profile.orders.review');
 
