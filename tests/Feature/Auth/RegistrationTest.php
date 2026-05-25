@@ -9,11 +9,13 @@ test('registration screen can be rendered', function () {
 test('new users can register', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
+        'email' => 'test_user@example.com',
+        'phone_number' => '081234567890',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $this->assertEquals('BRONZE', auth()->user()->status);
+    $response->assertRedirect(route('home'));
 });

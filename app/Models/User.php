@@ -67,6 +67,14 @@ class User extends Authenticatable
     }
 
     /**
+     * RELASI: One-to-Many ke model CartItem
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
      * --------------------------------------------------------------------------
      * ACCESSORS & MUTATORS (Laravel 11 Style)
      * --------------------------------------------------------------------------

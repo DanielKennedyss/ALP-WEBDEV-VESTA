@@ -24,12 +24,7 @@
                 
                 {{-- Sisi Kiri: List Item Keranjang Belanja --}}
                 <div class="lg:col-span-7">
-                    @if($isBuyNow)
-                        <div class="bg-stone-50 border border-stone-200 p-4 flex items-center justify-between text-xs text-stone-600 rounded-sm mb-6">
-                            <span class="font-medium uppercase tracking-wider">⚡ Buy Now Flow Active</span>
-                            <a href="{{ route('cart.view', ['cancel_buy_now' => 1]) }}" class="text-stone-900 hover:text-red-700 underline tracking-widest uppercase text-[10px] font-bold">Switch to Normal Cart</a>
-                        </div>
-                    @endif
+
                     
                     {{-- STEP 1: REVIEW ITEMS --}}
                     <div id="checkout_step_1" class="space-y-6 transition-all duration-500">
@@ -323,6 +318,29 @@
     </div>
 </div>
 
+@if($isBuyNow)
+<!-- Exit Confirmation Modal -->
+<div id="exitConfirmModal" class="fixed inset-0 z-[200] hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-200 max-w-md w-full p-8 shadow-2xl relative dynamic-fade-in">
+            <h3 class="text-xs tracking-[0.2em] font-serif uppercase text-stone-900 font-bold mb-4">Discard Buy Now Session?</h3>
+            <p class="text-[11px] text-stone-500 leading-relaxed uppercase tracking-wider mb-8">
+                Leaving this view will discard your temporary "Buy Now" session, and you will be returned to your standard shopping cart.
+            </p>
+            <div class="flex gap-4">
+                <button type="button" id="btnConfirmLeave" class="flex-1 bg-stone-900 text-white text-[10px] tracking-[0.2em] py-4 hover:bg-black transition-all uppercase font-bold text-center">
+                    Confirm / Leave
+                </button>
+                <button type="button" onclick="closeExitModal()" class="flex-1 border border-stone-200 text-stone-600 text-[10px] tracking-[0.2em] py-4 hover:bg-stone-50 transition-all uppercase font-bold text-center">
+                    Cancel / Stay
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <style>
     .dynamic-fade-in { animation: smoothFade 0.8s ease forwards; }
     @keyframes smoothFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -339,9 +357,17 @@
     .bg-stone-955:hover {
         background-color: #0c0a09; /* stone-950 */
     }
+    
+    /* Enforce monospace font for all select elements and options to align tabular text correctly */
+    select, select option {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    }
 </style>
 
 <script>
+    let isBuyNowFlowActive = {{ $isBuyNow ? 'true' : 'false' }};
+    let isLeavingConfirmed = false;
+
     function updateQty(key, newQty) {
         if (newQty <= 0) {
             removeItem(key);
@@ -351,7 +377,10 @@
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
             body: JSON.stringify({ quantity: newQty })
-        }).then(() => location.reload());
+        }).then(() => {
+            isLeavingConfirmed = true;
+            location.reload();
+        });
     }
 
     function updateSize(key, size) {
@@ -359,14 +388,20 @@
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
             body: JSON.stringify({ new_size: size })
-        }).then(() => location.reload());
+        }).then(() => {
+            isLeavingConfirmed = true;
+            location.reload();
+        });
     }
 
     function removeItem(key) {
         fetch(`/cart/remove/${key}`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-        }).then(() => location.reload());
+        }).then(() => {
+            isLeavingConfirmed = true;
+            location.reload();
+        });
     }
 
     const baseSubtotal = {{ $subtotal }};
@@ -548,6 +583,7 @@
             document.getElementById('shipping_cost_hidden').value = selectedShippingCost;
             
             // Trigger actual form submission!
+            isLeavingConfirmed = true;
             document.getElementById('checkout_form').submit();
         }
     }
@@ -560,7 +596,10 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    data.data.forEach(p => {
+                    const sortedProvinces = [...data.data].sort((a, b) => 
+                        a.province.localeCompare(b.province)
+                    );
+                    sortedProvinces.forEach(p => {
                         const opt = document.createElement('option');
                         opt.value = p.province_id;
                         opt.textContent = p.province;
@@ -590,7 +629,12 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    data.data.forEach(c => {
+                    const sortedCities = [...data.data].sort((a, b) => {
+                        const aName = (a.type ? a.type + " " : "") + a.city_name;
+                        const bName = (b.type ? b.type + " " : "") + b.city_name;
+                        return aName.localeCompare(bName);
+                    });
+                    sortedCities.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.city_id;
                         opt.textContent = (c.type ? c.type + " " : "") + c.city_name;
@@ -640,11 +684,42 @@
         .then(data => {
             loading.classList.add('hidden');
             if (data.success && data.services.length > 0) {
-                data.services.forEach(s => {
+                // First pass: clean up ETD and find maximum length of the left part (service + description)
+                let maxLeftLength = 0;
+                const processedServices = data.services.map(s => {
+                    const leftPart = s.service + " (" + (s.description || "") + ")";
+                    if (leftPart.length > maxLeftLength) {
+                        maxLeftLength = leftPart.length;
+                    }
+                    
+                    let etdStr = '';
+                    if (s.etd) {
+                        // Clean up DAY, DAYS, HARI, HARIS case-insensitively to avoid duplication
+                        let cleanEtd = s.etd.toString().toUpperCase().replace(/\b(DAY|DAYS|HARI|HARIS)\b/g, '').trim();
+                        if (cleanEtd) {
+                            etdStr = " (" + cleanEtd + " DAYS)";
+                        }
+                    }
+                    
+                    return {
+                        service: s.service,
+                        description: s.description || "",
+                        cost: s.cost,
+                        leftPart: leftPart,
+                        etdStr: etdStr
+                    };
+                });
+
+                processedServices.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.service;
                     opt.dataset.cost = s.cost;
-                    opt.textContent = s.service + " (" + s.description + ") - IDR " + s.cost.toLocaleString('id-ID') + " (" + s.etd + " DAYS)";
+                    
+                    // Pad the left part with non-breaking spaces for perfect vertical alignment
+                    const paddingLength = (maxLeftLength + 2) - s.leftPart.length;
+                    const paddedLeft = s.leftPart + "\u00A0".repeat(paddingLength);
+                    
+                    opt.textContent = paddedLeft + "- IDR " + s.cost.toLocaleString('id-ID') + s.etdStr;
                     serviceSelect.appendChild(opt);
                 });
                 serviceSelect.disabled = false;
@@ -682,5 +757,69 @@
         // Update Grand Total
         calculateTotal();
     }
+
+    @if($isBuyNow)
+    let targetUrlToNavigate = null;
+
+    // Open exit confirmation modal
+    function openExitModal(targetUrl) {
+        targetUrlToNavigate = targetUrl;
+        document.getElementById('exitConfirmModal').classList.remove('hidden');
+    }
+
+    // Close exit confirmation modal
+    function closeExitModal() {
+        document.getElementById('exitConfirmModal').classList.add('hidden');
+        targetUrlToNavigate = null;
+    }
+
+    // Confirm and leave
+    document.getElementById('btnConfirmLeave').addEventListener('click', function() {
+        isLeavingConfirmed = true;
+        
+        // Call backend to clear the buy_now session first, then navigate
+        const clearUrl = '/cart?cancel_buy_now=1';
+        fetch(clearUrl)
+            .then(() => {
+                if (targetUrlToNavigate) {
+                    window.location.href = targetUrlToNavigate;
+                } else {
+                    window.location.href = '{{ route("cart.view") }}';
+                }
+            })
+            .catch(() => {
+                window.location.href = targetUrlToNavigate || '{{ route("cart.view") }}';
+            });
+    });
+
+    // Intercept clicks on page links
+    document.addEventListener('click', function(e) {
+        if (isLeavingConfirmed) return;
+
+        // Find closest anchor tag
+        const anchor = e.target.closest('a');
+        if (!anchor) return;
+
+        const href = anchor.getAttribute('href');
+        const target = anchor.getAttribute('target');
+
+        // Ignore hash links, javascript: links, empty links, or open in new tab links
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || target === '_blank') {
+            return;
+        }
+
+        // Intercept navigation
+        e.preventDefault();
+        openExitModal(href);
+    });
+
+    // Intercept browser back / forward / reload / close tab
+    window.addEventListener('beforeunload', function(e) {
+        if (isBuyNowFlowActive && !isLeavingConfirmed) {
+            e.preventDefault();
+            e.returnValue = ''; // standard for showing browser prompt
+        }
+    });
+    @endif
 </script>
 @endsection

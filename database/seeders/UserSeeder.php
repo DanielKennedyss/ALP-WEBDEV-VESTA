@@ -66,7 +66,7 @@ class UserSeeder extends Seeder
             'email' => 'ella@gmail.com',
             'password' => Hash::make('password123'),
             'role' => 'customer',
-            'status' => 'active',
+            'status' => 'GOLD',
             'membership_level' => 'gold', // Menyesuaikan dengan migrasi VESTA
         ]);
 
@@ -75,7 +75,7 @@ class UserSeeder extends Seeder
             'email' => 'angie@gmail.com',
             'password' => Hash::make('password123'),
             'role' => 'customer',
-            'status' => 'active',
+            'status' => 'SILVER',
             'membership_level' => 'silver',
         ]);
 
@@ -87,7 +87,7 @@ class UserSeeder extends Seeder
                 'email' => strtolower(str_replace(' ', '', $name)) . '@example.com',
                 'password' => Hash::make('password123'),
                 'role' => 'customer',
-                'status' => 'active',
+                'status' => 'BRONZE',
                 'membership_level' => 'bronze',
             ]);
         }

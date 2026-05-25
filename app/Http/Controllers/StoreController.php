@@ -90,10 +90,6 @@ class StoreController extends Controller
      */
     public function add_to_cart(Request $request, $product_id)
     {
-        if (!Auth::check()) {
-            return redirect()->back()->with('error', 'Please login or sign up first to add items to your cart.');
-        }
-
         $product = Product::with('variants')->findOrFail($product_id);
         $quantity = $request->input('quantity', 1);
         $selectedSize = $request->input('size', null);
@@ -128,6 +124,12 @@ class StoreController extends Controller
         ];
 
         session()->put('cart', $cart);
+
+        // Sync to database if user is logged in
+        if (Auth::check()) {
+            \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+        }
+
         return redirect()->back()->with('success', $product->name . ' added to cart.');
     }
 
@@ -191,8 +193,11 @@ class StoreController extends Controller
             return redirect()->back()->with('error', 'Requested quantity is invalid or exceeds available stock.');
         }
 
-        // Simpan data ke session temporary 'buy_now'
+        // Clean previous 'buy_now' state and voucher applied
         session()->forget('buy_now');
+        session()->forget('applied_voucher');
+
+        // Put the single item in the isolated 'buy_now' session state
         session()->put('buy_now', [
             'product_id' => $product->id,
             'name'        => $product->name,
@@ -202,8 +207,8 @@ class StoreController extends Controller
             'image_path' => $product->image_path ?? null,
         ]);
 
-        // Arahkan langsung ke halaman review checkout
-        return redirect()->route('checkout.view');
+        // Redirect directly to the cart/checkout page (which will render only this item)
+        return redirect()->route('cart.view');
     }
 
     /**
@@ -400,6 +405,10 @@ class StoreController extends Controller
                 session()->forget('buy_now');
             } else {
                 session()->forget('cart');
+                // Persist the empty cart status by clearing the user's cart items in database
+                if (Auth::check()) {
+                    \App\Models\CartItem::where('user_id', Auth::id())->delete();
+                }
             }
 
             return view('store.payment', compact('snapToken', 'order', 'cartItems'));
@@ -544,17 +553,49 @@ class StoreController extends Controller
         return request()->has('order_id') ? $this->payment_status($order_id) : redirect()->route('payment_status', $order_id);
     }
 
-    /**
-     * Update Cart Item Quantity
-     */
     public function update_cart(Request $request, $cart_key)
     {
+        if ($cart_key === 'buy_now') {
+            $item = session()->get('buy_now');
+            if ($item) {
+                $newQuantity = (int) $request->input('quantity', 1);
+                if ($newQuantity <= 0) {
+                    session()->forget('buy_now');
+                    session()->forget('applied_voucher');
+                    return redirect()->back()->with('success', 'Item removed from cart.');
+                }
+
+                // Check stock limit
+                $product = Product::with('variants')->find($item['product_id']);
+                if ($product) {
+                    $size = $item['size'] ?? null;
+                    if ($size) {
+                        $variant = $product->variants->where('size_label', $size)->first();
+                        $maxStock = $variant ? $variant->stock : 0;
+                    } else {
+                        $maxStock = $product->total_stock;
+                    }
+
+                    if ($newQuantity > $maxStock) {
+                        return redirect()->back()->with('error', 'Quantity exceeds available stock.');
+                    }
+                }
+
+                $item['quantity'] = $newQuantity;
+                session()->put('buy_now', $item);
+            }
+            return redirect()->back();
+        }
+
         $cart = session()->get('cart', []);
         if (isset($cart[$cart_key])) {
             $newQuantity = (int) $request->input('quantity', 1);
             if ($newQuantity <= 0) {
                 unset($cart[$cart_key]);
                 session()->put('cart', $cart);
+                if (Auth::check()) {
+                    \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+                }
                 return redirect()->back()->with('success', 'Item removed from cart.');
             }
 
@@ -576,6 +617,9 @@ class StoreController extends Controller
 
             $cart[$cart_key]['quantity'] = $newQuantity;
             session()->put('cart', $cart);
+            if (Auth::check()) {
+                \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+            }
         }
         return redirect()->back();
     }
@@ -585,6 +629,16 @@ class StoreController extends Controller
      */
     public function update_cart_size(Request $request, $cart_key)
     {
+        if ($cart_key === 'buy_now') {
+            $item = session()->get('buy_now');
+            if ($item) {
+                $newSize = $request->input('new_size');
+                $item['size'] = $newSize;
+                session()->put('buy_now', $item);
+            }
+            return redirect()->back();
+        }
+
         $cart = session()->get('cart', []);
         if (isset($cart[$cart_key])) {
             $item = $cart[$cart_key];
@@ -601,16 +655,28 @@ class StoreController extends Controller
                 $cart[$newKey] = $item;
             }
             session()->put('cart', $cart);
+            if (Auth::check()) {
+                \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+            }
         }
         return redirect()->back();
     }
 
     public function remove_from_cart($cart_key)
     {
+        if ($cart_key === 'buy_now') {
+            session()->forget('buy_now');
+            session()->forget('applied_voucher');
+            return redirect()->back();
+        }
+
         $cart = session()->get('cart', []);
         if (isset($cart[$cart_key])) {
             unset($cart[$cart_key]);
             session()->put('cart', $cart);
+            if (Auth::check()) {
+                \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+            }
         }
         return redirect()->back();
     }

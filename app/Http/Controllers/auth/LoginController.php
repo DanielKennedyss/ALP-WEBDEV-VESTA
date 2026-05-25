@@ -23,6 +23,9 @@ class LoginController extends Controller
 
             // --- PERUBAHAN DI SINI ---
             $user = Auth::user();
+            
+            // Sync/Merge cart database with session
+            \App\Models\CartItem::syncCart($user);
 
             // Jika yang login adalah Owner atau Admin
             if ($user->role === 'owner' || $user->role === 'admin') {
@@ -36,14 +39,18 @@ class LoginController extends Controller
 
         return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
     }
-public function logout(Request $request)
-{
-    auth()->logout();
+    public function logout(Request $request)
+    {
+        if (Auth::check()) {
+            \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+        }
 
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
+        auth()->logout();
 
-    // Ubah redirect ke route login
-    return redirect()->route('login');
-}
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Ubah redirect ke route login
+        return redirect()->route('login');
+    }
 }
