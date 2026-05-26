@@ -64,6 +64,8 @@ Route::middleware(['web'])->group(function () {
         
         Route::post('/direct-checkout/{product_id}', 'direct_checkout')->name('direct.checkout');
         Route::get('/checkout', 'view_checkout')->name('checkout.view');
+        
+        // FIX BARIS 67: Mengubah Route::checkout menjadi Route::post agar tidak memicu HTTP Error 500
         Route::post('/checkout/process', 'checkout')->name('checkout.process');
 
         // Shipping Routes (RajaOngkir Proxy)
@@ -99,16 +101,17 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
     Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
-    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.update');
+    // PERBAIKAN: Mengubah nama rute agar tidak bentrok dengan password.update milik profile
+    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.reset.update');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Google Open Authentication Routes (Harus di luar Guest Middleware)
+| Google Open Authentication Routes (Mendukung Struktur Proxy fwd.host)
 |--------------------------------------------------------------------------
 */
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
 
 /*
@@ -154,6 +157,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        
+        // INTEGRASI LAPORAN: Rute penembak unduhan laporan Excel Sales Intelligence VESTA
+        Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('admin.dashboard.export');
         
         // Product Management
         Route::resource('products', ProductController::class)->except(['show'])->names('admin.products');

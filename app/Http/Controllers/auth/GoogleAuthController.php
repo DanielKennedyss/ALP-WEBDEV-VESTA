@@ -3,96 +3,58 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-<<<<<<< HEAD
+use Illuminate\Http\Request;
+use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Laravel\Socialite\Facades\Socialite;
-use Exception;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GoogleAuthController extends Controller
 {
     /**
-     * Redirect the user to the Google authentication page.
-     *
-     * @return \Symfony\Component\HttpFoundation\Response
+     * Mengalihkan jabat tangan otentikasi menuju server Google API
      */
     public function redirectToGoogle()
-    {
-        return Socialite::driver('google')->stateless()->redirect();
-    }
-
-    /**
-     * Obtain the user information from Google.
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function handleGoogleCallback()
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
-            
-            // 1. Validasi pastikan email dari Google didapatkan
-            if (!$googleUser->getEmail()) {
-                return redirect()->route('login')->with('error', 'Gagal mendapatkan data email dari akun Google Anda.');
-            }
-
-            // 2. Cari user berdasarkan email di database
-            $user = User::where('email', $googleUser->getEmail())->first();
-
-            if ($user) {
-                // Jika user sudah ada, update google_id nya
-                $user->update([
-                    'google_id' => $googleUser->getId()
-                ]);
-            } else {
-                // Jika user belum ada, buat data baru dan tampung ke dalam variabel $user
-                $user = User::create([
-                    'name'              => $googleUser->getName() ?? 'Google User',
-                    'email'             => $googleUser->getEmail(),
-                    'google_id'         => $googleUser->getId(),
-                    'role'              => 'customer',
-                    'status'            => 'active',
-                    'membership_level'  => 'bronze',
-                    'loyalty_points'    => 0,
-                    'total_spending'    => 0.00,
-                    'password'          => uniqid(), // Model User otomatis meng-hash lewat $casts
-                ]);
-            }
-
-            // 3. JAMINAN UTAMA: Cek apakah variabel $user benar-benar ada dan tidak null
-            if (!$user) {
-                return redirect()->route('login')->with('error', 'Gagal membuat atau menemukan akun pengguna di database.');
-            }
-
-            // 4. Daftarkan session login menggunakan objek $user yang sudah valid
-            Auth::login($user, true);
-
-            // 5. Regenerate session demi keamanan HTTPS ngrok
-            request()->session()->regenerate();
-
-            // 6. Alihkan ke halaman profile kustom VESTA kamu
-            return redirect()->route('profile');
-
-        } catch (Exception $e) {
-            // Tangkap jika ada error database (misal kolom kurang atau belum dimigrasi)
-            return redirect()->route('login')->with('error', 'Google Auth Error: ' . $e->getMessage());
+            return Socialite::driver('google')->redirect();
+        } catch (\Exception $e) {
+            Log::error('Google OAuth Redirect Failed: ' . $e->getMessage());
+            return redirect()->route('login')->with('error', 'Cannot connect to Google Open Authentication services.');
         }
     }
-}
-=======
-use Illuminate\Http\Request;
 
-class GoogleAuthController extends Controller
+    /**
+     * Menangkap respon data user yang sukses login dari Google
+     */
+public function handleGoogleCallback()
 {
-    public function redirectToGoogle()
-    {
-        return redirect()->back()->with('error', 'Google login not configured.');
-    }
+    try {
+        // WAJIB PAKAI STATELESS agar tidak memicu deteksi manipulasi session di fwd.host
+        $googleUser = Socialite::driver('google')->stateless()->user();
+        
+        $user = User::where('email', $googleUser->getEmail())->first();
 
-    public function handleGoogleCallback()
-    {
-        return redirect()->route('login')->with('error', 'Google login callback error.');
+        if (!$user) {
+            $user = User::create([
+                'name'              => $googleUser->getName(),
+                'email'             => $googleUser->getEmail(),
+                'password'          => bcrypt(\Illuminate\Support\Str::random(24)),
+                'role'              => 'customer',
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        // Kunci session login
+        Auth::login($user, true);
+
+        // Redirect ke profil
+        return redirect()->route('profile')->with('success', 'Logged in via Google.');
+
+    } catch (\Exception $e) {
+        // Jika gagal, lempar balik ke login dengan membawa pesan error aslinya untuk dilacak
+        return redirect()->route('login')->with('error', 'OAuth Error: ' . $e->getMessage());
     }
 }
->>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499
+}

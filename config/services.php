@@ -12,6 +12,7 @@ return [
     | location for this type of information, allowing packages to have
     | a conventional file to locate the various service credentials.
     |
+    |
     */
 
     'postmark' => [
@@ -35,11 +36,11 @@ return [
         ],
     ],
 
-    // Tambahkan blok ini di bawah slack
+    // REVISI: Mengubah GOOGLE_REDIRECT_URL menjadi GOOGLE_REDIRECT_URI agar sinkron dengan .env
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect'      => env('GOOGLE_REDIRECT_URL'),
+        'redirect'      => env('GOOGLE_REDIRECT_URI'),
     ],
 
 ];

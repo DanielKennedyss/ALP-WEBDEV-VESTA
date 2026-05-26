@@ -17,25 +17,36 @@
         </div>
     @endif
 
-    <form action="{{ route('password.update') }}" method="POST">
+    {{-- REVISI: Mengubah action ke route password.reset.update agar tidak bentrok --}}
+    <form action="{{ route('password.reset.update') }}" method="POST">
         @csrf
         
-        {{-- Input OTP --}}
+        {{-- Input OTP (REVISI: Mengubah name menjadi otp_code agar sinkron dengan Controller) --}}
         <div style="margin-bottom: 20px;">
             <label style="display: block; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; color: #333;">Kode OTP (6 Digit)</label>
-            <input type="text" name="otp" required maxlength="6" style="width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; font-weight: bold; text-align: center; letter-spacing: 4px;" placeholder="000000">
+            <input type="text" name="otp_code" required maxlength="6" style="width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; font-weight: bold; text-align: center; letter-spacing: 4px;" placeholder="000000" value="{{ old('otp_code') }}">
         </div>
 
         {{-- Input Password Baru --}}
         <div style="margin-bottom: 20px;">
             <label style="display: block; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; color: #333;">Password Baru (Minimal 8 Karakter)</label>
-            <input type="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            <div style="position: relative;">
+                <input type="password" id="password" name="password" required style="width: 100%; padding: 12px; padding-right: 60px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+                <button type="button" onclick="togglePasswordVisibility('password', 'toggleText1')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 11px; font-weight: bold; color: #666; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; user-select: none;">
+                    <span id="toggleText1">Show</span>
+                </button>
+            </div>
         </div>
 
         {{-- Konfirmasi Password --}}
         <div style="margin-bottom: 25px;">
             <label style="display: block; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; color: #333;">Konfirmasi Password Baru</label>
-            <input type="password" name="password_confirmation" required style="width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            <div style="position: relative;">
+                <input type="password" id="password_confirmation" name="password_confirmation" required style="width: 100%; padding: 12px; padding-right: 60px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+                <button type="button" onclick="togglePasswordVisibility('password_confirmation', 'toggleText2')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 11px; font-weight: bold; color: #666; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; user-select: none;">
+                    <span id="toggleText2">Show</span>
+                </button>
+            </div>
         </div>
 
         <button type="submit" style="width: 100%; padding: 14px; background: #000; color: #fff; border: none; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; font-weight: bold;">
@@ -43,4 +54,20 @@
         </button>
     </form>
 </div>
+
+{{-- JavaScript Ringan untuk Manipulasi Tipe Input Password --}}
+<script>
+    function togglePasswordVisibility(inputId, textId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleText = document.getElementById(textId);
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleText.textContent = 'Hide';
+        } else {
+            passwordInput.type = 'password';
+            toggleText.textContent = 'Show';
+        }
+    }
+</script>
 @endsection

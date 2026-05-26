@@ -72,7 +72,7 @@
         </div>
         <div>
             {{-- Tombol tambah voucher baru --}}
-            <a href="{{ route('admin.vouchers.create') }}" class="btn btn-luxury-black d-flex align-items-center gap-2">
+            <a href="{{ route('admin.vouchers.create') }}" class="btn btn-luxury-black d-flex align-items-center    p-2">
                 <i class="bi bi-plus-lg" style="font-size: 1rem;"></i> Create New Voucher
             </a>
         </div>
