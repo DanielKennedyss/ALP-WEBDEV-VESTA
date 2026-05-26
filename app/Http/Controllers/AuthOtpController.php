@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+<<<<<<< HEAD
 use App\Models\User;
 use App\Mail\SendOtpMail;
 use Illuminate\Http\Request;
@@ -95,11 +96,18 @@ class AuthOtpController extends Controller
     // ==========================================================================
 
     // Menampilkan halaman form memasukkan email lupa password
+=======
+use Illuminate\Http\Request;
+
+class AuthOtpController extends Controller
+{
+>>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499
     public function showForgotPasswordForm()
     {
         return view('auth.forgot-password');
     }
 
+<<<<<<< HEAD
     // Mengirim OTP Reset Password setelah validasi email
     public function sendResetOtp(Request $request)
     {
@@ -127,11 +135,19 @@ class AuthOtpController extends Controller
     }
 
     // Menampilkan halaman input OTP & Password baru
+=======
+    public function sendResetOtp(Request $request)
+    {
+        return redirect()->back()->with('success', 'OTP sent successfully.');
+    }
+
+>>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499
     public function showResetPasswordForm()
     {
         return view('auth.reset-password');
     }
 
+<<<<<<< HEAD
     // Mengecek validitas OTP akhir dan mengganti password lama ke baru
     public function resetPassword(Request $request)
     {
@@ -169,3 +185,25 @@ class AuthOtpController extends Controller
         return redirect()->route('login')->with('status', 'Password Anda berhasil diperbarui. Silakan login.');
     }
 }
+=======
+    public function resetPassword(Request $request)
+    {
+        return redirect()->route('login')->with('success', 'Password reset successfully.');
+    }
+
+    public function showVerifyForm()
+    {
+        return view('auth.verify-otp');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        return redirect()->route('home')->with('success', 'Account verified successfully.');
+    }
+
+    public function sendVerificationOtp(Request $request)
+    {
+        return redirect()->back()->with('success', 'Verification OTP sent successfully.');
+    }
+}
+>>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499

@@ -22,6 +22,9 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+            
+            // Sync/Merge cart database with session
+            \App\Models\CartItem::syncCart($user);
 
             // Selaraskan dengan role internal VESTA: owner, manager, staff
             if (in_array($user->role, ['owner', 'manager', 'staff'])) {
@@ -38,14 +41,27 @@ class LoginController extends Controller
             'email' => 'Email atau password yang Anda masukkan salah.'
         ])->onlyInput('email');
     }
+<<<<<<< HEAD
 
     public function logout(Request $request)
     {
+=======
+    public function logout(Request $request)
+    {
+        if (Auth::check()) {
+            \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+        }
+
+>>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499
         auth()->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+<<<<<<< HEAD
+=======
+        // Ubah redirect ke route login
+>>>>>>> 6107b4d483095e8bb7002a1725d7ee9f0bc9b499
         return redirect()->route('login');
     }
 }

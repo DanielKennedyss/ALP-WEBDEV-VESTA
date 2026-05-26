@@ -28,7 +28,7 @@
                 $table->integer('loyalty_points')->default(0);
                 $table->decimal('total_spending', 15, 2)->default(0.00);
 
-                $table->enum('status', ['active', 'suspended'])->default('active');
+                $table->string('status')->default('BRONZE');
                 $table->rememberToken();
                 $table->timestamps();
             });

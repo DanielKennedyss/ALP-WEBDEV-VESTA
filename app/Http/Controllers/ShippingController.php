@@ -30,7 +30,7 @@ class ShippingController extends Controller
                         'province_id' => $p['id'],
                         'province' => $p['name']
                     ];
-                })->toArray();
+                })->sortBy('province', SORT_NATURAL | SORT_FLAG_CASE)->values()->toArray();
 
                 return response()->json([
                     'success' => true,
@@ -75,7 +75,7 @@ class ShippingController extends Controller
                         'city_name' => $c['name'],
                         'type' => ''
                     ];
-                })->toArray();
+                })->sortBy('city_name', SORT_NATURAL | SORT_FLAG_CASE)->values()->toArray();
 
                 return response()->json([
                     'success' => true,

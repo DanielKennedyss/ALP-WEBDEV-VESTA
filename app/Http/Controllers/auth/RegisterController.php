@@ -34,10 +34,14 @@ public function store(Request $request)
         'membership_level' => 'bronze',
         'loyalty_points' => 0,
         'total_spending' => 0.00,
+        'status' => 'BRONZE',
     ]);
 
     // 3. Langsung Login setelah daftar
     \Illuminate\Support\Facades\Auth::login($user);
+
+    // Sync/Merge cart database with session
+    \App\Models\CartItem::syncCart($user);
 
     // 4. Redirect ke Dashboard
 

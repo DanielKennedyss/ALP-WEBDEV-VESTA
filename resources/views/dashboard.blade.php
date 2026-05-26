@@ -11,7 +11,7 @@
             </div>
             <div class="mt-6 md:mt-0">
                 <div class="border border-black px-6 py-3 inline-block">
-                    <span class="text-xs tracking-[0.2em] uppercase font-medium">Tier: {{ Auth::user()->membership_level ?? 'Bronze' }}</span>
+                    <span class="text-xs tracking-[0.2em] uppercase font-medium">STATUS: {{ auth()->check() ? auth()->user()->status : '' }}</span>
                 </div>
             </div>
         </div>
@@ -101,7 +101,7 @@
         <!-- Banner / Information -->
         <div class="bg-black text-white p-12 text-center">
             <h3 class="text-2xl md:text-3xl font-serif tracking-[0.1em] mb-4">VESTA Winter Collection '26 is coming.</h3>
-            <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Exclusively for {{ Auth::user()->membership_level ?? 'Bronze' }} members.</p>
+            <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Exclusively for {{ auth()->check() ? auth()->user()->status : '' }} members.</p>
         </div>
     </div>
 </div>

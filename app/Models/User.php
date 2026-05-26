@@ -71,11 +71,11 @@ class User extends Authenticatable
     }
 
     /**
-     * RELASI: One-to-Many ke model LoyaltyPointHistory
+     * RELASI: One-to-Many ke model CartItem
      */
-    public function loyaltyHistories(): HasMany
+    public function cartItems(): HasMany
     {
-        return $this->hasMany(LoyaltyPointHistory::class)->latest();
+        return $this->hasMany(CartItem::class);
     }
 
     /**

@@ -286,7 +286,7 @@
                         
                         @if($trx->user)
                             <div class="d-inline-block bg-black text-white px-3 py-1 text-[10px] tracking-wider uppercase font-bold rounded-1" style="font-size: 10px; letter-spacing: 0.08em;">
-                                Status: {{ $trx->user->membership_tier_badge }}
+                                Status: {{ $trx->user->status ?? '' }}
                             </div>
                         @endif
                     </div>
