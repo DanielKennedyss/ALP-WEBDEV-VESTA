@@ -136,7 +136,7 @@
     </div>
     
     <div class="d-flex gap-3 align-items-center">
-        {{-- Dropdown Filter dipindah ke atas --}}
+        {{-- Dropdown Filter Periode Dashboard --}}
         <form id="filterForm" action="{{ route('admin.dashboard') }}" method="GET" class="mb-0">
             <div class="d-flex align-items-center gap-2">
                 <select id="periodSelect" name="period" class="saas-select" onchange="document.getElementById('filterForm').submit()">
@@ -147,12 +147,24 @@
             </div>
         </form>
 
-        {{-- REVISI: Tambahkan action triggerExport() saat tombol ditekan --}}
+        {{-- Tombol Unduh Excel Langsung (Bawaan) --}}
         <button onclick="triggerExport()" class="btn btn-dark rounded shadow-sm px-4 py-2" style="font-size: 13px; font-weight: 500; background-color: #121212; border: none;">
-            Export
+            Download Excel
         </button>
     </div>
 </div>
+
+{{-- Notifikasi Sukses / Gagal Antrean Email --}}
+@if(session('success'))
+    <div class="alert alert-dark text-white border-0 rounded-3 mb-4 p-3" style="background-color: #121212; font-size: 13px;">
+        ⚡ {{ session('success') }}
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger border-0 rounded-3 mb-4 p-3" style="font-size: 13px;">
+        ⚠️ {{ session('error') }}
+    </div>
+@endif
 
 {{-- Baris 1: 3 Metrik Utama (Monokrom) --}}
 <div class="row g-4 mb-4">
@@ -240,61 +252,146 @@
         </div>
     </div>
 
-    {{-- Side Insight (AI Recommendation saja) --}}
+    {{-- Side Insight: Dynamic AI Engine Matrix --}}
     <div class="col-lg-4">
-        <div class="saas-card h-100 d-flex flex-column">
-            <h6 class="card-title-text mb-4">Intelligence Insight</h6>
-            
-            <div class="flex-grow-1 d-flex flex-column justify-content-center">
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 64px; height: 64px; background-color: var(--accent-light);">
-                        <svg width="32" height="32" fill="none" stroke="#121212" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-2">AI RECOMMENDATION</h6>
-                    <p class="text-muted mb-0 mx-auto" style="font-size: 13px; line-height: 1.6; max-width: 250px;">
-                        Berdasarkan data penjualan terakhir, kategori <strong>{{ $topProducts->first()->product->category->name ?? 'Produk Utama' }}</strong> sangat mendominasi. Pertimbangkan untuk mengatur ulang strategi inventaris minggu depan.
-                    </p>
+        <div class="saas-card h-100 d-flex flex-column justify-content-between" style="padding: 32px;">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="card-title-text mb-0" style="font-size: 11px; letter-spacing: 0.15em;">Intelligence Insight</h6>
+                    <span class="badge bg-dark text-white rounded-pill px-2 py-1" style="font-size: 9px; font-weight: 700; letter-spacing: 0.05em;">ENGINE V1.0</span>
                 </div>
+                
+                {{-- Progress Ring --}}
+                @if(isset($contributionPercentage) && $contributionPercentage > 0)
+                    <div class="my-4 py-2 d-flex align-items-center gap-3 border-bottom pb-4" style="border-color: #f1f5f9 !important;">
+                        <div class="position-relative d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <div class="rounded-circle position-absolute w-100 h-100" style="border: 4px solid #f3f4f6;"></div>
+                            <div class="rounded-circle position-absolute w-100 h-100" style="border: 4px solid #121212; border-top-color: transparent; border-left-color: transparent; transform: rotate({{ ($contributionPercentage / 100) * 360 }}deg);"></div>
+                            <span class="fw-bold text-dark" style="font-size: 13px; font-family: ui-serif, Georgia, serif;">{{ number_format($contributionPercentage, 0) }}%</span>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark" style="font-size: 13px;">Product Concentration</h6>
+                            <span class="card-subtitle-text">Kontribusi produk terlaris</span>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Slot Teks Insight Dinamis --}}
+                <p class="text-muted mb-0" style="font-size: 13px; line-height: 1.7; text-align: justify; color: #475569 !important;">
+                    {!! $insightText !!}
+                </p>
+            </div>
+
+            {{-- Timestamp Pemrosesan Riil --}}
+            <div class="pt-3 border-t mt-4" style="border-color: #f1f5f9 !important;">
+                <span class="text-muted d-flex align-items-center gap-1" style="font-size: 10px; font-family: monospace; letter-spacing: 0.02em;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                    DATA PROCESSED SECURELY AT {{ now()->format('H:i:s') }}
+                </span>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Baris 3: Top Selling Products (Layout Horizontal) --}}
-<div class="saas-card mb-5">
-    <div class="mb-4">
-        <h6 class="card-title-text mb-0">Top Selling Products</h6>
-    </div>
+{{-- Baris 3: Integrasi Modul Baru - Form Dispatch Financial Report & Top Products --}}
+<div class="row g-4 mb-5">
+    {{-- Form Kirim Laporan via Email (Luxury Component) --}}
+    <div class="col-md-5">
+        <div class="saas-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <h6 class="card-title-text mb-0" style="font-size: 13px;">Transmit Intelligence Report</h6>
+                </div>
 
-    <div class="row g-4">
-        @forelse($topProducts as $item)
-        <div class="col-md-4">
-            <div class="product-grid-card h-100">
-                <div class="product-img-box">
-                    <img src="{{ asset('product_image/' . ($item->product->image_path ?? 'default.jpg')) }}" 
-                         class="img-fluid" style="max-height: 100%; object-fit: contain;" 
-                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=V&background=f1f5f9&color=121212';">
-                </div>
-                <h6 class="fw-bold text-truncate mb-1" style="font-size: 14px; color: #1e293b;">{{ $item->product->name }}</h6>
-                <p class="card-subtitle-text mb-3">{{ $item->product->category->name ?? 'Clothing' }}</p>
-                
-                <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color: #f1f5f9 !important;">
-                    <span class="text-dark fw-bold" style="font-size: 13px;">{{ $item->units_sold }} Pcs Sold</span>
-                    <span class="badge bg-dark text-white rounded-pill px-2 py-1" style="font-size: 11px;">#{{ $loop->iteration }}</span>
-                </div>
+                <form action="{{ route('admin.transactions.export_email') }}" method="POST" class="needs-validation">
+                    @csrf
+                    
+                    {{-- Target Email --}}
+                    <div class="mb-3">
+                        <label class="form-label card-subtitle-text text-uppercase fw-bold tracking-wider mb-1" style="font-size: 10px;">Destination Email</label>
+                        <input type="email" name="email_target" value="vestaclothingg@gmail.com" required
+                            class="form-control px-3 py-2 text-dark" 
+                            style="font-size: 13px; border-color: #e2e8f0; border-radius: 6px; background-color: #f8fafc;">
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        {{-- Batas Periode Laporan --}}
+                        <div class="col-6">
+                            <label class="form-label card-subtitle-text text-uppercase fw-bold tracking-wider mb-1" style="font-size: 10px;">Archive Period</label>
+                            <select name="period" required class="form-select text-dark" style="font-size: 13px; border-color: #e2e8f0; border-radius: 6px; background-color: #f8fafc;">
+                                <option value="1">Today (Live)</option>
+                                <option value="7">Past 7 Days</option>
+                                <option value="30" selected>Past 30 Days</option>
+                            </select>
+                        </div>
+
+                        {{-- Format Ekspor --}}
+                        <div class="col-6">
+                            <label class="form-label card-subtitle-text text-uppercase fw-bold tracking-wider mb-1" style="font-size: 10px;">Document Format</label>
+                            <select name="format_choice" required class="form-select text-dark" style="font-size: 13px; border-color: #e2e8f0; border-radius: 6px; background-color: #f8fafc;">
+                                <option value="xlsx" selected>Excel (.xlsx)</option>
+                                <option value="html">HTML Table</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-full uppercase tracking-widest py-2.5 rounded shadow-sm w-100" 
+                        style="font-size: 11px; font-weight: 600; background-color: #121212; border: none; letter-spacing: 0.1em;">
+                        Queue & Transmit Report
+                    </button>
+                </form>
+            </div>
+            
+            <div class="pt-3 border-t mt-3" style="border-color: #f1f5f9 !important;">
+                <p class="mb-0 text-muted" style="font-size: 10.5px; line-height: 1.4;">
+                    *Proses kompilasi file dikerjakan secara asinkronus di background server agar performa sistem tetap ringan.
+                </p>
             </div>
         </div>
-        @empty
-        <div class="col-12 text-center py-5">
-            <p class="text-muted mb-0">No sales data available yet.</p>
+    </div>
+
+    {{-- Top Selling Products --}}
+    <div class="col-md-7">
+        <div class="saas-card h-100">
+            <div class="mb-4">
+                <h6 class="card-title-text mb-0">Top Selling Products</h6>
+            </div>
+
+            <div class="row g-3">
+                @forelse($topProducts as $item)
+                <div class="col-6 col-md-4">
+                    <div class="product-grid-card h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="product-img-box" style="height: 120px;">
+                                <img src="{{ asset('product_image/' . ($item->product->image_path ?? 'default.jpg')) }}" 
+                                     class="img-fluid" style="max-height: 100%; object-fit: contain;" 
+                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=V&background=f1f5f9&color=121212';">
+                            </div>
+                            <h6 class="fw-bold text-truncate mb-0" style="font-size: 13px; color: #121212;">{{ $item->product->name }}</h6>
+                            <p class="card-subtitle-text mb-2 text-truncate" style="font-size: 10.5px;">{{ $item->product->category->name ?? 'Clothing' }}</p>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color: #f1f5f9 !important;">
+                            <span class="text-dark fw-bold" style="font-size: 11.5px;">{{ $item->units_sold }} Sold</span>
+                            <span class="badge bg-dark text-white rounded-pill" style="font-size: 9px; padding: 4px 6px;">#{{ $loop->iteration }}</span>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted mb-0">No sales data available yet.</p>
+                </div>
+                @endforelse
+            </div>
         </div>
-        @endforelse
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// REVISI: Penambahan fungsi pengalih rute export agar dinamis menangkap isi dropdown
 function triggerExport() {
     const activePeriod = document.getElementById('periodSelect').value;
     window.location.href = `{{ route('admin.dashboard.export') }}?period=${activePeriod}`;
@@ -306,7 +403,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (canvasElement) {
         const ctx = canvasElement.getContext('2d');
         
-        // Gradien Aksen Monokrom (Hitam ke Transparan)
         let gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, 'rgba(18, 18, 18, 0.1)');
         gradient.addColorStop(1, 'rgba(18, 18, 18, 0.0)');
@@ -318,11 +414,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Income',
                     data: {!! json_encode($chartData) !!},
-                    borderColor: '#121212', /* Charcoal Solid */
+                    borderColor: '#121212',
                     borderWidth: 2.5, 
                     backgroundColor: gradient,
                     fill: true,
-                    tension: 0.45, /* Bergelombang halus */
+                    tension: 0.45,
                     pointBackgroundColor: '#fff',
                     pointBorderColor: '#121212',
                     pointBorderWidth: 2,

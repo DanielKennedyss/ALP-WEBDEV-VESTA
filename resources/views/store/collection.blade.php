@@ -105,7 +105,6 @@
             }
         }
 
-        /* Horizontal Filter Styles */
         .filter-btn {
             display: inline-flex;
             align-items: center;
@@ -188,9 +187,10 @@
 
             {{-- Search Bar --}}
             <div class="max-w-2xl mx-auto mb-10">
-                <form id="mainFilterForm" action="{{ route('collection') }}" method="GET">
+                <form id="mainFilterForm" action="{{ route('collection') }}" method="GET" onsubmit="event.preventDefault();">
                     <div class="relative">
-                        <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
+                        {{-- REVISI: Mengubah input search bar agar dimanipulasi real-time oleh Fuse.js --}}
+                        <input type="text" id="searchInput" value="{{ request('search') }}"
                             placeholder="Search by name, description, or SKU..."
                             class="w-full border border-gray-300 pl-12 pr-4 py-3.5 text-sm focus:outline-none focus:border-black transition-colors bg-white">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
@@ -198,18 +198,16 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        @if (request('search'))
-                            <a href="{{ route('collection') }}"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </a>
-                        @endif
+                        <a href="{{ route('collection') }}" id="clearSearchBtn"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black" style="display: none;">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </a>
                     </div>
 
-                    {{-- Hidden inputs for all filters --}}
+                    {{-- Hidden inputs untuk sinkronisasi state filter URL herarki --}}
                     <input type="hidden" name="category" id="filterCategory" value="{{ request('category') }}">
                     <input type="hidden" name="gender" id="filterGender" value="{{ request('gender') }}">
                     <input type="hidden" name="size" id="filterSize" value="{{ request('size') }}">
@@ -299,7 +297,7 @@
                                 </div>
                             </div>
 
-                            @if (request('category') || request('gender') || request('size') || request('search'))
+                            @if (request('category') || request('gender') || request('size'))
                                 <a href="{{ route('collection') }}"
                                     class="text-[10px] tracking-widest text-gray-500 hover:text-black transition-colors uppercase ml-2 underline underline-offset-4">Clear
                                     Filters</a>
@@ -307,8 +305,9 @@
                         </div>
 
                         <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
-                            <span class="text-xs text-gray-500 whitespace-nowrap"><span
-                                    class="text-black font-medium">{{ $products->count() }}</span> Results</span>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">
+                                <span id="resultsCount" class="text-black font-medium">{{ $products->count() }}</span> Results
+                            </span>
 
                             {{-- Sort Dropdown --}}
                             <div x-data="{ open: false }" class="relative">
@@ -343,93 +342,23 @@
                     </div>
                 </div>
 
-                {{-- Products Grid --}}
+                {{-- Products Grid Wrapper --}}
                 <div class="w-full">
-
-                    @if ($products->isEmpty())
-                        <div class="text-center py-24">
-                            <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <p class="text-sm tracking-widest text-gray-400 uppercase mb-4">No products found</p>
-                            <a href="{{ route('collection') }}"
-                                class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR
-                                FILTERS</a>
+                    {{-- REVISI: Kontainer diubah menjadi penampung kosong, data murni di-render via displayProducts() --}}
+                    <div id="productGridContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                         </div>
-                    @else
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                            @foreach ($products as $index => $product)
-                                <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
-                                    <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer"
-                                        onclick="openQuickView({{ $product->id }})">
-                                        <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
-                                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                            loading="lazy">
-
-                                        {{-- Gender Badge --}}
-                                        <div class="absolute top-3 left-3 z-10">
-                                            @php $gc = strtolower($product->gender ?? ''); @endphp
-                                            <span
-                                                class="gender-badge {{ $gc == 'male' ? 'gender-male' : ($gc == 'female' ? 'gender-female' : 'gender-unisex') }}">
-                                                @if ($gc == 'male')
-                                                    ♂
-                                                @elseif($gc == 'female')
-                                                ♀ @else⚥
-                                                @endif
-                                                {{ $product->gender }}
-                                            </span>
-                                        </div>
-
-                                        @if ($product->total_stock == 0)
-                                            <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
-                                                <span
-                                                    class="text-white text-xs tracking-[0.3em] border border-white px-6 py-3">SOLD
-                                                    OUT</span>
-                                            </div>
-                                        @endif
-
-                                        <div
-                                            class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                                            <button onclick="openQuickView({{ $product->id }})"
-                                                class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
-                                                QUICK VIEW
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="relative w-full flex flex-col items-center text-center pt-2">
-                                        <span
-                                            class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">{{ $product->category->name ?? '' }}</span>
-                                        <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">
-                                            {{ $product->name }}</h3>
-                                        <p class="text-sm font-light text-gray-800">IDR
-                                            {{ number_format($product->price, 0, ',', '.') }}</p>
-
-                                        <!-- Heart button at the bottom-right of the card -->
-                                        <button
-                                            onclick="toggleWishlist(event, {{ json_encode([
-                                                'id' => $product->id,
-                                                'name' => $product->name,
-                                                'price' => $product->price,
-                                                'image_path' => $product->image_path,
-                                                'category' => $product->category->name ?? '',
-                                            ]) }})"
-                                            class="absolute right-2 bottom-1.5 p-2 text-gray-400 hover:text-red-500 transition-colors z-20 origin-center"
-                                            id="wishlist-heart-{{ $product->id }}" aria-label="Add to Wishlist">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                class="h-5 w-5 stroke-current transition-colors duration-300 origin-center"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    @endif
+                    
+                    {{-- Empty State Placeholder --}}
+                    <div id="emptySearchPlaceholder" class="text-center py-24" style="display: none;">
+                        <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <p class="text-sm tracking-widest text-gray-400 uppercase mb-4">No products found</p>
+                        <a href="{{ route('collection') }}"
+                            class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR
+                            FILTERS</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -455,14 +384,12 @@
                     <span id="modalCategory" class="text-xs tracking-[0.3em] text-gray-400 uppercase mb-3"></span>
                     <h2 id="modalName" class="text-3xl md:text-4xl font-serif tracking-[0.1em] mb-4"></h2>
 
-                    {{-- Gender Badge in Modal --}}
                     <div id="modalGender" class="mb-4"></div>
 
                     <p id="modalPrice" class="text-2xl font-light mb-6"></p>
                     <div class="w-16 h-px bg-gray-200 mb-6"></div>
                     <p id="modalDescription" class="text-gray-600 text-sm leading-relaxed mb-6"></p>
 
-                    {{-- Size Selector --}}
                     <div id="modalSizeSection" class="mb-6">
                         <span class="text-xs tracking-[0.2em] block mb-3">SELECT SIZE</span>
                         <div id="modalSizes" class="flex flex-wrap gap-2"></div>
@@ -475,8 +402,7 @@
                             <input type="number" id="modalQuantity" value="1" min="1" disabled
                                 class="w-20 border border-gray-200 px-3 py-2 text-center disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                         </div>
-                        <p id="qtyWarning" class="text-xs text-red-500 mt-2" style="display: none;">Purchase has reached
-                            the maximum limit!</p>
+                        <p id="qtyWarning" class="text-xs text-red-500 mt-2" style="display: none;">Purchase has reached the maximum limit!</p>
                     </div>
 
                     <form id="modalAddToCartForm" action="" method="POST">
@@ -499,31 +425,132 @@
         </div>
     </div>
 
+    {{-- Script Data Bridge --}}
     <script type="application/json" id="productsData">{!! json_encode($products) !!}</script>
+    
+    {{-- TAMBAHAN: Inject Fuse.js Core CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
 
     <script>
         const products = JSON.parse(document.getElementById('productsData').textContent);
         let currentModalProductId = null;
         let selectedSize = null;
 
-        // Filter system
+        // Filter system (Bawaan URL herarki tetap aktif penuh)
         function setFilter(name, value) {
             document.getElementById('filter' + name.charAt(0).toUpperCase() + name.slice(1)).value = value;
             document.getElementById('mainFilterForm').submit();
         }
 
-        // Debounced search
-        let searchTimer;
-        document.getElementById('searchInput').addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                document.getElementById('mainFilterForm').submit();
-            }, 600);
+        // ==========================================
+        // REVISI CORE: LOGIKA FUZZY SEARCH (FUSE.JS)
+        // ==========================================
+        const gridContainer = document.getElementById('productGridContainer');
+        const emptyPlaceholder = document.getElementById('emptySearchPlaceholder');
+        const resultsCountEl = document.getElementById('resultsCount');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+        const fuseOptions = {
+            keys: ['name', 'description', 'sku'], // Kolom target ejaan samar
+            threshold: 0.4, // Parameter toleransi typo
+            includeScore: true
+        };
+
+        const fuseInstance = new Fuse(products, fuseOptions);
+
+        function displayProducts(productsList) {
+            gridContainer.innerHTML = '';
+            
+            // Unpack objek jika data dilempar dari struktur output search Fuse.js (.item)
+            const normalizedList = productsList.map(p => p.item ? p.item : p);
+            resultsCountEl.innerText = normalizedList.length;
+
+            if (normalizedList.length === 0) {
+                gridContainer.style.display = 'none';
+                emptyPlaceholder.style.display = 'block';
+                return;
+            }
+
+            gridContainer.style.display = 'grid';
+            emptyPlaceholder.style.display = 'none';
+
+            normalizedList.forEach((product, index) => {
+                const gc = (product.gender || '').toLowerCase();
+                const genderClass = gc === 'male' ? 'gender-male' : (gc === 'female' ? 'gender-female' : 'gender-unisex');
+                const genderSymbol = gc === 'male' ? '♂' : (gc === 'female' ? '♀' : '⚥');
+                
+                let soldOutOverlay = '';
+                if (product.total_stock == 0) {
+                    soldOutOverlay = `
+                        <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
+                            <span class="text-white text-xs tracking-[0.3em] border border-white px-6 py-3">SOLD OUT</span>
+                        </div>
+                    `;
+                }
+
+                const productCardHtml = `
+                    <article class="product-card group" style="animation-delay: ${index * 0.05}s; opacity: 1;">
+                        <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer" onclick="openQuickView(${product.id})">
+                            <img src="${product.image_path}" alt="${product.name}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                            <div class="absolute top-3 left-3 z-10">
+                                <span class="gender-badge ${genderClass}">
+                                    ${genderSymbol} ${product.gender || 'Unisex'}
+                                </span>
+                            </div>
+                            ${soldOutOverlay}
+                            <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                                <button onclick="event.stopPropagation(); openQuickView(${product.id})" class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
+                                    QUICK VIEW
+                                </button>
+                            </div>
+                        </div>
+                        <div class="relative w-full flex flex-col items-center text-center pt-2">
+                            <span class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">${product.category ? product.category.name : ''}</span>
+                            <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">${product.name}</h3>
+                            <p class="text-sm font-light text-gray-800">IDR ${new Intl.NumberFormat('id-ID').format(product.price)}</p>
+                            <button onclick="toggleWishlist(event, ${JSON.stringify(product).replace(/"/g, '&quot;')})" class="absolute right-2 bottom-1.5 p-2 text-gray-400 hover:text-red-500 transition-colors z-20 origin-center" id="wishlist-heart-${product.id}" aria-label="Add to Wishlist">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 stroke-current transition-colors duration-300 origin-center" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </article>
+                `;
+                gridContainer.insertAdjacentHTML('beforeend', productCardHtml);
+            });
+
+            // Re-sync icon hati pasca-render ulang DOM
+            if (typeof syncCardHearts === 'function') syncCardHearts();
+        }
+
+        // Jalankan render awal data produk pasca-load halaman
+        displayProducts(products);
+
+        // Jika URL membawa data parameter pencarian lama, aktifkan silang pembatalan
+        if (searchInput.value.trim() !== '') {
+            clearSearchBtn.style.display = 'block';
+            const initialResults = fuseInstance.search(searchInput.value);
+            displayProducts(initialResults);
+        }
+
+        // Tembak pencarian real-time fuzzy (Debounce manual diganti instant response murni)
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value;
+            if (query.trim() === '') {
+                clearSearchBtn.style.display = 'none';
+                displayProducts(products);
+                return;
+            }
+            clearSearchBtn.style.display = 'block';
+            const filtered = fuseInstance.search(query);
+            displayProducts(filtered);
         });
+
+        // ==========================================
 
         // Quantity sync with max stock enforcement
         let prevQtyValue = 1;
-
         const qtyInput = document.getElementById('modalQuantity');
 
         qtyInput.addEventListener('focus', function() {
@@ -598,22 +625,18 @@
             document.getElementById('modalImage').alt = product.name;
             document.getElementById('modalCategory').textContent = product.category ? product.category.name : '';
             document.getElementById('modalName').textContent = product.name;
-            document.getElementById('modalPrice').textContent = 'IDR ' + new Intl.NumberFormat('id-ID').format(product
-                .price);
+            document.getElementById('modalPrice').textContent = 'IDR ' + new Intl.NumberFormat('id-ID').format(product.price);
             document.getElementById('modalDescription').textContent = product.description || 'No description available.';
             document.getElementById('modalQuantity').value = '1';
             document.getElementById('modalQuantityInput').value = '1';
             document.getElementById('modalSizeInput').value = '';
 
-            // Gender badge
             const genderDiv = document.getElementById('modalGender');
             const g = (product.gender || '').toLowerCase();
             const symbol = g === 'male' ? '♂' : g === 'female' ? '♀' : '⚥';
             const cls = g === 'male' ? 'gender-male' : g === 'female' ? 'gender-female' : 'gender-unisex';
-            genderDiv.innerHTML = '<span class="gender-badge ' + cls + '">' + symbol + ' ' + (product.gender || 'Unisex') +
-                '</span>';
+            genderDiv.innerHTML = '<span class="gender-badge ' + cls + '">' + symbol + ' ' + (product.gender || 'Unisex') + '</span>';
 
-            // Size buttons
             const sizesDiv = document.getElementById('modalSizes');
             const sizeSection = document.getElementById('modalSizeSection');
             const variants = product.variants || [];
@@ -639,12 +662,10 @@
                 sizeSection.style.display = 'none';
             }
 
-            // Stock info
             const totalStock = variants.reduce((s, v) => s + v.stock, 0);
             document.getElementById('modalQuantity').max = totalStock;
             document.getElementById('qtyWarning').style.display = 'none';
 
-            // Disable QTY input until a size is selected (if product has variants)
             const qtyEl = document.getElementById('modalQuantity');
             if (variants.length > 0) {
                 qtyEl.disabled = true;
@@ -653,8 +674,6 @@
             }
 
             document.getElementById('sizeStockInfo').textContent = variants.length > 0 ? 'Please select a size' : '';
-
-            // Disable buttons if variants exist but none selected, or if sold out
             updateActionButtons(variants.length > 0 ? false : totalStock > 0);
 
             document.getElementById('quickViewModal').classList.remove('hidden');
@@ -693,9 +712,7 @@
             document.body.style.overflow = '';
         }
 
-        // Sync card heart icons with the global wishlistItems array
         function syncCardHearts() {
-            // Reset all cards first
             document.querySelectorAll('[id^="wishlist-heart-"]').forEach(btn => {
                 btn.classList.add('text-gray-400', 'hover:text-red-500');
                 btn.classList.remove('text-red-500');
@@ -706,7 +723,6 @@
                 }
             });
 
-            // Check against global wishlistItems array
             if (typeof wishlistItems !== 'undefined' && wishlistItems.length > 0) {
                 wishlistItems.forEach(item => {
                     const btn = document.getElementById('wishlist-heart-' + item.id);
@@ -723,22 +739,16 @@
             }
         }
 
-        // Check query param for quickview on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Sync hearts initial call
             syncCardHearts();
 
-            // Check query params
             const urlParams = new URLSearchParams(window.location.search);
             const quickviewId = urlParams.get('quickview');
             if (quickviewId) {
                 openQuickView(parseInt(quickviewId));
-                // Clean URL
                 const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (
                     window.location.search.replace(/quickview=\d+&?/, '').replace(/\?$/, ''));
-                window.history.replaceState({
-                    path: newUrl
-                }, '', newUrl);
+                window.history.replaceState({ path: newUrl }, '', newUrl);
             }
         });
 

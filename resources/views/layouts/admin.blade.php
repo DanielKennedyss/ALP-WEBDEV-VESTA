@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        /* 1. Base Setup */
         :root {
             --vesta-black: #1a1a1a;
             --vesta-gray: #7a7a7a;
@@ -26,7 +25,6 @@
             overflow-x: hidden;
         }
         
-        /* 2. Sidebar Refinement */
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -63,7 +61,6 @@
             display: block;
         }
 
-        /* 3. Luxury Animated Nav Links */
         .nav-link-admin {
             display: flex;
             align-items: center;
@@ -97,7 +94,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.12);
         }
 
-        /* 4. Main Content Transition */
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -110,7 +106,6 @@
             animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        /* 5. User Profile Section */
         .profile-card {
             background: #f9f9f9;
             border-radius: 16px;
@@ -145,7 +140,6 @@
             border-color: #dc3545;
         }
 
-        /* Responsive Mobile */
         @media (max-width: 992px) {
             .sidebar { width: 85px; padding: 40px 12px; }
             .sidebar-brand, .nav-label, .nav-link-admin span, .profile-text, .home-btn, .sidebar-header-wrapper { display: none !important; }
@@ -182,12 +176,14 @@
                 <i class="bi bi-receipt"></i> <span>Transactions</span>
             </a>
 
-            {{-- MENU VOUCHERS BARU BERSTANDAR LUXURY OPERATIONS --}}
             <a href="{{ route('admin.vouchers.index') }}" class="nav-link-admin {{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
                 <i class="bi bi-ticket-perforated"></i> <span>Vouchers</span>
             </a>
 
-            {{-- Logic Role: Manager & Owner can manage staff --}}
+            <a href="{{ route('admin.support.index') }}" class="nav-link-admin {{ request()->routeIs('admin.support*') ? 'active' : '' }}">
+                <i class="bi bi-chat-left-text"></i> <span>Customer Care</span>
+            </a>
+
             @if(in_array(auth()->user()->role, ['owner', 'manager']))
                 <span class="nav-label">Administration</span>
                 <a href="{{ route('admin.staff.index') }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">

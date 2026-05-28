@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\SupportController; // REVISI: Import SupportController Baru
 use App\Http\Middleware\AdminMiddleware;
 use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
 use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
@@ -30,10 +31,11 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['web'])->group(function () {
+    $navObj = function () { return view('about'); };
     Route::get('/about', function () { return view('about'); })->name('about');
     Route::get('/contact', function () { return view('contact'); })->name('contact');
     
-    // REVISI: Mengubah fungsionalitas kirim pesan agar mengirim ke email toko DAN balasan otomatis ke customer sekaligus
+    // REVISI (LANGKAH 2): Menyimpan pesan masuk ke DB sebelum mengirim email notifikasi otomatis
     Route::post('/contact', function (\Illuminate\Http\Request $request) {
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -44,14 +46,17 @@ Route::middleware(['web'])->group(function () {
             'message'    => 'required|string|max:5000',
         ]);
         
-        // 1. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
+        // 1. Simpan rekaman pesan bantuan ke database agar muncul di panel admin
+        \App\Models\ContactInquiry::create($validatedData);
+
+        // 2. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
         Mail::to('evanvarian39@gmail.com')->send(new ContactInquiryMail($validatedData));
 
-        // 2. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
+        // 3. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
         $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
         Mail::to($validatedData['email'])->send(new ContactAutoResponseMail($customerName));
 
-        return redirect()->back()->with('success', 'Thank you! Your inquiry has been sent to our team successfully.');
+        return redirect()->back()->with('success', 'Thank you! Your inquiry has been recorded and sent successfully.');
     })->name('contact.submit');
 
     Route::controller(StoreController::class)->group(function () {
@@ -78,6 +83,7 @@ Route::middleware(['web'])->group(function () {
         Route::post('/payment/callback/{order_id}', 'payment_callback')->name('payment.callback');
         Route::get('/payment/retry/{order_id}', 'payment_retry')->name('payment.retry');
 
+        $navObj = function () { return view('about'); };
         Route::get('/wishlist/items', 'get_wishlist')->name('wishlist.items');
         Route::post('/wishlist/toggle/{product_id}', 'toggle_wishlist')->name('wishlist.toggle');
         Route::post('/wishlist/sync', 'sync_wishlist')->name('wishlist.sync');
@@ -155,26 +161,39 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', function () { return redirect()->route('profile'); });
 
-    Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    // PERBAIKAN STRUKTURAL: Ditambahkan ->name('admin.') agar semua rute di dalam grup ini mendapatkan prefix nama "admin."
+    Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         
         // INTEGRASI LAPORAN: Rute penembak unduhan laporan Excel Sales Intelligence VESTA
-        Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('admin.dashboard.export');
+        Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
+        
+        // REVISI OPTIMASI (LANGKAH 5): Grouping Rute Manajemen Support / Customer Care VESTA
+        Route::controller(SupportController::class)->group(function () {
+            Route::get('/support', 'index')->name('support.index');
+            Route::get('/support/{id}', 'show')->name('support.show');
+            Route::post('/support/{id}/reply', 'reply')->name('support.reply');
+        });
         
         // Product Management
-        Route::resource('products', ProductController::class)->except(['show'])->names('admin.products');
-        Route::get('/inventory', [ProductController::class, 'index'])->name('admin.inventory');
+        Route::resource('products', ProductController::class)->except(['show'])->names('products');
+        Route::get('/inventory', [ProductController::class, 'index'])->name('inventory');
 
-        // Transaction Management
+        // Transaction & Report Management
         Route::controller(TransactionController::class)->group(function () {
-            Route::get('/transactions', 'index')->name('admin.transactions.index');
-            Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('admin.transactions.updateStatus');
+            Route::get('/transactions', 'index')->name('transactions.index');
+            Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('transactions.updateStatus');
+            
+            // ==========================================================================
+            // REVISI CORE: Rute POST Penembak Ekspor Laporan Finansial Multi-Format ke Email
+            // ==========================================================================
+            Route::post('/transactions/export-email', 'sendReportToEmail')->name('transactions.export_email');
         });
 
         // Voucher Management
-        Route::resource('vouchers', VoucherController::class)->names('admin.vouchers');
+        Route::resource('vouchers', VoucherController::class)->names('vouchers');
 
         // Staff Management
-        Route::resource('staff', StaffController::class)->names('admin.staff');
+        Route::resource('staff', StaffController::class)->names('staff');
     });
 });

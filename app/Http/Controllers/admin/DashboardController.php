@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Carbon\Carbon;
-use App\Exports\SalesReportExport; // Tambahan: Import class export
-use Maatwebsite\Excel\Facades\Excel; // Tambahan: Import facade excel
+use App\Exports\SalesReportExport; // Import class export
+use Maatwebsite\Excel\Facades\Excel; // Import facade excel
 
 class DashboardController extends Controller
 {
@@ -43,20 +43,22 @@ class DashboardController extends Controller
             $previousEndDate = now()->subDays($period)->startOfDay();
         }
 
-        // 3. Data Periode Sekarang (Current Period)
+        // 3. Data Periode Sekarang (Current Period) - FIXED: Ditambahkan filter paid() agar sinkron
         $totalRevenue = Transaction::paid()
             ->whereBetween('created_at', [$currentStartDate, $now])
             ->sum('total_price');
             
-        $totalOrders = Transaction::whereBetween('created_at', [$currentStartDate, $now])
+        $totalOrders = Transaction::paid()
+            ->whereBetween('created_at', [$currentStartDate, $now])
             ->count();
 
-        // 4. Data Periode Sebelumnya (Last Period) untuk Kalkulasi Growth
+        // 4. Data Periode Sebelumnya (Last Period) untuk Kalkulasi Growth - FIXED: Ditambahkan filter paid()
         $lastRevenue = Transaction::paid()
             ->whereBetween('created_at', [$previousStartDate, $previousEndDate])
             ->sum('total_price');
 
-        $lastOrders = Transaction::whereBetween('created_at', [$previousStartDate, $previousEndDate])
+        $lastOrders = Transaction::paid()
+            ->whereBetween('created_at', [$previousStartDate, $previousEndDate])
             ->count();
 
         // 5. Kalkulasi Persentase Pertumbuhan (Growth)
@@ -68,17 +70,37 @@ class DashboardController extends Controller
         $lastAOV = $lastOrders > 0 ? $lastRevenue / $lastOrders : 0;
         $aovGrowth = $lastAOV > 0 ? (($avgOrderValue - $lastAOV) / $lastAOV) * 100 : 0;
 
-        // 7. Mengambil Top Products (Disaring berdasarkan periode waktu juga)
+        // 7. Mengambil Top Products (Disaring berdasarkan periode waktu)
         $topProducts = Transaction::select('product_id', DB::raw('SUM(quantity) as units_sold'))
             ->paid()
-            ->whereBetween('created_at', [$currentStartDate, $now]) // Filter waktu agar akurat
+            ->whereBetween('created_at', [$currentStartDate, $now])
             ->groupBy('product_id')
             ->orderByDesc('units_sold')
             ->with('product.category') 
             ->take(3)
             ->get();
 
-        // 8. Data untuk Chart (Menyesuaikan Hari vs Jam)
+        // 8. INTEGRASI: Dynamic Intelligence AI Insight Engine
+        $topProduct = $topProducts->first();
+        $contributionPercentage = 0;
+        $insightText = "";
+
+        if ($topProduct && $totalRevenue > 0) {
+            // Kalkulasi matematis kontribusi nominal rupiah dari produk terlaris
+            $topProductRevenue = $topProduct->units_sold * ($topProduct->product->price ?? 0);
+            $contributionPercentage = ($topProductRevenue / $totalRevenue) * 100;
+
+            // Algoritma penentuan narasi rekomendasi bisnis berbasis kondisi data riil
+            if ($contributionPercentage > 50) {
+                $insightText = "Kategori <strong>" . ($topProduct->product->category->name ?? 'Clothing') . "</strong> mendominasi secara absolut dengan menguasai " . number_format($contributionPercentage, 0) . "% dari total revenue. Struktur bisnis VESTA saat ini mengalami indikasi 'Over-reliance' pada satu produk tunggal. Pertimbangkan restrukturisasi alokasi modal iklan ke varian koleksi lain demi mereduksi risiko tumpukan inventaris mati.";
+            } else {
+                $insightText = "Aliran distribusi penjualan periode ini berjalan sangat stabil dan sehat. Produk utama kontemporer berkontribusi sebesar " . number_format($contributionPercentage, 0) . "% dari total revenue. Struktur portofolio ini aman dari risiko dominasi tunggal. Amankan kontinuitas suplai untuk kain varian <strong>" . $topProduct->product->name . "</strong> guna mempertahankan traksi pasar pekan depan.";
+            }
+        } else {
+            $insightText = "Sistem mesin kecerdasan analitik belum mendeteksi volume transaksi riil yang signifikan pada rentang waktu ini untuk menyusun rekomendasi teori. Lakukan simulasi transaksi sukses untuk memicu kalkulasi matriks operasional.";
+        }
+
+        // 9. Data untuk Chart (Menyesuaikan Hari vs Jam)
         if ($period === 1) {
             // Chart Real-time Hari Ini (Group By Hour)
             $salesTrend = Transaction::paid()
@@ -125,7 +147,9 @@ class DashboardController extends Controller
             'aovGrowth',
             'topProducts',
             'chartLabels',
-            'chartData'
+            'chartData',
+            'contributionPercentage', // Lempar variabel kontribusi riil ke view dashboard
+            'insightText'             // Lempar teks rekomendasi dinamis ke view dashboard
         ));
     }
 
