@@ -193,6 +193,11 @@
                 <a href="{{ route('admin.staff.index') }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
                     <i class="bi bi-people"></i> <span>Staff Management</span>
                 </a>
+            @elseif(auth()->user()->role === 'staff')
+                <span class="nav-label">Administration</span>
+                <a href="{{ route('admin.staff.edit', auth()->id()) }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
+                    <i class="bi bi-person-gear"></i> <span>My Account</span>
+                </a>
             @endif
         </nav>
     </div>

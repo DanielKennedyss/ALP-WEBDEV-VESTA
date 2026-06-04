@@ -50,6 +50,14 @@ class Product extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Relasi: Satu Product punya banyak Review
+     */
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class);
+    }
     
     /**
      * Accessor: Total stock dari semua varian

@@ -25,6 +25,8 @@ use App\Http\Controllers\ProfileController;
 */
 
 Route::get('/', function () {
+    session()->forget('buy_now');
+    session()->forget('applied_voucher');
     $products = \App\Models\Product::orderBy('created_at', 'desc')->take(8)->get();
     return view('home', compact('products'));
 })->name('home');
@@ -129,6 +131,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/resend-otp', [AuthOtpController::class, 'sendVerificationOtp'])->name('otp.resend');
 
     Route::get('/profile', function () {
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
         $user = auth()->user();
         if (in_array($user->role, ['owner', 'manager', 'staff'])) {
             return redirect()->route('admin.dashboard');

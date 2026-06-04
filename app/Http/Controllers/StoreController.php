@@ -31,7 +31,9 @@ class StoreController extends Controller
      */
     public function collection(Request $request)
     {
-        $query = Product::with(['category', 'variants']);
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
+        $query = Product::with(['category', 'variants'])->withAvg('reviews', 'rating')->withCount('reviews');
 
         // Search by product name, description, or SKU
         if ($request->filled('search')) {
@@ -222,6 +224,14 @@ class StoreController extends Controller
         // Ambil session berdasarkan alur pembeliannya
         $isBuyNow = session()->has('buy_now');
         $cart = $isBuyNow ? [session('buy_now')] : session('cart', []);
+
+        $checkedKeys = [];
+        if (!$isBuyNow && $request->has('checked_items') && !empty($request->input('checked_items'))) {
+            $checkedKeys = explode(',', $request->input('checked_items'));
+            $cart = array_filter($cart, function($key) use ($checkedKeys) {
+                return in_array($key, $checkedKeys);
+            }, ARRAY_FILTER_USE_KEY);
+        }
 
         if (empty($cart)) return redirect()->back()->with('error', 'Transaction session has expired or is empty.');
         
@@ -832,6 +842,8 @@ class StoreController extends Controller
             'success' => true,
             'message' => 'Voucher "' . $voucher->code . '" successfully applied!',
             'discount' => $discountAmount,
+            'type' => $voucher->type,
+            'reward_value' => (float) $voucher->reward_value,
             'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
     }
@@ -868,6 +880,8 @@ class StoreController extends Controller
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }
+
+        $order->load(['reviews.product']);
 
         return view('store.track', compact('order'));
     }

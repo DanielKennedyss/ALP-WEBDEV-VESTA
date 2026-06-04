@@ -69,6 +69,7 @@ class ProductController extends Controller
             'sku' => $sku,
             'description' => $request->description ?? 'No description available.',
             'price' => $request->price,
+            'weight' => $request->weight,
             'category_id' => $request->category_id,
             'gender' => $request->gender,
             'image_path' => $imagePath,
@@ -117,6 +118,7 @@ class ProductController extends Controller
             'name' => $request->name,
             'description' => $request->description ?? 'No description available.',
             'price' => $request->price,
+            'weight' => $request->weight,
             'category_id' => $request->category_id,
             'gender' => $request->gender,
             'image_path' => $product->image_path,
@@ -158,6 +160,7 @@ class ProductController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'weight' => 'required|integer|min:1',
             'category_id' => 'required|exists:categories,id',
             'gender' => 'required|string|in:Male,Female,Unisex',
             'size_type' => 'required|string|in:one_size,custom',

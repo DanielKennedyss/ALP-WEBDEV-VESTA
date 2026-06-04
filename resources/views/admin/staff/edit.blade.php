@@ -96,7 +96,7 @@
                                 UPDATE STAFF ACCOUNT
                             </button>
                             <div class="text-center">
-                                <a href="{{ route('admin.staff.index') }}" class="text-muted text-decoration-none small fw-bold">CANCEL & BACK</a>
+                                <a href="{{ auth()->user()->role === 'staff' ? route('admin.dashboard') : route('admin.staff.index') }}" class="text-muted text-decoration-none small fw-bold">CANCEL & BACK</a>
                             </div>
                         </div>
                     </form>

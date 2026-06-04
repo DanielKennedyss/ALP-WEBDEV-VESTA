@@ -404,6 +404,20 @@
                                             class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">{{ $product->category->name ?? '' }}</span>
                                         <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">
                                             {{ $product->name }}</h3>
+                                        
+                                        @if ($product->reviews_count > 0)
+                                            <div class="flex items-center gap-1 mb-2 text-black">
+                                                <div class="flex gap-0.5">
+                                                    @for ($i = 1; $i <= 5; $i++)
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 {{ $i <= round($product->reviews_avg_rating) ? 'fill-current' : 'text-stone-200' }}" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                    @endfor
+                                                </div>
+                                                <span class="text-[9px] text-stone-400 font-mono">({{ $product->reviews_count }})</span>
+                                            </div>
+                                        @endif
+
                                         <p class="text-sm font-light text-gray-800">IDR
                                             {{ number_format($product->price, 0, ',', '.') }}</p>
 
@@ -454,6 +468,9 @@
                 <div class="p-8 md:p-12 lg:p-14 flex flex-col justify-center overflow-y-auto">
                     <span id="modalCategory" class="text-xs tracking-[0.3em] text-gray-400 uppercase mb-3"></span>
                     <h2 id="modalName" class="text-3xl md:text-4xl font-serif tracking-[0.1em] mb-4"></h2>
+
+                    {{-- Rating in Modal --}}
+                    <div id="modalRating" class="mb-4 flex items-center gap-1.5" style="display: none;"></div>
 
                     {{-- Gender Badge in Modal --}}
                     <div id="modalGender" class="mb-4"></div>
@@ -604,6 +621,29 @@
             document.getElementById('modalQuantity').value = '1';
             document.getElementById('modalQuantityInput').value = '1';
             document.getElementById('modalSizeInput').value = '';
+
+            // Rating
+            const ratingDiv = document.getElementById('modalRating');
+            const avgRating = parseFloat(product.reviews_avg_rating) || 0;
+            const countReviews = parseInt(product.reviews_count) || 0;
+
+            if (countReviews > 0) {
+                ratingDiv.style.display = 'flex';
+                let starsHtml = '<div class="flex gap-0.5 text-black">';
+                for (let i = 1; i <= 5; i++) {
+                    const isFilled = i <= Math.round(avgRating);
+                    starsHtml += `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ${isFilled ? 'fill-current text-black' : 'text-stone-200'}" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                    `;
+                }
+                starsHtml += `</div><span class="text-[10px] text-stone-400 font-mono">(${countReviews} ${countReviews === 1 ? 'review' : 'reviews'})</span>`;
+                ratingDiv.innerHTML = starsHtml;
+            } else {
+                ratingDiv.style.display = 'none';
+                ratingDiv.innerHTML = '';
+            }
 
             // Gender badge
             const genderDiv = document.getElementById('modalGender');

@@ -10,72 +10,123 @@ use Illuminate\Support\Facades\Log;
 class ShippingController extends Controller
 {
     /**
-     * Get provinces list from RajaOngkir via Komerce Proxy
+     * Get static provinces list to match Biteship workflow
      */
     public function get_provinces()
     {
-        $apiKey = env('RAJAONGKIR_API_KEY');
-        
-        try {
-            $response = Http::withHeaders([
-                'key' => $apiKey
-            ])->get('https://rajaongkir.komerce.id/api/v1/destination/province');
+        $provinces = [
+            ['province_id' => 'bali', 'province' => 'BALI'],
+            ['province_id' => 'bangka_belitung', 'province' => 'BANGKA BELITUNG'],
+            ['province_id' => 'banten', 'province' => 'BANTEN'],
+            ['province_id' => 'bengkulu', 'province' => 'BENGKULU'],
+            ['province_id' => 'di_yogyakarta', 'province' => 'DI YOGYAKARTA'],
+            ['province_id' => 'dki_jakarta', 'province' => 'DKI JAKARTA'],
+            ['province_id' => 'gorontalo', 'province' => 'GORONTALO'],
+            ['province_id' => 'jambi', 'province' => 'JAMBI'],
+            ['province_id' => 'jawa_barat', 'province' => 'JAWA BARAT'],
+            ['province_id' => 'jawa_tengah', 'province' => 'JAWA TENGAH'],
+            ['province_id' => 'jawa_timur', 'province' => 'JAWA TIMUR'],
+            ['province_id' => 'kalimantan_barat', 'province' => 'KALIMANTAN BARAT'],
+            ['province_id' => 'kalimantan_selatan', 'province' => 'KALIMANTAN SELATAN'],
+            ['province_id' => 'kalimantan_tengah', 'province' => 'KALIMANTAN TENGAH'],
+            ['province_id' => 'kalimantan_timur', 'province' => 'KALIMANTAN TIMUR'],
+            ['province_id' => 'kalimantan_utara', 'province' => 'KALIMANTAN UTARA'],
+            ['province_id' => 'kepulauan_riau', 'province' => 'KEPULAUAN RIAU'],
+            ['province_id' => 'lampung', 'province' => 'LAMPUNG'],
+            ['province_id' => 'maluku', 'province' => 'MALUKU'],
+            ['province_id' => 'maluku_utara', 'province' => 'MALUKU UTARA'],
+            ['province_id' => 'nanggroe_aceh_darussalam', 'province' => 'NANGGROE ACEH DARUSSALAM (NAD)'],
+            ['province_id' => 'nusa_tenggara_barat', 'province' => 'NUSA TENGGARA BARAT (NTB)'],
+            ['province_id' => 'nusa_tenggara_timur', 'province' => 'NUSA TENGGARA TIMUR (NTT)'],
+            ['province_id' => 'papua', 'province' => 'PAPUA'],
+            ['province_id' => 'papua_barat', 'province' => 'PAPUA BARAT'],
+            ['province_id' => 'riau', 'province' => 'RIAU'],
+            ['province_id' => 'sulawesi_barat', 'province' => 'SULAWESI BARAT'],
+            ['province_id' => 'sulawesi_selatan', 'province' => 'SULAWESI SELATAN'],
+            ['province_id' => 'sulawesi_tengah', 'province' => 'SULAWESI TENGAH'],
+            ['province_id' => 'sulawesi_tenggara', 'province' => 'SULAWESI TENGGARA'],
+            ['province_id' => 'sulawesi_utara', 'province' => 'SULAWESI UTARA'],
+            ['province_id' => 'sumatera_barat', 'province' => 'SUMATERA BARAT'],
+            ['province_id' => 'sumatera_selatan', 'province' => 'SUMATERA SELATAN'],
+            ['province_id' => 'sumatera_utara', 'province' => 'SUMATERA UTARA']
+        ];
 
-            if ($response->successful()) {
-                $results = $response->json()['data'] ?? [];
-                
-                // Map Komerce keys (id, name) to standard RajaOngkir keys (province_id, province)
-                $provinces = collect($results)->map(function ($p) {
-                    return [
-                        'province_id' => $p['id'],
-                        'province' => $p['name']
-                    ];
-                })->sortBy('province', SORT_NATURAL | SORT_FLAG_CASE)->values()->toArray();
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $provinces
-                ]);
-            }
-
-            Log::error('Komerce Provinces API failed: ' . $response->body());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch provinces from Komerce RajaOngkir.'
-            ], 400);
-
-        } catch (\Exception $e) {
-            Log::error('RajaOngkir Provinces Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while fetching provinces.'
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => $provinces
+        ]);
     }
 
     /**
-     * Get cities list by province ID from RajaOngkir via Komerce Proxy
+     * Get subdistricts/cities list from Biteship by matching the selected province
      */
     public function get_cities($province_id)
     {
-        $apiKey = env('RAJAONGKIR_API_KEY');
+        $apiKey = env('BITESHIP_API_KEY');
+        
+        $provinceNames = [
+            'bali' => 'Bali',
+            'bangka_belitung' => 'Bangka Belitung',
+            'banten' => 'Banten',
+            'bengkulu' => 'Bengkulu',
+            'di_yogyakarta' => 'DI Yogyakarta',
+            'dki_jakarta' => 'DKI Jakarta',
+            'gorontalo' => 'Gorontalo',
+            'jambi' => 'Jambi',
+            'jawa_barat' => 'Jawa Barat',
+            'jawa_tengah' => 'Jawa Tengah',
+            'jawa_timur' => 'Jawa Timur',
+            'kalimantan_barat' => 'Kalimantan Barat',
+            'kalimantan_selatan' => 'Kalimantan Selatan',
+            'kalimantan_tengah' => 'Kalimantan Tengah',
+            'kalimantan_timur' => 'Kalimantan Timur',
+            'kalimantan_utara' => 'Kalimantan Utara',
+            'kepulauan_riau' => 'Kepulauan Riau',
+            'lampung' => 'Lampung',
+            'maluku' => 'Maluku',
+            'maluku_utara' => 'Maluku Utara',
+            'nanggroe_aceh_darussalam' => 'Aceh',
+            'nusa_tenggara_barat' => 'Nusa Tenggara Barat',
+            'nusa_tenggara_timur' => 'Nusa Tenggara Timur',
+            'papua' => 'Papua',
+            'papua_barat' => 'Papua Barat',
+            'riau' => 'Riau',
+            'sulawesi_barat' => 'Sulawesi Barat',
+            'sulawesi_selatan' => 'Sulawesi Selatan',
+            'sulawesi_tengah' => 'Sulawesi Tengah',
+            'sulawesi_tenggara' => 'Sulawesi Tenggara',
+            'sulawesi_utara' => 'Sulawesi Utara',
+            'sumatera_barat' => 'Sumatera Barat',
+            'sumatera_selatan' => 'Sumatera Selatan',
+            'sumatera_utara' => 'Sumatera Utara'
+        ];
+
+        $provinceName = $provinceNames[strtolower($province_id)] ?? $province_id;
         
         try {
             $response = Http::withHeaders([
-                'key' => $apiKey
-            ])->get("https://rajaongkir.komerce.id/api/v1/destination/city/{$province_id}");
+                'Authorization' => $apiKey
+            ])->get('https://api.biteship.com/v1/maps/areas', [
+                'input' => $provinceName,
+                'countries' => 'ID'
+            ]);
 
             if ($response->successful()) {
-                $results = $response->json()['data'] ?? [];
+                $results = $response->json()['areas'] ?? [];
                 
-                // Map Komerce keys (id, name) to standard RajaOngkir keys (city_id, city_name)
-                $cities = collect($results)->map(function ($c) {
+                $cities = collect($results)->map(function ($area) {
+                    $name = $area['name'] ?? 'Unknown Area';
+                    preg_match('/(\d{5})$/', $name, $matches);
+                    $postalCode = $matches[1] ?? '';
+                    
                     return [
-                        'city_id' => $c['id'],
-                        'city_name' => $c['name'],
+                        'city_id' => $area['id'],
+                        'city_name' => $name,
+                        'postal_code' => $postalCode,
                         'type' => ''
                     ];
                 })->sortBy('city_name', SORT_NATURAL | SORT_FLAG_CASE)->values()->toArray();
+
 
                 return response()->json([
                     'success' => true,
@@ -83,14 +134,14 @@ class ShippingController extends Controller
                 ]);
             }
 
-            Log::error('Komerce Cities API failed: ' . $response->body());
+            Log::error('Biteship Cities API failed: ' . $response->body());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch cities from Komerce RajaOngkir.'
+                'message' => 'Failed to fetch cities from Biteship.'
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('RajaOngkir Cities Error: ' . $e->getMessage());
+            Log::error('Biteship Cities Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching cities.'
@@ -99,17 +150,18 @@ class ShippingController extends Controller
     }
 
     /**
-     * Calculate shipping cost from Surabaya (origin: 444) to destination city via Komerce Proxy
+     * Calculate shipping cost using Biteship rates API
      */
     public function get_shipping_cost(Request $request)
     {
         $request->validate([
-            'destination_city_id' => 'required|integer',
-            'courier' => 'required|string|in:jne,pos,tiki',
+            'destination_city_id' => 'required|string',
+            'destination_postal_code' => 'nullable|string',
+            'courier' => 'required|string',
         ]);
 
-        $apiKey = env('RAJAONGKIR_API_KEY');
-        $originCityId = 444; // Surabaya City ID in RajaOngkir / Komerce
+        $apiKey = env('BITESHIP_API_KEY');
+        $originPostalCode = 60261; // Surabaya, Tegalsari postal code in Biteship
         
         // Calculate total weight of the cart items
         $isBuyNow = session()->has('buy_now');
@@ -123,39 +175,53 @@ class ShippingController extends Controller
         }
 
         $totalWeight = 0;
+        $items = [];
         foreach ($cartItems as $item) {
             $product = Product::find($item['product_id']);
-            $weight = $product ? ($product->weight ?? 500) : 500; // default to 500g if weight is null
+            $weight = $product ? ($product->weight ?? 500) : 500;
             $totalWeight += ($weight * $item['quantity']);
+            
+            $items[] = [
+                'name' => substr($item['name'], 0, 50),
+                'value' => (int) $item['price'],
+                'quantity' => (int) $item['quantity'],
+                'weight' => (int) $weight
+            ];
         }
 
-        // If totalWeight is 0 or very light, default to minimum 100g to keep RajaOngkir happy
         if ($totalWeight <= 0) {
             $totalWeight = 100;
         }
 
         try {
+            $ratesParams = [
+                'origin_postal_code' => $originPostalCode,
+                'couriers' => strtolower($request->courier),
+                'items' => $items
+            ];
+            
+            if ($request->filled('destination_postal_code')) {
+                $ratesParams['destination_postal_code'] = (int) $request->destination_postal_code;
+            } else {
+                $ratesParams['destination_area_id'] = $request->destination_city_id;
+            }
+
             $response = Http::withHeaders([
-                'key' => $apiKey
-            ])->asForm()->post('https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost', [
-                'origin' => $originCityId,
-                'destination' => $request->destination_city_id,
-                'weight' => $totalWeight,
-                'courier' => strtolower($request->courier),
-            ]);
+                'Authorization' => $apiKey,
+                'Content-Type' => 'application/json'
+            ])->post('https://api.biteship.com/v1/rates/couriers', $ratesParams);
 
             if ($response->successful()) {
-                $results = $response->json()['data'] ?? [];
+                $pricing = $response->json()['pricing'] ?? [];
                 
-                // Map the results to a simplified format for AJAX
-                $services = collect($results)->map(function ($cost) {
+                $services = collect($pricing)->map(function ($rate) {
                     return [
-                        'service' => $cost['service'],
-                        'description' => $cost['description'] ?? '',
-                        'cost' => $cost['cost'] ?? 0,
-                        'etd' => $cost['etd'] ?? ''
+                        'service' => strtoupper($rate['courier_service_code'] ?? $rate['courier_service_name']),
+                        'description' => $rate['courier_service_name'] . ' (' . ($rate['description'] ?? '') . ')',
+                        'cost' => $rate['price'] ?? 0,
+                        'etd' => $rate['duration'] ?? ''
                     ];
-                });
+                })->values()->toArray();
 
                 return response()->json([
                     'success' => true,
@@ -164,15 +230,16 @@ class ShippingController extends Controller
                 ]);
             }
 
-            $errorMessage = $response->json()['meta']['message'] ?? 'Failed to calculate shipping cost from Komerce.';
-            Log::error('Komerce Calculate API failed: ' . $response->body());
+            $responseJson = $response->json();
+            $errorMessage = $responseJson['message'] ?? $responseJson['error'] ?? 'Failed to calculate shipping cost from Biteship.';
+            Log::error('Biteship Calculate API failed: ' . $response->body());
             return response()->json([
                 'success' => false,
                 'message' => $errorMessage
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('RajaOngkir Cost Error: ' . $e->getMessage());
+            Log::error('Biteship Cost Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while calculating shipping cost.'
@@ -180,4 +247,3 @@ class ShippingController extends Controller
         }
     }
 }
-
