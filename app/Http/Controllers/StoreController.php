@@ -33,7 +33,7 @@ class StoreController extends Controller
     {
         session()->forget('buy_now');
         session()->forget('applied_voucher');
-        $query = Product::with(['category', 'variants'])->withAvg('reviews', 'rating')->withCount('reviews');
+        $query = Product::with(['category', 'variants', 'reviews.user'])->withAvg('reviews', 'rating')->withCount('reviews');
 
         // Search by product name, description, or SKU
         if ($request->filled('search')) {

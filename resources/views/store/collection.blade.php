@@ -175,6 +175,199 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* ===== Review Overlay Widget ===== */
+        .review-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            max-width: 340px;
+            background: rgba(15, 15, 15, 0.55);
+            backdrop-filter: blur(20px) saturate(1.4);
+            -webkit-backdrop-filter: blur(20px) saturate(1.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 18px;
+            z-index: 10;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .review-overlay.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .review-overlay-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .review-overlay-header svg {
+            width: 14px;
+            height: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .review-overlay-header span {
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 500;
+        }
+
+        .review-slide-container {
+            position: relative;
+            min-height: 72px;
+            overflow: hidden;
+        }
+
+        .review-slide-item {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+
+        .review-slide-item.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .review-slide-item.exit-up {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+
+        .review-user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .review-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .review-avatar.av-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .review-avatar.av-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .review-avatar.av-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .review-avatar.av-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+        .review-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .review-user-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .review-stars {
+            display: flex;
+            gap: 2px;
+            margin-top: 2px;
+        }
+
+        .review-stars svg {
+            width: 11px;
+            height: 11px;
+        }
+
+        .review-stars .star-filled {
+            color: #fbbf24;
+            fill: #fbbf24;
+        }
+
+        .review-stars .star-empty {
+            color: rgba(255, 255, 255, 0.15);
+            fill: rgba(255, 255, 255, 0.15);
+        }
+
+        .review-comment {
+            font-size: 12px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.72);
+            font-style: italic;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            letter-spacing: 0.01em;
+        }
+
+        .review-comment::before {
+            content: '"';
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;
+            font-weight: 700;
+            margin-right: 2px;
+        }
+
+        .review-comment::after {
+            content: '"';
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        .review-progress {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 12px;
+            padding-top: 8px;
+        }
+
+        .review-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .review-dot.active {
+            background: rgba(255, 255, 255, 0.7);
+            width: 14px;
+            border-radius: 2px;
+        }
+
+        .review-no-reviews {
+            display: none;
+        }
     </style>
 
     <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-screen">
@@ -461,8 +654,22 @@
             </button>
 
             <div class="w-full h-full grid grid-cols-1 md:grid-cols-2">
-                <div class="bg-gray-100 overflow-hidden">
+                <div class="bg-gray-100 overflow-hidden relative">
                     <img id="modalImage" src="" alt="" class="w-full h-full object-cover">
+
+                    {{-- Review Overlay Widget --}}
+                    <div id="reviewOverlay" class="review-overlay">
+                        <div class="review-overlay-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span id="reviewOverlayTitle">Customer Reviews</span>
+                        </div>
+                        <div class="review-slide-container" id="reviewSlideContainer">
+                            {{-- Reviews will be injected here by JS --}}
+                        </div>
+                        <div class="review-progress" id="reviewProgressDots"></div>
+                    </div>
                 </div>
 
                 <div class="p-8 md:p-12 lg:p-14 flex flex-col justify-center overflow-y-auto">
@@ -699,6 +906,9 @@
 
             document.getElementById('quickViewModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+
+            // Initialize Review Slider
+            initReviewSlider(product);
         }
 
         function selectSize(btn, sizeLabel, stock) {
@@ -731,6 +941,131 @@
         function closeQuickView() {
             document.getElementById('quickViewModal').classList.add('hidden');
             document.body.style.overflow = '';
+            destroyReviewSlider();
+        }
+
+        // ===== REVIEW SLIDER SYSTEM =====
+        let reviewSliderInterval = null;
+        let reviewCurrentIndex = 0;
+        let reviewItems = [];
+
+        function initReviewSlider(product) {
+            destroyReviewSlider();
+
+            const overlay = document.getElementById('reviewOverlay');
+            const container = document.getElementById('reviewSlideContainer');
+            const dotsContainer = document.getElementById('reviewProgressDots');
+            const titleEl = document.getElementById('reviewOverlayTitle');
+
+            container.innerHTML = '';
+            dotsContainer.innerHTML = '';
+            overlay.classList.remove('visible');
+
+            const reviews = (product.reviews || []).filter(r => r.comment && r.comment.trim() !== '');
+
+            if (reviews.length === 0) {
+                overlay.style.display = 'none';
+                return;
+            }
+
+            overlay.style.display = '';
+            titleEl.textContent = `Customer Reviews (${reviews.length})`;
+
+            const avatarClasses = ['', 'av-1', 'av-2', 'av-3', 'av-4'];
+
+            reviews.forEach((review, index) => {
+                const userName = review.user ? review.user.name : 'Anonymous';
+                const initials = userName.split(' ').map(w => w[0]).join('').substring(0, 2);
+                const avatarClass = avatarClasses[index % avatarClasses.length];
+                const rating = parseInt(review.rating) || 5;
+
+                let starsHtml = '<div class="review-stars">';
+                for (let i = 1; i <= 5; i++) {
+                    starsHtml += `<svg viewBox="0 0 20 20" class="${i <= rating ? 'star-filled' : 'star-empty'}"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+                }
+                starsHtml += '</div>';
+
+                const slide = document.createElement('div');
+                slide.className = 'review-slide-item';
+                slide.innerHTML = `
+                    <div class="review-user-row">
+                        <div class="review-avatar ${avatarClass}">${initials}</div>
+                        <div class="review-user-info">
+                            <div class="review-user-name">${userName}</div>
+                            ${starsHtml}
+                        </div>
+                    </div>
+                    <div class="review-comment">${review.comment}</div>
+                `;
+                container.appendChild(slide);
+            });
+
+            // Create progress dots
+            reviews.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'review-dot' + (index === 0 ? ' active' : '');
+                dotsContainer.appendChild(dot);
+            });
+
+            reviewItems = container.querySelectorAll('.review-slide-item');
+            reviewCurrentIndex = 0;
+
+            // Stagger reveal: delay the overlay appearance
+            setTimeout(() => {
+                overlay.classList.add('visible');
+            }, 400);
+
+            // Show first review with a slight delay for the "pop-up" feel
+            setTimeout(() => {
+                if (reviewItems[0]) {
+                    reviewItems[0].classList.add('active');
+                }
+            }, 700);
+
+            // Auto-cycle if more than 1 review
+            if (reviews.length > 1) {
+                reviewSliderInterval = setInterval(() => {
+                    advanceReviewSlide();
+                }, 4000);
+            }
+        }
+
+        function advanceReviewSlide() {
+            if (reviewItems.length === 0) return;
+
+            const currentSlide = reviewItems[reviewCurrentIndex];
+            const dots = document.querySelectorAll('#reviewProgressDots .review-dot');
+
+            // Exit current slide upward
+            currentSlide.classList.remove('active');
+            currentSlide.classList.add('exit-up');
+
+            // Calculate next index
+            const nextIndex = (reviewCurrentIndex + 1) % reviewItems.length;
+
+            // After exit transition, reset and show next
+            setTimeout(() => {
+                currentSlide.classList.remove('exit-up');
+
+                // Activate next slide (slides in from bottom)
+                reviewItems[nextIndex].classList.add('active');
+
+                // Update dots
+                dots.forEach((d, i) => {
+                    d.classList.toggle('active', i === nextIndex);
+                });
+
+                reviewCurrentIndex = nextIndex;
+            }, 350);
+        }
+
+        function destroyReviewSlider() {
+            if (reviewSliderInterval) {
+                clearInterval(reviewSliderInterval);
+                reviewSliderInterval = null;
+            }
+            reviewCurrentIndex = 0;
+            reviewItems = [];
         }
 
         // Sync card heart icons with the global wishlistItems array
