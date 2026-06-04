@@ -47,8 +47,8 @@ Route::middleware(['web'])->group(function () {
             'message'    => 'required|string|max:5000',
         ]);
         
-        // 1. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
-        Mail::to('evanvarian39@gmail.com')->send(new ContactInquiryMail($validatedData));
+        // 1. Mengirim email rangkuman tiket bantuan ke vestaclothingg@gmail.com
+        Mail::to('vestaclothingg@gmail.com')->send(new ContactInquiryMail($validatedData));
 
         // 2. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
         $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
@@ -104,7 +104,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
     Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
-    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.reset.update');
+    Route::post('/verify-reset-otp', [AuthOtpController::class, 'verifyResetOtp'])->name('password.verify.otp');
+    Route::post('/resend-reset-otp', [AuthOtpController::class, 'resendResetOtp'])->name('password.resend.otp');
 });
 
 /*
