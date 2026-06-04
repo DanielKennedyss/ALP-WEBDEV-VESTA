@@ -3,7 +3,7 @@
 @section('content')
 <style>
     .vesta-toast {
-        position: fixed; top: 6rem; right: 1.5rem; z-index: 200;
+        position: fixed; top: 1.5rem; right: 2rem; z-index: 200;
         padding: 1.25rem 2rem; min-width: 320px; max-width: 420px;
         border: 1px solid; opacity: 0; transform: translateX(100%);
         animation: toastIn 0.5s ease forwards;
@@ -104,7 +104,7 @@
                 ← Back to Profile
             </a>
             <span class="text-gray-300 hidden sm:inline">|</span>
-            <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] text-gray-400 hover:text-black transition-colors uppercase">
+            <a href="{{ route('collections.index') }}" class="text-xs tracking-[0.2em] text-gray-400 hover:text-black transition-colors uppercase">
                 Continue Shopping
             </a>
         </div>

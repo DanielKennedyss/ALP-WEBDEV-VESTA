@@ -15,7 +15,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                 </svg>
                 <p class="text-sm tracking-widest text-gray-400 uppercase mb-6">Your cart is empty</p>
-                <a href="{{ route('collection') }}" class="inline-block border border-black text-xs tracking-[0.2em] px-8 py-4 hover:bg-black hover:text-white transition-colors">
+                <a href="{{ route('collections.index') }}" class="inline-block border border-black text-xs tracking-[0.2em] px-8 py-4 hover:bg-black hover:text-white transition-colors">
                     BROWSE COLLECTION
                 </a>
             </div>

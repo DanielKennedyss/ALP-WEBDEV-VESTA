@@ -11,7 +11,7 @@
                 <h4 class="text-xs tracking-[0.25em] mb-6">NAVIGATE</h4>
                 <ul class="space-y-3">
                     <li><a href="/" class="text-gray-400 text-sm hover:text-black transition-colors">Home</a></li>
-                    <li><a href="{{ route('collection') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Collection</a></li>
+                    <li><a href="{{ route('collections.index') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Collection</a></li>
                     <li><a href="{{ route('about') }}" class="text-gray-400 text-sm hover:text-black transition-colors">About</a></li>
                     <li><a href="{{ route('contact') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Contact</a></li>
                 </ul>

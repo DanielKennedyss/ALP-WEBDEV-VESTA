@@ -177,6 +177,10 @@
             <a href="{{ route('admin.inventory') }}" class="nav-link-admin {{ request()->routeIs('admin.inventory*') ? 'active' : '' }}">
                 <i class="bi bi-box-seam"></i> <span>Inventory</span>
             </a>
+
+            <a href="{{ route('admin.events.index') }}" class="nav-link-admin {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-event"></i> <span>Collections</span>
+            </a>
             
             <a href="{{ route('admin.transactions.index') }}" class="nav-link-admin {{ request()->routeIs('admin.transactions*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> <span>Transactions</span>

@@ -272,7 +272,7 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Elegant Silhouettes &amp; Timeless Textures</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     Explore Collection
                 </a>
             </div>
@@ -303,7 +303,7 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Meticulously Crafted for the Modern Icon</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     Shop The Edit
                 </a>
             </div>
@@ -334,7 +334,7 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Sophistication in Every Single Thread</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     View Selection
                 </a>
             </div>

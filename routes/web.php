@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
 use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
@@ -58,6 +59,8 @@ Route::middleware(['web'])->group(function () {
 
     Route::controller(StoreController::class)->group(function () {
         Route::get('/collection', 'collection')->name('collection');
+        Route::get('/catalog', 'catalog')->name('catalog');
+        Route::get('/collections', 'catalog')->name('collections.index');
         Route::get('/cart', 'view_cart')->name('cart.view');
         Route::post('/cart/add/{product_id}', 'add_to_cart')->name('cart.add');
         Route::post('/cart/remove/{cart_key}', 'remove_from_cart')->name('cart.remove');
@@ -171,6 +174,9 @@ Route::middleware('auth')->group(function () {
 
         // Voucher Management
         Route::resource('vouchers', VoucherController::class)->names('admin.vouchers');
+
+        // Event Collection Management
+        Route::resource('events', EventController::class)->names('admin.events');
 
         // Staff Management
         Route::resource('staff', StaffController::class)->names('admin.staff');

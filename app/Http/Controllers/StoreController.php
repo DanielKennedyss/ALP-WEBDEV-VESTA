@@ -27,9 +27,40 @@ class StoreController extends Controller
     }
 
     /**
-     * Halaman Koleksi dengan Filter & Search
+     * Halaman Koleksi dengan Filter & Search (Locked Event Landing Page)
      */
     public function collection(Request $request)
+    {
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
+
+        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->with(['products' => function($q) {
+                $q->with(['category', 'variants', 'reviews.user'])
+                  ->withAvg('reviews', 'rating')
+                  ->withCount('reviews');
+            }])
+            ->first();
+
+        // Fallback products (e.g. new arrivals) if no active event is present
+        $products = collect();
+        if (!$activeEvent) {
+            $products = Product::with(['category', 'variants', 'reviews.user'])
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
+                ->orderBy('created_at', 'desc')
+                ->take(12)
+                ->get();
+        }
+
+        return view('store.collection', compact('activeEvent', 'products'));
+    }
+
+    /**
+     * Halaman Katalog Unfiltered dengan Filter & Search
+     */
+    public function catalog(Request $request)
     {
         session()->forget('buy_now');
         session()->forget('applied_voucher');
@@ -49,6 +80,13 @@ class StoreController extends Controller
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->category);
+            });
+        }
+
+        // Filter by event
+        if ($request->filled('filter_event')) {
+            $query->whereHas('events', function ($q) use ($request) {
+                $q->where('events.id', $request->filter_event);
             });
         }
 
@@ -79,12 +117,26 @@ class StoreController extends Controller
             default: $query->orderBy('created_at', 'desc'); break;
         }
 
-        $products = $query->get();
+        $products = $query->paginate(12)->withQueryString();
         $categories = Category::orderBy('name')->pluck('name');
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
 
-        return view('store.collection', compact('products', 'categories', 'genders', 'sizes'));
+        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+
+        $activeEventProductIds = [];
+        if ($activeEvent) {
+            $activeEventProductIds = $activeEvent->products()->pluck('products.id')->toArray();
+        }
+
+        $filteredEvent = null;
+        if ($request->filled('filter_event')) {
+            $filteredEvent = \App\Models\Event::find($request->filter_event);
+        }
+
+        return view('store.catalog', compact('products', 'categories', 'genders', 'sizes', 'activeEvent', 'activeEventProductIds', 'filteredEvent'));
     }
 
     /**

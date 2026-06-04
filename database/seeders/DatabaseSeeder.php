@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             VoucherSeeder::class,
             ProductReviewSeeder::class,
+            EventSeeder::class,
         ]);
         // User::factory(10)->create();
 
