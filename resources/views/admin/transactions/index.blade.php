@@ -93,6 +93,33 @@
         letter-spacing: 0.05em !important;
         border-radius: 8px !important;
     }
+
+    /* Pill-Shape design for inputs and select */
+    .filter-pill {
+        border-radius: 9999px !important;
+        background-color: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 0.5rem 1.25rem !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        color: #212529 !important;
+        outline: none !important;
+        box-shadow: none !important;
+        height: 38px !important;
+        transition: all 0.2s ease !important;
+    }
+    .filter-pill:focus {
+        border-color: #000 !important;
+        background-color: #fff !important;
+    }
+    select.filter-pill {
+        appearance: none !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 1rem center !important;
+        background-size: 10px 10px !important;
+        padding-right: 2.25rem !important;
+    }
 </style>
 
 <div class="container-fluid p-0">
@@ -112,6 +139,37 @@
 
     {{-- Main Data Table Card --}}
     <div class="admin-card shadow-sm bg-white overflow-hidden" id="main-transactions-table-card">
+        <!-- Filters Row -->
+        <div class="p-4 border-bottom bg-light-subtle">
+            <form id="transactions-filter-form" action="{{ route('admin.transactions.index') }}" method="GET" class="m-0">
+                <div class="row g-2 align-items-center">
+                    <!-- Product/Invoice Search -->
+                    <div class="col-md-6 col-12">
+                        <input type="text" id="filter-product" name="product" value="{{ request('product') }}" class="form-control filter-pill" placeholder="Search product name, SKU, or Invoice ID...">
+                    </div>
+                    
+                    <!-- Status Dropdown -->
+                    <div class="col-md-4 col-sm-6 col-12">
+                        <select id="filter-status" name="status" class="form-select filter-pill">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending Payment</option>
+                            <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
+                            <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                            <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                            <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                            <option value="refunded" {{ request('status') === 'refunded' ? 'selected' : '' }}>Refunded</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter & Reset Buttons -->
+                    <div class="col-md-2 col-sm-6 col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-dark rounded-pill px-3 fw-bold text-uppercase w-100" style="font-size: 10px; height: 38px; letter-spacing: 0.05em;">FILTER</button>
+                        <a href="{{ route('admin.transactions.index') }}" id="btn-reset-filters" class="btn btn-light rounded-pill px-3 fw-bold text-uppercase border d-flex align-items-center justify-center {{ request()->anyFilled(['product', 'status']) ? '' : 'd-none' }}" style="font-size: 10px; height: 38px; min-width: 38px;" title="Reset Filters">✕</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
         <div class="table-responsive">
             <table class="table border-0 table-luxury align-middle mb-0">
                 <thead>
@@ -124,318 +182,29 @@
                         <th style="width: 20%;" class="text-end">Action Logistics</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($transactions as $trx)
-                    @php
-                        // Map order status to tracker category group for filtering
-                        $statusGroup = 'other';
-                        if ($trx->status == 'pending') {
-                            $statusGroup = 'pending';
-                        } elseif (in_array($trx->status, ['success', 'processing', 'settlement', 'paid'])) {
-                            $statusGroup = 'packed';
-                        } elseif ($trx->status == 'shipped') {
-                            $statusGroup = 'shipped';
-                        } elseif (in_array($trx->status, ['delivered', 'completed'])) {
-                            $statusGroup = 'rate';
-                        }
-                    @endphp
-                    <tr class="order-row" data-status-group="{{ $statusGroup }}">
-                        {{-- 1. Invoice Number --}}
-                        <td class="fw-bold font-mono text-dark" style="font-size: 12px;">
-                            {{ $trx->invoice_number ?? '#TRX-'.$trx->id }}
-                        </td>
-                        
-                        {{-- 2. Product Information --}}
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light rounded-3" style="width: 44px; height: 55px; margin-right: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
-                                    <img src="{{ ($trx->product->image_path ?? null) && Str::startsWith($trx->product->image_path, 'http') ? $trx->product->image_path : asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
-                                         class="w-100 h-100 object-fit-cover" 
-                                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
-                                </div>
-                                <div class="overflow-hidden">
-                                    <p class="mb-0 fw-semibold text-dark text-truncate" style="font-size: 13px;">
-                                        {{ $trx->product->name ?? 'Product Deleted' }}
-                                    </p>
-                                    <p class="text-muted mb-0 uppercase tracking-wider" style="font-size: 10px; font-weight: 500;">
-                                        @if(isset($trx->product->category) && is_object($trx->product->category))
-                                            {{ $trx->product->category->name ?? 'Uncategorized' }}
-                                        @else
-                                            {{ $trx->product->category ?? 'Uncategorized' }}
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        {{-- 3. Total Price --}}
-                        <td class="fw-medium text-dark">
-                            IDR {{ number_format($trx->total_price, 0, ',', '.') }}
-                        </td>
-                        
-                        {{-- 4. Dynamic Badges Status --}}
-                        <td>
-                            @php
-                                $statusColor = match(strtolower($trx->status)) {
-                                    'pending'    => 'bg-warning-subtle text-warning border border-warning-subtle',
-                                    'processing', 'success', 'settlement', 'paid' => 'bg-info-subtle text-info border border-info-subtle',
-                                    'shipped'    => 'bg-primary-subtle text-primary border border-primary-subtle',
-                                    'delivered', 'completed'  => 'bg-success-subtle text-success border border-success-subtle',
-                                    'cancelled', 'failed', 'expired' => 'bg-danger-subtle text-danger border border-danger-subtle',
-                                    'refunded'   => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
-                                    default      => 'bg-secondary-subtle text-secondary'
-                                };
-                                $statusLabel = match(strtolower($trx->status)) {
-                                    'pending'    => 'Pending Payment',
-                                    'processing', 'success', 'settlement', 'paid' => 'Processing',
-                                    'shipped'    => 'Shipped',
-                                    'delivered', 'completed'  => 'Delivered',
-                                    'cancelled', 'failed', 'expired' => 'Cancelled',
-                                    'refunded'   => 'Refunded',
-                                    default      => $trx->status
-                                };
-                            @endphp
-                            <span class="badge rounded-pill {{ $statusColor }} uppercase font-bold tracking-widest" style="font-size: 9px; padding: 6px 12px;">
-                                {{ $statusLabel }}
-                            </span>
-                        </td>
-                        
-                        {{-- 5. Details button --}}
-                        <td class="text-center">
-                            <button type="button" onclick="showTransactionDetails({{ $trx->id }})" class="btn btn-outline-dark btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; transition: all 0.2s;" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
-
-                        {{-- 6. Hybrid Action Controls --}}
-                        <td class="text-end">
-                            @if(in_array(strtolower($trx->status), ['cancelled', 'expired', 'failed', 'refunded']))
-                                <span class="text-muted small fst-italic" style="font-size: 11px;">No actions available</span>
-                            @elseif(strtolower($trx->status) === 'delivered')
-                                {{-- Tombol Refund Terpisah --}}
-                                <form id="form-refund-{{ $trx->id }}" action="{{ route('admin.transactions.updateStatus', $trx->id) }}" method="POST" class="m-0">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="status" value="refunded">
-                                    <button type="button" onclick="triggerRefundAlert('{{ $trx->id }}', '{{ $trx->invoice_number }}')" class="btn btn-outline-danger btn-sm shadow-sm" style="font-size: 11px; padding: 6px 12px; border-radius: 8px; font-weight: 600;" title="Refund Order">
-                                        Refund
-                                    </button>
-                                </form>
-                            @else
-                                <div class="d-inline-flex align-items-center gap-2">
-                                    
-                                    {{-- Dropdown Logistik Maju (Interseptasi via JS SweetAlert) --}}
-                                    <form id="form-logistics-{{ $trx->id }}" action="{{ route('admin.transactions.updateStatus', $trx->id) }}" method="POST" class="m-0">
-                                        @csrf
-                                        @method('PATCH')
-                                        
-                                        <select name="status" data-old-value="{{ strtolower($trx->status) }}" onchange="triggerLogisticsAlert(this, '{{ $trx->invoice_number }}')" class="form-select form-select-sm select-luxury-sm shadow-sm">
-                                            
-                                            {{-- SAFEGUARD OPTION: Mencegah kotak blank jika data DB berisi status di luar opsi logistik utama --}}
-                                            @if(!in_array(strtolower($trx->status), ['pending', 'processing', 'shipped', 'delivered', 'success', 'settlement', 'paid']))
-                                                <option value="{{ strtolower($trx->status) }}" selected disabled>{{ ucfirst($trx->status) }}</option>
-                                            @endif
-
-                                            <option value="pending" {{ $trx->status === 'pending' ? 'selected' : '' }} disabled>Pending Payment</option>
-                                            <option value="processing" {{ in_array(strtolower($trx->status), ['processing', 'success', 'settlement', 'paid']) ? 'selected' : '' }}>Processing</option>
-                                            <option value="shipped" {{ $trx->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                            <option value="delivered" {{ $trx->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
-                                        </select>
-                                    </form>
-
-                                    {{-- Tombol Cancel Terpisah (Interseptasi via JS SweetAlert) --}}
-                                    <form id="form-cancel-{{ $trx->id }}" action="{{ route('admin.transactions.updateStatus', $trx->id) }}" method="POST" class="m-0">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="cancelled">
-                                        <button type="button" onclick="triggerCancelAlert('{{ $trx->id }}', '{{ $trx->invoice_number }}')" class="btn btn-cancel-luxury shadow-sm" title="Cancel Order">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </form>
-
-                                </div>
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            <i class="bi bi-receipt d-block display-6 mb-3 text-secondary"></i>
-                            <span class="text-uppercase tracking-widest font-medium" style="font-size: 11px;">No transactions recorded in system.</span>
-                        </td>
-                    </tr>
-                    @endforelse
+                <tbody id="transactions-table-body">
+                    @include('admin.transactions.table_rows')
                 </tbody>
             </table>
         </div>
 
-        {{-- Luxury Pagination Layout --}}
-        @if($transactions->hasPages())
-        <div class="d-flex justify-content-between align-items-center mt-0 p-4 border-top bg-light-subtle">
-            <span class="text-muted small">Showing {{ $transactions->firstItem() }} to {{ $transactions->lastItem() }} of {{ $transactions->total() }} ledger entries</span>
-            <div>
-                {{ $transactions->links('pagination::bootstrap-5') }}
+        <!-- Pagination Wrapper -->
+        <div id="transactions-pagination-container">
+            @if($transactions->hasPages())
+            <div class="d-flex justify-content-between align-items-center mt-0 p-4 border-top bg-light-subtle">
+                <span class="text-muted small">Showing {{ $transactions->firstItem() }} to {{ $transactions->lastItem() }} of {{ $transactions->total() }} ledger entries</span>
+                <div>
+                    {{ $transactions->links('pagination::bootstrap-5') }}
+                </div>
             </div>
+            @endif
         </div>
-        @endif
     </div>
 
-    {{-- Transaction Detail Cards --}}
-    @foreach($transactions as $trx)
-        <div class="admin-card shadow-sm bg-white p-5 d-none transaction-details-card mb-5" id="trxDetailCard-{{ $trx->id }}">
-            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
-                <div>
-                    <span class="text-uppercase text-muted tracking-widest" style="font-size: 10px; font-weight: 600; letter-spacing: 0.15em;">Transaction Details</span>
-                    <h3 class="h4 fw-bold mt-1 text-dark mb-0">
-                        Invoice {{ $trx->invoice_number ?? '#TRX-'.$trx->id }}
-                    </h3>
-                </div>
-                <button type="button" onclick="hideTransactionDetails({{ $trx->id }})" class="btn btn-outline-dark btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" title="Back to List">
-                    <i class="bi bi-arrow-left"></i>
-                </button>
-            </div>
-            
-            <div class="row g-4 text-start">
-                <!-- Customer info card -->
-                <div class="col-md-6">
-                    <div class="bg-light p-4 rounded-3 border border-light h-100">
-                        <h6 class="text-uppercase text-muted tracking-wide mb-3" style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">Customer Information</h6>
-                        <p class="mb-1 text-dark fw-bold" style="font-size: 15px;">{{ $trx->customer_name }}</p>
-                        <p class="mb-3 text-muted" style="font-size: 13px;">{{ $trx->customer_email }}</p>
-                        
-                        @if($trx->user)
-                            <div class="d-inline-block bg-black text-white px-3 py-1 text-[10px] tracking-wider uppercase font-bold rounded-1" style="font-size: 10px; letter-spacing: 0.08em;">
-                                Status: {{ $trx->user->status ?? '' }}
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                
-                <!-- Order Metadata card -->
-                <div class="col-md-6">
-                    <div class="bg-light p-4 rounded-3 border border-light h-100">
-                        <h6 class="text-uppercase text-muted tracking-wide mb-3" style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">Order Metadata</h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">Order Date:</span>
-                            <span class="fw-semibold small text-dark">{{ $trx->created_at->format('M d, Y H:i') }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">Payment URL / Token:</span>
-                            <span class="font-monospace text-truncate ms-3 small text-dark" style="max-width: 250px;">{{ $trx->payment_url ?? 'N/A' }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted small">Paid At:</span>
-                            <span class="fw-semibold small text-dark">{{ $trx->paid_at ? $trx->paid_at->format('M d, Y H:i') : 'Unpaid' }}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Items breakdown -->
-                <div class="col-12">
-                    <div class="bg-white p-4 rounded-3 border border-light shadow-sm">
-                        <h6 class="text-uppercase text-muted tracking-wide mb-3" style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">Items Purchased</h6>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr class="border-bottom border-light">
-                                        <th class="text-muted small py-2 px-0">Product Details</th>
-                                        <th class="text-muted small py-2 text-center">Size</th>
-                                        <th class="text-muted small py-2 text-center" style="width: 10%;">Qty</th>
-                                        <th class="text-muted small py-2 text-end" style="width: 25%;">Price</th>
-                                        <th class="text-muted small py-2 text-end" style="width: 25%;">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if($trx->cart_items && is_array($trx->cart_items) && count($trx->cart_items) > 0)
-                                        @foreach($trx->cart_items as $item)
-                                            <tr class="border-bottom border-light-subtle">
-                                                <td class="py-3 px-0">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="bg-light rounded overflow-hidden me-3" style="width: 44px; height: 56px;">
-                                                            <img src="{{ $item['image_path'] ?? asset('product_image/default.jpg') }}" 
-                                                                 class="w-100 h-100 object-fit-cover" 
-                                                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($item['name'] ?? 'NA') }}&background=1a1a1a&color=fff';">
-                                                        </div>
-                                                        <span class="fw-semibold text-dark" style="font-size: 13px;">{{ $item['name'] }}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="text-center py-3">
-                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis text-uppercase" style="font-size: 10px;">{{ $item['size'] ?? '—' }}</span>
-                                                </td>
-                                                <td class="text-center py-3 fw-medium text-dark">{{ $item['quantity'] }}</td>
-                                                <td class="text-end py-3 text-muted">IDR {{ number_format($item['price'], 0, ',', '.') }}</td>
-                                                <td class="text-end py-3 fw-bold text-dark">IDR {{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}</td>
-                                            </tr>
-                                        @endforeach
-                                    @else
-                                        <tr class="border-bottom border-light-subtle">
-                                            <td class="py-3 px-0">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="bg-light rounded overflow-hidden me-3" style="width: 44px; height: 56px;">
-                                                        <img src="{{ ($trx->product->image_path ?? null) && Str::startsWith($trx->product->image_path, 'http') ? $trx->product->image_path : asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
-                                                             class="w-100 h-100 object-fit-cover"
-                                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
-                                                    </div>
-                                                    <span class="fw-semibold text-dark" style="font-size: 13px;">{{ $trx->product->name ?? 'Product Deleted' }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-center py-3">
-                                                <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 10px;">—</span>
-                                            </td>
-                                            <td class="text-center py-3 fw-medium text-dark">{{ $trx->quantity }}</td>
-                                            <td class="text-end py-3 text-muted">IDR {{ number_format(($trx->product->price ?? 0), 0, ',', '.') }}</td>
-                                            <td class="text-end py-3 fw-bold text-dark">IDR {{ number_format($trx->total_price, 0, ',', '.') }}</td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Cost summary breakdown -->
-                <div class="col-12">
-                    <div class="bg-light p-4 rounded-3 border border-light">
-                        <div class="row justify-content-end">
-                            <div class="col-md-6 col-lg-4">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted small">Subtotal:</span>
-                                    <span class="text-dark small">IDR {{ number_format($trx->subtotal ?? $trx->total_price, 0, ',', '.') }}</span>
-                                </div>
-                                
-                                @if(($trx->discount_points ?? 0) > 0)
-                                    <div class="d-flex justify-content-between mb-2 text-success">
-                                        <span class="small">Points Discount ({{ number_format($trx->points_redeemed ?? 0) }} PTS):</span>
-                                        <span class="small">-IDR {{ number_format($trx->discount_points, 0, ',', '.') }}</span>
-                                    </div>
-                                
-                                @endif
-                                @if(($trx->discount_voucher ?? 0) > 0)
-                                    <div class="d-flex justify-content-between mb-2 text-success">
-                                        <span class="small">Voucher Discount:</span>
-                                        <span class="small">-IDR {{ number_format($trx->discount_voucher, 0, ',', '.') }}</span>
-                                    </div>
-                                @endif
-                                
-                                <hr class="my-2 border-light-subtle">
-                                
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold text-dark" style="font-size: 15px;">Total Price:</span>
-                                    <span class="fw-bold text-dark" style="font-size: 15px;">IDR {{ number_format($trx->total_price, 0, ',', '.') }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="d-flex justify-content-end mt-4">
-                <button type="button" onclick="hideTransactionDetails({{ $trx->id }})" class="btn btn-dark text-uppercase tracking-wider font-semibold text-white px-5 py-3" style="font-size: 11px; border-radius: 8px;">
-                    Close Details
-                </button>
-            </div>
-        </div>
-    @endforeach
+    {{-- Transaction Detail Cards Container --}}
+    <div id="transaction-details-container">
+        @include('admin.transactions.detail_cards')
+    </div>
 
 </div> {{-- End of container-fluid --}}
 
@@ -542,5 +311,100 @@
             }
         });
     }
+
+    // 5. AJAX Live Search & Status Filter Implementation
+    (function() {
+        const filterProduct = document.getElementById('filter-product');
+        const filterStatus = document.getElementById('filter-status');
+        const resetBtn = document.getElementById('btn-reset-filters');
+        const filterForm = document.getElementById('transactions-filter-form');
+        
+        let debounceTimer;
+
+        function fetchTransactions(url) {
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update table body
+                const tbody = document.getElementById('transactions-table-body');
+                if (tbody) tbody.innerHTML = data.html;
+
+                // Update pagination
+                const paginationContainer = document.getElementById('transactions-pagination-container');
+                if (paginationContainer) paginationContainer.innerHTML = data.pagination;
+
+                // Update detail cards
+                const detailsContainer = document.getElementById('transaction-details-container');
+                if (detailsContainer) detailsContainer.innerHTML = data.details;
+
+                // Update reset button visibility
+                const productVal = filterProduct.value.trim();
+                const statusVal = filterStatus.value;
+                if (productVal !== '' || statusVal !== '') {
+                    resetBtn.classList.remove('d-none');
+                } else {
+                    resetBtn.classList.add('d-none');
+                }
+            })
+            .catch(error => console.error('Error loading transaction data:', error));
+        }
+
+        function triggerSearch() {
+            const productVal = encodeURIComponent(filterProduct.value.trim());
+            const statusVal = encodeURIComponent(filterStatus.value);
+            const baseUrl = "{{ route('admin.transactions.index') }}";
+            const url = `${baseUrl}?product=${productVal}&status=${statusVal}`;
+            fetchTransactions(url);
+        }
+
+        // Live Search Input event with debounce
+        if (filterProduct) {
+            filterProduct.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(triggerSearch, 400);
+            });
+        }
+
+        // Status filter Change event
+        if (filterStatus) {
+            filterStatus.addEventListener('change', function() {
+                triggerSearch();
+            });
+        }
+
+        // Reset button Click event
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                filterProduct.value = '';
+                filterStatus.value = '';
+                triggerSearch();
+            });
+        }
+
+        // Form Submit interception
+        if (filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                triggerSearch();
+            });
+        }
+
+        // Intercept pagination clicks (delegated)
+        document.addEventListener('click', function(e) {
+            const pageLink = e.target.closest('#transactions-pagination-container a');
+            if (pageLink) {
+                e.preventDefault();
+                const url = pageLink.getAttribute('href');
+                if (url) {
+                    fetchTransactions(url);
+                }
+            }
+        });
+    })();
 </script>
 @endsection

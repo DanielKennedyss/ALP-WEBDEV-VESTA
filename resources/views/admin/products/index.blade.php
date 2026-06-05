@@ -10,6 +10,52 @@
 </div>
 
 <div class="admin-card border-0 shadow-sm p-4" style="background: #fff; border-radius: 12px;">
+    <!-- Filters Row -->
+    <form id="products-filter-form" action="{{ route('admin.inventory') }}" method="GET" class="mb-4">
+        <div class="row g-2 align-items-center">
+            <!-- Product Search -->
+            <div class="col-md-3 col-12">
+                <input type="text" id="filter-product" name="product" value="{{ request('product') }}" class="form-control filter-pill" placeholder="Search product or SKU...">
+            </div>
+            
+            <!-- Category -->
+            <div class="col-md-3 col-sm-4 col-12">
+                <select id="filter-category" name="category_id" class="form-select filter-pill">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            
+            <!-- Gender -->
+            <div class="col-md-2 col-sm-4 col-12">
+                <select id="filter-gender" name="gender" class="form-select filter-pill">
+                    <option value="">All Genders</option>
+                    <option value="Male" {{ request('gender') === 'Male' ? 'selected' : '' }}>Male</option>
+                    <option value="Female" {{ request('gender') === 'Female' ? 'selected' : '' }}>Female</option>
+                    <option value="Unisex" {{ request('gender') === 'Unisex' ? 'selected' : '' }}>Unisex</option>
+                </select>
+            </div>
+            
+            <!-- Size -->
+            <div class="col-md-2 col-sm-4 col-12">
+                <select id="filter-size" name="size" class="form-select filter-pill">
+                    <option value="">All Sizes</option>
+                    @foreach($sizes as $sz)
+                        <option value="{{ $sz }}" {{ request('size') === $sz ? 'selected' : '' }}>{{ $sz }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Submit & Reset Button -->
+            <div class="col-md-2 col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-dark rounded-pill px-3 fw-bold text-uppercase w-100" style="font-size: 10px; height: 38px; letter-spacing: 0.05em;">FILTER</button>
+                <a href="{{ route('admin.inventory') }}" id="btn-reset-filters" class="btn btn-light rounded-pill px-3 fw-bold text-uppercase border d-flex align-items-center justify-center {{ request()->anyFilled(['product', 'category_id', 'gender', 'size']) ? '' : 'd-none' }}" style="font-size: 10px; height: 38px; min-width: 38px;" title="Reset Filters">✕</a>
+            </div>
+        </div>
+    </form>
+
     <div class="table-responsive" style="overflow: visible;"> {{-- FIX 1: Override overflow agar dropdown tidak terpotong --}}
         <table class="table table-hover align-middle mb-0">
             <thead class="text-muted" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;">
@@ -25,84 +71,8 @@
                     <th class="border-0 text-end pe-0">Action</th>
                 </tr>
             </thead>
-            <tbody style="font-size: 13px;">
-                @forelse($products as $product)
-                <tr>
-                    <td class="ps-0">
-                        <div class="d-flex align-items-center">
-                            <img src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
-                                 class="rounded bg-light shadow-sm" 
-                                 style="width: 48px; height: 48px; object-fit: cover;" 
-                                 onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($product->name) }}&background=f8f9fa&color=000';">
-                            <div class="ms-3">
-                                <p class="mb-0 fw-bold text-dark" style="font-size: 14px;">{{ $product->name }}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-muted fw-medium" style="font-size: 11px;">{{ $product->sku }}</td>
-                    <td><span class="badge bg-light text-dark fw-normal rounded-pill px-3">{{ $product->category->name ?? '-' }}</span></td>
-                    <td class="text-muted">{{ ucfirst($product->gender) }}</td>
-                    <td>
-                        <div class="d-flex flex-wrap gap-1">
-                            @foreach($product->variants as $variant)
-                                <span class="badge bg-white text-dark border shadow-xs" style="font-size: 9px; padding: 4px 8px; border-color: #eee !important;">
-                                    {{ $variant->size_label }} <span class="text-muted ms-1">({{ $variant->stock }})</span>
-                                </span>
-                            @endforeach
-                        </div>
-                    </td>
-                    <td class="fw-bold text-dark">IDR {{ number_format($product->price, 0, ',', '.') }}</td>
-                    <td class="fw-medium">{{ $product->total_stock }}</td>
-                    <td style="white-space: nowrap;">
-                        @if($product->isOutOfStock())
-                            <span class="text-danger d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Out of Stock</span>
-                        @elseif($product->hasLowStock())
-                            <span class="text-warning d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Low Stock</span>
-                        @else
-                            <span class="text-success d-flex align-items-center"><i class="bi bi-dot fs-3"></i> Healthy</span>
-                        @endif
-                    </td>
-                    
-                    <td class="text-end pe-0">
-                        <div class="dropdown">
-                            {{-- FIX 2: Tambahkan data-bs-boundary="window" --}}
-                            <button class="btn btn-link text-dark p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-boundary="window">
-                                <i class="bi bi-three-dots-vertical fs-5"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="font-size: 12px; border-radius: 12px; min-width: 160px; z-index: 1050;">
-                                <li>
-                                    <a class="dropdown-item py-2" href="{{ route('admin.products.edit', $product->id) }}">
-                                        <i class="bi bi-pencil-square me-2"></i> Edit Piece
-                                    </a>
-                                </li>
-
-                                {{-- Pengecekan RBAC yang lebih bersih --}}
-                                @if(in_array(auth()->user()->role, ['owner', 'manager']))
-                                    <li><hr class="dropdown-divider opacity-50"></li>
-                                    <li>
-                                        <form action="{{ route('admin.products.destroy', $product->id) }}" 
-                                              method="POST" 
-                                              id="delete-form-{{ $product->id }}" 
-                                              class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" 
-                                                    class="dropdown-item py-2 text-danger" 
-                                                    onclick="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}')"> {{-- FIX 3: addslashes agar nama produk yg ada petik tidak merusak JS --}}
-                                                <i class="bi bi-trash3-fill me-2"></i> Delete Piece
-                                            </button>
-                                        </form>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">No pieces in inventory.</td>
-                </tr>
-                @endforelse
+            <tbody id="products-table-body" style="font-size: 13px;">
+                @include('admin.products.table_rows')
             </tbody>
         </table>
     </div>
@@ -117,6 +87,33 @@
     
     /* FIX 1.1: Pastikan dropdown table bisa meluap */
     .table-responsive { overflow-x: visible !important; overflow-y: visible !important; }
+
+    /* Pill-Shape design for inputs and select */
+    .filter-pill {
+        border-radius: 9999px !important;
+        background-color: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 0.5rem 1.25rem !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        color: #212529 !important;
+        outline: none !important;
+        box-shadow: none !important;
+        height: 38px !important;
+        transition: all 0.2s ease !important;
+    }
+    .filter-pill:focus {
+        border-color: #000 !important;
+        background-color: #fff !important;
+    }
+    select.filter-pill {
+        appearance: none !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 1rem center !important;
+        background-size: 10px 10px !important;
+        padding-right: 2.25rem !important;
+    }
 </style>
 
 {{-- FIX 4: Hapus bootstrap script duplicate di sini jika master layout sudah memilikinya. 
@@ -155,5 +152,90 @@ function confirmDelete(id, name) {
         }
     })
 }
+
+// AJAX Live Search & Filters Implementation
+(function() {
+    const filterProduct = document.getElementById('filter-product');
+    const filterCategory = document.getElementById('filter-category');
+    const filterGender = document.getElementById('filter-gender');
+    const filterSize = document.getElementById('filter-size');
+    const resetBtn = document.getElementById('btn-reset-filters');
+    const filterForm = document.getElementById('products-filter-form');
+    
+    let debounceTimer;
+
+    function fetchProducts(url) {
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('products-table-body');
+            if (tbody) tbody.innerHTML = data.html;
+
+            // Update reset button visibility
+            const productVal = filterProduct.value.trim();
+            const categoryVal = filterCategory.value;
+            const genderVal = filterGender.value;
+            const sizeVal = filterSize.value;
+            
+            if (productVal !== '' || categoryVal !== '' || genderVal !== '' || sizeVal !== '') {
+                resetBtn.classList.remove('d-none');
+            } else {
+                resetBtn.classList.add('d-none');
+            }
+        })
+        .catch(error => console.error('Error loading product data:', error));
+    }
+
+    function triggerSearch() {
+        const productVal = encodeURIComponent(filterProduct.value.trim());
+        const categoryVal = encodeURIComponent(filterCategory.value);
+        const genderVal = encodeURIComponent(filterGender.value);
+        const sizeVal = encodeURIComponent(filterSize.value);
+        const baseUrl = "{{ route('admin.inventory') }}";
+        const url = `${baseUrl}?product=${productVal}&category_id=${categoryVal}&gender=${genderVal}&size=${sizeVal}`;
+        fetchProducts(url);
+    }
+
+    if (filterProduct) {
+        filterProduct.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(triggerSearch, 400);
+        });
+    }
+
+    if (filterCategory) {
+        filterCategory.addEventListener('change', triggerSearch);
+    }
+
+    if (filterGender) {
+        filterGender.addEventListener('change', triggerSearch);
+    }
+
+    if (filterSize) {
+        filterSize.addEventListener('change', triggerSearch);
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            filterProduct.value = '';
+            filterCategory.value = '';
+            filterGender.value = '';
+            filterSize.value = '';
+            triggerSearch();
+        });
+    }
+
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            triggerSearch();
+        });
+    }
+})();
 </script>
 @endsection

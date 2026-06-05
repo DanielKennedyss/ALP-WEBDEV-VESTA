@@ -17,6 +17,10 @@ class Event extends Model
         'text_color',
         'banner_image',
         'short_name',
+        'background_image',
+        'main_image',
+        'display_title',
+        'display_description',
     ];
 
     protected $casts = [

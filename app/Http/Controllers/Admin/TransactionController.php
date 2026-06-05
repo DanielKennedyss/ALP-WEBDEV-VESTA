@@ -13,18 +13,44 @@ use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
-    /**
-     * Menampilkan daftar semua transaksi.
-     */
-    public function index(): View
+    public function index(Request $request)
     {
-        // BEST PRACTICE: 
-        // 1. Eager load 'user' dan 'product' untuk mencegah N+1 Query.
-        // 2. Gunakan latest() sebagai alias dari orderBy('created_at', 'desc').
-        // 3. Gunakan paginate() agar performa dashboard admin tetap cepat.
-        $transactions = Transaction::with(['product', 'user'])
-            ->latest()
-            ->paginate(15); 
+        $query = Transaction::with(['product', 'user']);
+
+        if ($request->filled('product')) {
+            $product = $request->product;
+            $query->where(function($q) use ($product) {
+                $q->whereHas('product', function($qp) use ($product) {
+                    $qp->where('name', 'like', "%{$product}%")
+                       ->orWhere('sku', 'like', "%{$product}%");
+                })
+                ->orWhere('cart_items', 'like', "%{$product}%")
+                ->orWhere('invoice_number', 'like', "%{$product}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'processing') {
+                $query->whereIn('status', ['processing', 'success', 'settlement', 'paid']);
+            } elseif ($status === 'delivered') {
+                $query->whereIn('status', ['delivered', 'completed']);
+            } elseif ($status === 'cancelled') {
+                $query->whereIn('status', ['cancelled', 'failed', 'expired']);
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        $transactions = $query->latest()->paginate(15)->withQueryString(); 
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.transactions.table_rows', compact('transactions'))->render(),
+                'details' => view('admin.transactions.detail_cards', compact('transactions'))->render(),
+                'pagination' => $transactions->hasPages() ? $transactions->links('pagination::bootstrap-5')->render() : ''
+            ]);
+        }
 
         return view('admin.transactions.index', compact('transactions'));
     }

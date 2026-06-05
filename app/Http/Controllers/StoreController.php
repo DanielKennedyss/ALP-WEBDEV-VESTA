@@ -23,7 +23,11 @@ class StoreController extends Controller
     public function show()
     {
         $products = Product::with(['category', 'variants'])->get();
-        return view('home', compact('products'));
+        $currentTime = \Carbon\Carbon::now();
+        $activeEvents = \App\Models\Event::where('start_date', '<=', $currentTime)
+            ->where('end_date', '>=', $currentTime)
+            ->get();
+        return view('home', compact('products', 'activeEvents'));
     }
 
     /**
@@ -34,27 +38,43 @@ class StoreController extends Controller
         session()->forget('buy_now');
         session()->forget('applied_voucher');
 
-        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+        $currentTime = \Carbon\Carbon::now();
+        $activeEvents = \App\Models\Event::where('start_date', '<=', $currentTime)
+            ->where('end_date', '>=', $currentTime)
             ->with(['products' => function($q) {
                 $q->with(['category', 'variants', 'reviews.user'])
                   ->withAvg('reviews', 'rating')
                   ->withCount('reviews');
             }])
-            ->first();
+            ->get();
 
-        // Fallback products (e.g. new arrivals) if no active event is present
-        $products = collect();
-        if (!$activeEvent) {
-            $products = Product::with(['category', 'variants', 'reviews.user'])
-                ->withAvg('reviews', 'rating')
-                ->withCount('reviews')
-                ->orderBy('created_at', 'desc')
-                ->take(12)
-                ->get();
+        if ($request->has('filter_event') && $request->filled('filter_event')) {
+            $eventId = $request->filter_event;
+            $products = Product::whereHas('events', function ($query) use ($eventId) {
+                $query->where('events.id', $eventId);
+            })->with(['category', 'variants', 'reviews.user'])
+              ->withAvg('reviews', 'rating')
+              ->withCount('reviews')
+              ->get();
+        } else {
+            // Fallback products (e.g. new arrivals) if no active events are present
+            $products = collect();
+            if ($activeEvents->isEmpty()) {
+                $products = Product::with(['category', 'variants', 'reviews.user'])
+                    ->withAvg('reviews', 'rating')
+                    ->withCount('reviews')
+                    ->orderBy('created_at', 'desc')
+                    ->take(12)
+                    ->get();
+            } else {
+                foreach ($activeEvents as $event) {
+                    $products = $products->merge($event->products);
+                }
+                $products = $products->unique('id');
+            }
         }
 
-        return view('store.collection', compact('activeEvent', 'products'));
+        return view('store.collection', compact('activeEvents', 'products'));
     }
 
     /**
@@ -64,7 +84,7 @@ class StoreController extends Controller
     {
         session()->forget('buy_now');
         session()->forget('applied_voucher');
-        $query = Product::with(['category', 'variants', 'reviews.user'])->withAvg('reviews', 'rating')->withCount('reviews');
+        $query = Product::with(['category', 'variants', 'reviews.user', 'events'])->withAvg('reviews', 'rating')->withCount('reviews');
 
         // Search by product name, description, or SKU with fuzzy matching
         if ($request->filled('search')) {
@@ -92,9 +112,10 @@ class StoreController extends Controller
         }
 
         // Filter by event
-        if ($request->filled('filter_event')) {
-            $query->whereHas('events', function ($q) use ($request) {
-                $q->where('events.id', $request->filter_event);
+        if ($request->has('filter_event') && $request->filled('filter_event')) {
+            $eventId = $request->filter_event;
+            $query->whereHas('events', function ($q) use ($eventId) {
+                $q->where('events.id', $eventId);
             });
         }
 
@@ -130,21 +151,23 @@ class StoreController extends Controller
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
 
-        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->first();
+        $currentTime = \Carbon\Carbon::now();
+        $activeEvents = \App\Models\Event::where('start_date', '<=', $currentTime)
+            ->where('end_date', '>=', $currentTime)
+            ->get();
 
         $activeEventProductIds = [];
-        if ($activeEvent) {
-            $activeEventProductIds = $activeEvent->products()->pluck('products.id')->toArray();
+        foreach ($activeEvents as $event) {
+            $activeEventProductIds = array_merge($activeEventProductIds, $event->products()->pluck('products.id')->toArray());
         }
+        $activeEventProductIds = array_unique($activeEventProductIds);
 
         $filteredEvent = null;
         if ($request->filled('filter_event')) {
             $filteredEvent = \App\Models\Event::find($request->filter_event);
         }
 
-        return view('store.catalog', compact('products', 'categories', 'genders', 'sizes', 'activeEvent', 'activeEventProductIds', 'filteredEvent'));
+        return view('store.catalog', compact('products', 'categories', 'genders', 'sizes', 'activeEvents', 'activeEventProductIds', 'filteredEvent'));
     }
 
     /**

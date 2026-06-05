@@ -343,5 +343,9 @@
                 setTimeout(function() { toast.remove(); }, 400);
             }
         }, 5000);
-    </script></body>
+    </script>
+    
+    <!-- Membership Guide Modal -->
+    @include('layouts.membership-modal')
+</body>
 </html>

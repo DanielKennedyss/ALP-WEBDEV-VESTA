@@ -36,11 +36,25 @@ class StaffController extends Controller
         });
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $admins = User::whereIn('role', ['owner', 'manager', 'staff'])
-                      ->orderByRaw("FIELD(role, 'owner', 'manager', 'staff')")
-                      ->get();
+        $query = User::whereIn('role', ['owner', 'manager', 'staff']);
+
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        if ($request->filled('position')) {
+            $query->where('role', $request->position);
+        }
+
+        $admins = $query->orderByRaw("FIELD(role, 'owner', 'manager', 'staff')")->get();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.staff.table_rows', compact('admins'))->render()
+            ]);
+        }
 
         return view('admin.staff.index', compact('admins'));
     }

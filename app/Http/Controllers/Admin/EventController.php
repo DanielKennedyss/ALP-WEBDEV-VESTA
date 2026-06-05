@@ -59,13 +59,28 @@ class EventController extends Controller
             'theme_color'  => 'required|string|max:7',
             'text_color'   => 'required|string|max:7',
             'banner_image' => 'nullable|url|max:2048',
+            'background_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'main_image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'display_title'    => 'nullable|string|max:255',
+            'display_description' => 'nullable|string',
         ], [
             'end_date.after_or_equal' => 'The end date must be on or after the start date.',
         ]);
 
         DB::beginTransaction();
         try {
-            $event = Event::create($validated);
+            $eventData = collect($validated)->except(['background_image', 'main_image'])->toArray();
+            $event = Event::create($eventData);
+
+            if ($request->hasFile('background_image')) {
+                $path = $request->file('background_image')->store('events/backgrounds', 'public');
+                $event->background_image = $path;
+            }
+            if ($request->hasFile('main_image')) {
+                $path = $request->file('main_image')->store('events/mains', 'public');
+                $event->main_image = $path;
+            }
+            $event->save();
 
             // Sync product assignments (sync with empty array if none selected)
             $productIds = $request->input('product_ids', []);
@@ -130,13 +145,28 @@ class EventController extends Controller
             'theme_color'  => 'required|string|max:7',
             'text_color'   => 'required|string|max:7',
             'banner_image' => 'nullable|url|max:2048',
+            'background_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'main_image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'display_title'    => 'nullable|string|max:255',
+            'display_description' => 'nullable|string',
         ], [
             'end_date.after_or_equal' => 'The end date must be on or after the start date.',
         ]);
 
         DB::beginTransaction();
         try {
-            $event->update($validated);
+            $eventData = collect($validated)->except(['background_image', 'main_image'])->toArray();
+            $event->update($eventData);
+
+            if ($request->hasFile('background_image')) {
+                $path = $request->file('background_image')->store('events/backgrounds', 'public');
+                $event->background_image = $path;
+            }
+            if ($request->hasFile('main_image')) {
+                $path = $request->file('main_image')->store('events/mains', 'public');
+                $event->main_image = $path;
+            }
+            $event->save();
 
             // Re-sync product assignments
             $productIds = $request->input('product_ids', []);

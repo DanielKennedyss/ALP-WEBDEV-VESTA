@@ -1,6 +1,19 @@
 @extends('base.base')
 
 @section('content')
+<style>
+    /* Hover effect for (!) info icon */
+    .info-btn-trigger {
+        transition: all 0.3s ease !important;
+    }
+    .info-btn-trigger:hover {
+        transform: scale(1.15) !important;
+        background-color: #fbbf24 !important; /* bg-amber-400 */
+        color: #000000 !important;
+        border-color: #fbbf24 !important;
+        box-shadow: 0 0 14px rgba(251, 191, 36, 0.7) !important;
+    }
+</style>
 <div class="pt-32 pb-24 px-6 lg:px-8 bg-white min-h-screen">
     <div class="max-w-6xl mx-auto">
         <!-- Header Section -->
@@ -10,8 +23,15 @@
                 <h1 class="text-4xl md:text-5xl font-serif tracking-[0.1em] mt-2 uppercase">{{ Auth::user()->name }}</h1>
             </div>
             <div class="mt-6 md:mt-0">
-                <div class="border border-black px-6 py-3 inline-block">
+                <div class="relative border border-black px-6 py-3 inline-block bg-white text-black">
                     <span class="text-xs tracking-[0.2em] uppercase font-medium">STATUS: {{ auth()->check() ? auth()->user()->status : '' }}</span>
+                    
+                    <!-- Clickable Info Icon (!) -->
+                    <button type="button" onclick="openMembershipModal()" class="info-btn-trigger absolute -top-3 -right-3 bg-black text-white border border-black w-7 h-7 rounded-full flex items-center justify-center cursor-pointer shadow-sm focus:outline-none" title="Membership Info Guide">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>

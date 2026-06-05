@@ -29,7 +29,11 @@ Route::get('/', function () {
     session()->forget('buy_now');
     session()->forget('applied_voucher');
     $products = \App\Models\Product::orderBy('created_at', 'desc')->take(8)->get();
-    return view('home', compact('products'));
+    $currentTime = \Carbon\Carbon::now();
+    $activeEvents = \App\Models\Event::where('start_date', '<=', $currentTime)
+        ->where('end_date', '>=', $currentTime)
+        ->get();
+    return view('home', compact('products', 'activeEvents'));
 })->name('home');
 
 Route::middleware(['web'])->group(function () {

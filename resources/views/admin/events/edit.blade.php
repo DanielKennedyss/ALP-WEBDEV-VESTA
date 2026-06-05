@@ -193,7 +193,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.events.update', $event->id) }}" method="POST" id="eventForm">
+    <form action="{{ route('admin.events.update', $event->id) }}" method="POST" id="eventForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -288,6 +288,59 @@
                            placeholder="https://images.unsplash.com/photo-…"
                            class="form-control-luxury @error('banner_image') is-invalid @enderror">
                     @error('banner_image') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Background Image --}}
+                <div class="col-md-6">
+                    <label for="background_image" class="form-label-luxury">Background Image / Texture <span class="text-muted fw-normal">(optional, file)</span></label>
+                    @if($event->background_image)
+                        <div class="mb-2 p-2 border rounded d-flex align-items-center gap-3 bg-light">
+                            <img src="{{ asset('storage/' . $event->background_image) }}" alt="Background" style="height: 50px; width: 80px; object-fit: cover; border-radius: 4px;">
+                            <span class="text-muted small">Current: {{ basename($event->background_image) }}</span>
+                        </div>
+                    @endif
+                    <input type="file" name="background_image" id="background_image"
+                           accept="image/*"
+                           class="form-control-luxury @error('background_image') is-invalid @enderror">
+                    @error('background_image') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <p class="text-muted mt-2 mb-0" style="font-size: 11px;">Upload a new image to replace the current full-width background.</p>
+                </div>
+
+                {{-- Main Image --}}
+                <div class="col-md-6">
+                    <label for="main_image" class="form-label-luxury">Main Image / Overlay <span class="text-muted fw-normal">(optional, file)</span></label>
+                    @if($event->main_image)
+                        <div class="mb-2 p-2 border rounded d-flex align-items-center gap-3 bg-light">
+                            <img src="{{ asset('storage/' . $event->main_image) }}" alt="Main" style="height: 50px; width: 50px; object-fit: cover; border-radius: 4px;">
+                            <span class="text-muted small">Current: {{ basename($event->main_image) }}</span>
+                        </div>
+                    @endif
+                    <input type="file" name="main_image" id="main_image"
+                           accept="image/*"
+                           class="form-control-luxury @error('main_image') is-invalid @enderror">
+                    @error('main_image') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <p class="text-muted mt-2 mb-0" style="font-size: 11px;">Upload a new image to replace the current overlay/product banner.</p>
+                </div>
+
+                {{-- Display Title --}}
+                <div class="col-md-12">
+                    <label for="display_title" class="form-label-luxury">Display Title <span class="text-muted fw-normal">(optional)</span></label>
+                    <input type="text" name="display_title" id="display_title"
+                           value="{{ old('display_title', $event->display_title) }}"
+                           placeholder="e.g. HALLOWEEN SPOOKTACULAR"
+                           class="form-control-luxury @error('display_title') is-invalid @enderror">
+                    @error('display_title') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <p class="text-muted mt-2 mb-0" style="font-size: 11px;">Custom banner main heading displayed on frontend hero section.</p>
+                </div>
+
+                {{-- Display Description --}}
+                <div class="col-md-12">
+                    <label for="display_description" class="form-label-luxury">Display Description <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea name="display_description" id="display_description" rows="3"
+                              placeholder="e.g. EXCLUSIVE OFFERS FROM..."
+                              class="form-control-luxury @error('display_description') is-invalid @enderror">{{ old('display_description', $event->display_description) }}</textarea>
+                    @error('display_description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <p class="text-muted mt-2 mb-0" style="font-size: 11px;">Custom banner sub-heading/paragraph displayed on frontend hero section.</p>
                 </div>
             </div>
         </div>

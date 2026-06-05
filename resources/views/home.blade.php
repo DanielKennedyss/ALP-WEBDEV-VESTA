@@ -15,6 +15,10 @@
     <!-- Styles / Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- Swiper.js CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <style>
         /* Confine scroll exclusively to the Hero container */
         html,
@@ -27,22 +31,12 @@
             background-color: #000;
         }
 
-        /* Scroll-Snap Container */
+        /* Swiper Container */
         .hero-scroll-container {
             width: 100vw;
             height: 100vh;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-            -ms-overflow-style: none;
-            /* IE and Edge */
-            scrollbar-width: none;
-            /* Firefox */
-        }
-
-        .hero-scroll-container::-webkit-scrollbar {
-            display: none;
-            /* Chrome, Safari and Opera */
+            position: relative;
+            overflow: hidden;
         }
 
         /* Individual Slides */
@@ -70,7 +64,7 @@
         }
 
         /* Subtle Ken Burns zoom effect when slide is active */
-        .hero-slide.active .slide-bg-media {
+        .hero-slide.swiper-slide-active .slide-bg-media {
             transform: scale(1.05);
         }
 
@@ -95,7 +89,7 @@
             max-width: 900px;
         }
 
-        .hero-slide.active .slide-content {
+        .hero-slide.swiper-slide-active .slide-content {
             opacity: 1;
             transform: translateY(0);
         }
@@ -160,6 +154,7 @@
             position: relative;
             overflow: hidden;
             cursor: pointer;
+            z-index: 50; /* Ensure clickable */
         }
 
         .cta-btn::before {
@@ -211,305 +206,224 @@
     @include('layouts.header')
 
     <!-- VERTICAL SLIDE DOT INDICATORS -->
-    <div class="vertical-nav hidden md:flex flex-col">
-        <div class="dot-wrapper active" data-slide-target="0" onclick="scrollToSlide(0)">
-            <span class="nav-dot"></span>
+    <div class="vertical-nav hidden md:flex flex-col"></div>
+
+    <!-- MAIN HERO CONTAINER (SWIPER) -->
+    <main class="swiper-container hero-scroll-container">
+        <div class="swiper-wrapper">
+
+            <!-- SLIDE 1: Brand Introduction (Original Video) -->
+            <section class="swiper-slide hero-slide">
+                <video class="slide-bg-media absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline
+                    poster="https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1920&q=80">
+                    <source src="/assets/video/hero.mp4" type="video/mp4">
+                </video>
+                <div class="slide-overlay"></div>
+
+                <div class="slide-content flex flex-col items-center justify-center">
+                    <h1 class="text-white text-5xl md:text-7xl lg:text-9xl font-serif tracking-[0.25em] mb-4">VESTA</h1>
+                    <div class="w-24 h-px bg-white/40 my-8"></div>
+                    <p class="text-white/80 text-[10px] md:text-xs tracking-[0.5em] uppercase font-light">Luxury Fashion
+                        Redefined</p>
+                    <a href="{{ route('collections.index') }}" class="cta-btn mt-8 relative z-50">
+                        Discover More
+                    </a>
+                </div>
+
+                <!-- Down Arrow Hint -->
+                <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                    onclick="window.swiper.slideNext()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: Active Events or Fallback Campaign -->
+            @if($activeEvents->isNotEmpty())
+                @foreach($activeEvents as $event)
+                    <section class="swiper-slide hero-slide">
+                        @if($event->background_image)
+                            <div class="slide-bg-media absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('{{ asset('storage/' . $event->background_image) }}');" data-swiper-parallax="50%"></div>
+                        @else
+                            <img src="{{ $event->banner_image ?? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80' }}"
+                                alt="{{ $event->display_title ?? $event->name }} Banner" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
+                                loading="lazy">
+                        @endif
+                        <div class="slide-overlay"></div>
+
+                        <div class="slide-content flex flex-col items-center justify-center">
+                            @if($event->main_image)
+                                <img src="{{ asset('storage/' . $event->main_image) }}" alt="{{ $event->display_title ?? $event->name }}" class="w-32 h-32 md:w-48 md:h-48 object-cover mb-6 rounded shadow-2xl border border-white/10">
+                            @endif
+                            <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">Limited Event</span>
+                            <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight text-center">
+                                {{ strtoupper($event->display_title ?? $event->name) }}</h2>
+                            <p
+                                class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light text-center">
+                                @if($event->display_description)
+                                    {{ $event->display_description }}
+                                @else
+                                    EXCLUSIVE OFFERS FROM {{ strtoupper($event->start_date->format('M d, Y')) }} UNTIL {{ strtoupper($event->end_date->format('M d, Y')) }}
+                                @endif
+                            </p>
+                            <a href="{{ route('collections.index', ['filter_event' => $event->id]) }}#product-grid" class="cta-btn mt-8 relative z-50">
+                                Explore Collection
+                            </a>
+                        </div>
+
+                        <!-- Down Arrow Hint -->
+                        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                            onclick="window.swiper.slideNext()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                        </div>
+                    </section>
+                @endforeach
+            @else
+                <!-- SLIDE 2: Spring / Summer '26 (High Fashion Image Ad) -->
+                <section class="swiper-slide hero-slide">
+                    <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80"
+                        alt="Spring/Summer '26 Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
+                        loading="lazy">
+                    <div class="slide-overlay"></div>
+
+                    <div class="slide-content flex flex-col items-center justify-center">
+                        <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">New Campaign</span>
+                        <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
+                            SPRING / SUMMER '26</h2>
+                        <p
+                            class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
+                            Elegant Silhouettes &amp; Timeless Textures</p>
+                        <a href="{{ route('collections.index') }}" class="cta-btn mt-8 relative z-50">
+                            Explore Collection
+                        </a>
+                    </div>
+
+                    <!-- Down Arrow Hint -->
+                    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                        onclick="window.swiper.slideNext()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                    </div>
+                </section>
+            @endif
+
+            <!-- SLIDE 3: Men's Tailoring (Haute Couture Image Ad) -->
+            <section class="swiper-slide hero-slide">
+                <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1920&q=80"
+                    alt="Men's Tailoring Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
+                    loading="lazy">
+                <div class="slide-overlay"></div>
+
+                <div class="slide-content flex flex-col items-center justify-center">
+                    <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">The Tailoring
+                        Edit</span>
+                    <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
+                        HAUTE COUTURE</h2>
+                    <p
+                        class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
+                        Meticulously Crafted for the Modern Icon</p>
+                    <a href="{{ route('collections.index') }}" class="cta-btn mt-8 relative z-50">
+                        Shop The Edit
+                    </a>
+                </div>
+
+                <!-- Down Arrow Hint -->
+                <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                    onclick="window.swiper.slideNext()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: Prestige Line (Women's Image Ad) -->
+            <section class="swiper-slide hero-slide">
+                <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1920&q=80"
+                    alt="The Prestige Line Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
+                    loading="lazy">
+                <div class="slide-overlay"></div>
+
+                <div class="slide-content flex flex-col items-center justify-center">
+                    <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">Prestige
+                        Collection</span>
+                    <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
+                        THE PRESTIGE LINE</h2>
+                    <p
+                        class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
+                        Sophistication in Every Single Thread</p>
+                    <a href="{{ route('collections.index') }}" class="cta-btn mt-8 relative z-50">
+                        View Selection
+                    </a>
+                </div>
+
+                <!-- Down Arrow Hint to Loop back to Slide 1 -->
+                <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                    onclick="window.swiper.slideNext()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </div>
+            </section>
+
         </div>
-        <div class="dot-wrapper" data-slide-target="1" onclick="scrollToSlide(1)">
-            <span class="nav-dot"></span>
-        </div>
-        <div class="dot-wrapper" data-slide-target="2" onclick="scrollToSlide(2)">
-            <span class="nav-dot"></span>
-        </div>
-        <div class="dot-wrapper" data-slide-target="3" onclick="scrollToSlide(3)">
-            <span class="nav-dot"></span>
-        </div>
-    </div>
-
-    <!-- MAIN SCROLL SNAP HERO CONTAINER -->
-    <main class="hero-scroll-container">
-
-        <!-- SLIDE 1: Brand Introduction (Original Video) -->
-        <section class="hero-slide active" data-slide-index="0">
-            <video class="slide-bg-media absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline
-                poster="https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1920&q=80">
-                <source src="/assets/video/hero.mp4" type="video/mp4">
-            </video>
-            <div class="slide-overlay"></div>
-
-            <div class="slide-content flex flex-col items-center justify-center">
-                <h1 class="text-white text-5xl md:text-7xl lg:text-9xl font-serif tracking-[0.25em] mb-4">VESTA</h1>
-                <div class="w-24 h-px bg-white/40 my-8"></div>
-                <p class="text-white/80 text-[10px] md:text-xs tracking-[0.5em] uppercase font-light">Luxury Fashion
-                    Redefined</p>
-                <a href="#slide-1" onclick="event.preventDefault(); scrollToSlide(1);" class="cta-btn mt-8">
-                    Discover More
-                </a>
-            </div>
-
-            <!-- Down Arrow Hint -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
-                onclick="scrollToSlide(1)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </div>
-        </section>
-
-        <!-- SLIDE 2: Spring / Summer '26 (High Fashion Image Ad) -->
-        <section class="hero-slide" data-slide-index="1">
-            <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80"
-                alt="Spring/Summer '26 Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
-                loading="lazy">
-            <div class="slide-overlay"></div>
-
-            <div class="slide-content flex flex-col items-center justify-center">
-                <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">New Campaign</span>
-                <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
-                    SPRING / SUMMER '26</h2>
-                <p
-                    class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
-                    Elegant Silhouettes &amp; Timeless Textures</p>
-                <a href="{{ route('collections.index') }}" class="cta-btn">
-                    Explore Collection
-                </a>
-            </div>
-
-            <!-- Down Arrow Hint -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
-                onclick="scrollToSlide(2)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </div>
-        </section>
-
-        <!-- SLIDE 3: Men's Tailoring (Haute Couture Image Ad) -->
-        <section class="hero-slide" data-slide-index="2">
-            <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1920&q=80"
-                alt="Men's Tailoring Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
-                loading="lazy">
-            <div class="slide-overlay"></div>
-
-            <div class="slide-content flex flex-col items-center justify-center">
-                <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">The Tailoring
-                    Edit</span>
-                <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
-                    HAUTE COUTURE</h2>
-                <p
-                    class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
-                    Meticulously Crafted for the Modern Icon</p>
-                <a href="{{ route('collections.index') }}" class="cta-btn">
-                    Shop The Edit
-                </a>
-            </div>
-
-            <!-- Down Arrow Hint -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
-                onclick="scrollToSlide(3)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </div>
-        </section>
-
-        <!-- SLIDE 4: Prestige Line (Women's Image Ad) -->
-        <section class="hero-slide" data-slide-index="3">
-            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1920&q=80"
-                alt="The Prestige Line Campaign" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
-                loading="lazy">
-            <div class="slide-overlay"></div>
-
-            <div class="slide-content flex flex-col items-center justify-center">
-                <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">Prestige
-                    Collection</span>
-                <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight">
-                    THE PRESTIGE LINE</h2>
-                <p
-                    class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
-                    Sophistication in Every Single Thread</p>
-                <a href="{{ route('collections.index') }}" class="cta-btn">
-                    View Selection
-                </a>
-            </div>
-
-            <!-- Down Arrow Hint to Loop back to Slide 1 -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
-                onclick="scrollToSlide(0)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </div>
-        </section>
-
     </main>
 
     <!-- INTERACTION SCRIPTS -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const container = document.querySelector('.hero-scroll-container');
-            const originalSlides = Array.from(document.querySelectorAll('.hero-slide'));
-            const dotWrappers = document.querySelectorAll('.dot-wrapper');
-
-            // --- INFINITE SCROLL CLONING SETUP ---
-            // Clone first and last slides for infinite snapping
-            const firstSlideClone = originalSlides[0].cloneNode(true);
-            const lastSlideClone = originalSlides[originalSlides.length - 1].cloneNode(true);
-
-            // Mark clones with specific classes/attributes and remove id/active states
-            firstSlideClone.classList.add('hero-slide-clone');
-            firstSlideClone.classList.remove('active');
-            firstSlideClone.removeAttribute('id');
-            // Update cloned arrow onclick if present to snap back correctly
-            const firstCloneDownArrow = firstSlideClone.querySelector('.scroll-indicator');
-            if (firstCloneDownArrow) {
-                firstCloneDownArrow.setAttribute('onclick', 'scrollToSlide(1)');
-            }
-
-            lastSlideClone.classList.add('hero-slide-clone');
-            lastSlideClone.classList.remove('active');
-            lastSlideClone.removeAttribute('id');
-            const lastCloneDownArrow = lastSlideClone.querySelector('.scroll-indicator');
-            if (lastCloneDownArrow) {
-                lastCloneDownArrow.setAttribute('onclick', 'scrollToSlide(0)');
-            }
-
-            // Prepend and Append clones
-            container.appendChild(firstSlideClone);
-            container.insertBefore(lastSlideClone, originalSlides[0]);
-
-            // Ensure video plays in first slide clone if present
-            const clonedVideo = firstSlideClone.querySelector('video');
-            if (clonedVideo) {
-                clonedVideo.play().catch(() => {});
-            }
-
-            // --- INTERSECTION OBSERVER FOR ACTIVE STATES ---
-            const observerOptions = {
-                root: container,
-                threshold: 0.5
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const slide = entry.target;
-                    if (entry.isIntersecting) {
-                        slide.classList.add('active');
-
-                        // Set active dot
-                        const activeIndex = slide.dataset.slideIndex;
-                        dotWrappers.forEach(wrapper => {
-                            if (wrapper.dataset.slideTarget == activeIndex) {
-                                wrapper.classList.add('active');
-                            } else {
-                                wrapper.classList.remove('active');
-                            }
-                        });
-                    } else {
-                        // Remove active class when it goes out of view
-                        slide.classList.remove('active');
+            const swiper = new Swiper('.swiper-container', {
+                direction: 'vertical',
+                loop: true,
+                slidesPerView: 1,
+                mousewheel: {
+                    thresholdDelta: 10,
+                    forceToAxis: true
+                },
+                keyboard: {
+                    enabled: true,
+                },
+                pagination: {
+                    el: '.vertical-nav',
+                    clickable: true,
+                    bulletClass: 'dot-wrapper',
+                    bulletActiveClass: 'active',
+                    renderBullet: function (index, className) {
+                        return '<div class="' + className + '"><span class="nav-dot"></span></div>';
                     }
-                });
-            }, observerOptions);
+                },
+                on: {
+                    init: function() {
+                        playActiveVideos(this);
+                    },
+                    slideChange: function() {
+                        playActiveVideos(this);
+                    }
+                }
+            });
+            window.swiper = swiper;
 
-            // Observe all slides including clones
-            const allSlides = container.querySelectorAll('.hero-slide');
-            allSlides.forEach(slide => observer.observe(slide));
-
-            // --- SMOOTH SCROLL DOTS CLICK HANDLER ---
-            window.scrollToSlide = function(index) {
-                if (originalSlides[index]) {
-                    originalSlides[index].scrollIntoView({
-                        behavior: 'smooth'
+            function playActiveVideos(swiperInstance) {
+                const activeSlide = swiperInstance.slides[swiperInstance.activeIndex];
+                if (activeSlide) {
+                    const videos = activeSlide.querySelectorAll('video');
+                    videos.forEach(video => {
+                        video.play().catch(() => {});
                     });
                 }
-            };
-
-            // --- INFINITE TELEPORT LOGIC ---
-            let isJumping = true; // Disable jumps during initial setup
-
-            // Initialize to real first slide (Slide 1)
-            requestAnimationFrame(() => {
-                container.style.scrollSnapType = 'none';
-                container.style.scrollBehavior = 'auto';
-                container.scrollTop = originalSlides[0].offsetTop;
-                container.offsetHeight; // force reflow
-                container.style.scrollSnapType = '';
-                container.style.scrollBehavior = '';
-                
-                setTimeout(() => {
-                    isJumping = false;
-                }, 150);
-            });
-
-            // Handlers for scroll settlement to avoid momentum scrolling issues
-            let scrollTimeout;
-            const handleScrollEnd = () => {
-                if (isJumping) return;
-
-                const scrollTop = container.scrollTop;
-                const maxScroll = container.scrollHeight - container.clientHeight;
-
-                // 1. Settled at top boundary (Last Slide Clone) -> Teleport to Real Last Slide
-                if (scrollTop <= 5) {
-                    isJumping = true;
-                    
-                    // Pre-activate destination to avoid text animation flash
-                    originalSlides[originalSlides.length - 1].classList.add('active');
-                    lastSlideClone.classList.remove('active');
-
-                    container.style.scrollSnapType = 'none';
-                    container.style.scrollBehavior = 'auto';
-                    
-                    container.scrollTop = originalSlides[originalSlides.length - 1].offsetTop;
-                    container.offsetHeight; // force reflow
-                    
-                    container.style.scrollSnapType = '';
-                    container.style.scrollBehavior = '';
-
-                    setTimeout(() => {
-                        isJumping = false;
-                    }, 50);
-                } 
-                // 2. Settled at bottom boundary (First Slide Clone) -> Teleport to Real First Slide
-                else if (scrollTop >= maxScroll - 5) {
-                    isJumping = true;
-                    
-                    // Pre-activate destination to avoid text animation flash
-                    originalSlides[0].classList.add('active');
-                    firstSlideClone.classList.remove('active');
-
-                    container.style.scrollSnapType = 'none';
-                    container.style.scrollBehavior = 'auto';
-                    
-                    container.scrollTop = originalSlides[0].offsetTop;
-                    container.offsetHeight; // force reflow
-                    
-                    container.style.scrollSnapType = '';
-                    container.style.scrollBehavior = '';
-
-                    setTimeout(() => {
-                        isJumping = false;
-                    }, 50);
-                }
-            };
-
-            // Use native scrollend if available, otherwise fallback to debounce scroll event
-            if ('onscrollend' in window) {
-                container.addEventListener('scrollend', handleScrollEnd);
-            } else {
-                container.addEventListener('scroll', () => {
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(handleScrollEnd, 100);
-                });
             }
         });
     </script>

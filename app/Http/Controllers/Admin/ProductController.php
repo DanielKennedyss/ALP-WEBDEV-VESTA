@@ -16,10 +16,46 @@ class ProductController extends Controller
      * 1. INDEX: Menampilkan inventory.
      * Dapat diakses oleh Owner, Manager, dan Staff.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['category', 'variants'])->orderBy('created_at', 'desc')->get();
-        return view('admin.products.index', compact('products'));
+        $query = Product::with(['category', 'variants']);
+
+        if ($request->filled('product')) {
+            $productName = $request->product;
+            $query->where(function($q) use ($productName) {
+                $q->where('name', 'like', "%{$productName}%")
+                  ->orWhere('sku', 'like', "%{$productName}%");
+            });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        if ($request->filled('size')) {
+            $size = $request->size;
+            $query->whereHas('variants', function($q) use ($size) {
+                $q->where('size_label', $size);
+            });
+        }
+
+        $products = $query->orderBy('created_at', 'desc')->get();
+        $categories = Category::all();
+        
+        // Fetch unique sizes available in DB for the dropdown
+        $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.products.table_rows', compact('products'))->render()
+            ]);
+        }
+
+        return view('admin.products.index', compact('products', 'categories', 'sizes'));
     }
 
     /**
