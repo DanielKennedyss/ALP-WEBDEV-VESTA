@@ -30,7 +30,8 @@ class User extends Authenticatable
         'loyalty_points', 
         'total_spending', 
         'status',
-        'google_id',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     /**
@@ -41,6 +42,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 
         'remember_token',
+        'otp_code',
     ];
 
     /**
@@ -50,10 +52,10 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'otp_expires_at'    => 'datetime', // REVISI: Otomatis cast menjadi instance Carbon/Datetime
-        'password'          => 'hashed',   // Mengotomatiskan hashing string password saat mutation
-        'total_spending'    => 'decimal:2',
-        'loyalty_points'    => 'integer',
+        'password' => 'hashed',
+        'total_spending' => 'decimal:2',
+        'loyalty_points' => 'integer',
+        'otp_expires_at' => 'datetime',
     ];
 
     /**

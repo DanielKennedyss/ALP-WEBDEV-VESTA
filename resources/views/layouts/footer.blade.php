@@ -1,19 +1,20 @@
 <footer id="contact" class="w-full bg-[#fafafa] text-black pt-32 pb-16 px-6 lg:px-16 border-t border-[#e9e9e6] mt-32">
     <div class="max-w-7xl mx-auto">
-        
-        {{-- Row 1: Asymmetric Minimalist Layout --}}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 mb-24">
-            
-            {{-- Sektor Kiri: Brand Statement (Menguasai Ruang) --}}
-            <div class="lg:col-span-7 flex flex-col justify-between">
-                <div>
-                    <a href="/" class="text-3xl font-serif tracking-[0.35em] text-black uppercase transition-opacity duration-300 hover:opacity-60">
-                        VESTA
-                    </a>
-                    <p class="text-[#666660] text-sm font-light leading-relaxed max-w-sm mt-6">
-                        An editorial approach to contemporary tailoring. Crafting permanent wardrobes for the discerning individual with uncompromising standards.
-                    </p>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div class="md:col-span-2">
+                <a href="/" class="text-2xl font-serif tracking-[0.3em] text-black">VESTA</a>
+                <p class="text-gray-500 text-sm mt-4 leading-relaxed max-w-sm">
+                    Luxury fashion for the discerning individual. Crafted with passion, worn with pride.
+                </p>
+            </div>
+            <div>
+                <h4 class="text-xs tracking-[0.25em] mb-6">NAVIGATE</h4>
+                <ul class="space-y-3">
+                    <li><a href="/" class="text-gray-400 text-sm hover:text-black transition-colors">Home</a></li>
+                    <li><a href="{{ route('collections.index') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Collection</a></li>
+                    <li><a href="{{ route('about') }}" class="text-gray-400 text-sm hover:text-black transition-colors">About</a></li>
+                    <li><a href="{{ route('contact') }}" class="text-gray-400 text-sm hover:text-black transition-colors">Contact</a></li>
+                </ul>
             </div>
 
             {{-- Sektor Kanan: High-End Navigation (Spasi Lebar & Ringkas) --}}

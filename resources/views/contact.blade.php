@@ -25,7 +25,7 @@
                     <div>
                         <!-- Guaranteed visible red subhead using inline style -->
                         <h4 class="text-[11px] tracking-[0.25em] font-bold uppercase mb-2 font-sans" style="color: #dc2626;">OFFICIAL INQUIRY</h4>
-                        <a href="mailto:support@vesta.com" class="text-gray-600 text-sm md:text-base font-light hover:text-black transition-colors font-sans">
+                        <a href="mailto:vestaclothingg@gmail.com" class="text-gray-600 text-sm md:text-base font-light hover:text-black transition-colors font-sans">
                             vestaclothingg@gmail.com
                         </a>
                     </div>

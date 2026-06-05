@@ -152,6 +152,13 @@
                            placeholder="0" value="{{ old('price', $product->price) }}" required>
                 </div>
 
+                {{-- Weight --}}
+                <div class="mb-4">
+                    <label class="stat-label d-block mb-2">Weight (Grams)</label>
+                    <input type="number" name="weight" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
+                           placeholder="e.g. 500" value="{{ old('weight', $product->weight) }}" min="1" required>
+                </div>
+
                 {{-- Product Image --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Image</label>
@@ -159,7 +166,7 @@
                     {{-- Preview Current Image --}}
                     @if($product->image_path)
                     <div class="mb-3">
-                        <img src="{{ asset('product_image/' . $product->image_path) }}" 
+                        <img src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
                              class="img-thumbnail rounded-0 border-0 bg-light" style="max-height: 200px;">
                         <p class="text-muted mt-2" style="font-size: 9px;">Current Image</p>
                     </div>

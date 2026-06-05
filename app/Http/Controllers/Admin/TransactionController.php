@@ -40,7 +40,7 @@ class TransactionController extends Controller
     {
         // 1. Validasi Input Status Sesuai Alur Logistik Baru VESTA
         $validated = $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered,cancelled,expired'
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled,expired,refunded'
         ]);
 
         $oldStatus = $transaction->status;
@@ -62,8 +62,8 @@ class TransactionController extends Controller
             }
 
             // 3. GARDA PENGAMAN REFUND POIN LOYALTY
-            // Jika pesanan digagalkan (cancelled/expired) dari status aktif sebelumnya
-            if (in_array($newStatus, ['cancelled', 'expired']) && !in_array($oldStatus, ['cancelled', 'expired'])) {
+            // Jika pesanan digagalkan (cancelled/expired/refunded) dari status aktif sebelumnya
+            if (in_array($newStatus, ['cancelled', 'expired', 'refunded']) && !in_array($oldStatus, ['cancelled', 'expired', 'refunded'])) {
                 
                 // Mengambil relasi user yang melakukan transaksi
                 $user = $transaction->user;
@@ -78,7 +78,7 @@ class TransactionController extends Controller
                         'transaction_id' => $transaction->id,
                         'type'           => 'refund',
                         'points'         => $transaction->points_redeemed,
-                        'description'    => "Points refunded from Admin cancellation on Order #" . $transaction->invoice_number,
+                        'description'    => "Points refunded from Admin cancellation/refund on Order #" . $transaction->invoice_number,
                     ]);
                 }
             }

@@ -50,6 +50,30 @@ class Product extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Relasi: Satu Product punya banyak Review
+     */
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    /**
+     * Relasi: Product dapat diasosiasikan ke banyak Event secara langsung
+     */
+    public function events()
+    {
+        return $this->belongsToMany(Event::class, 'event_product');
+    }
+
+    /**
+     * Relasi: Product dapat dimasukkan ke banyak Subcategory Event
+     */
+    public function eventSubcategories()
+    {
+        return $this->belongsToMany(EventSubcategory::class, 'event_subcategory_product');
+    }
     
     /**
      * Accessor: Total stock dari semua varian

@@ -3,25 +3,25 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ContactInquiryMail extends Mailable
+class ResetPasswordOtpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public array $data;
+    public string $otpCode;
+    public string $userName;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(array $data)
+    public function __construct(string $otpCode, string $userName)
     {
-        $this->data = $data;
+        $this->otpCode = $otpCode;
+        $this->userName = $userName;
     }
 
     /**
@@ -30,7 +30,7 @@ class ContactInquiryMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Contact Inquiry: ' . ($this->data['subject'] ?? 'No Subject'),
+            subject: 'Your Password Reset OTP - VESTA',
         );
     }
 
@@ -40,14 +40,14 @@ class ContactInquiryMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.contact_inquiry',
+            view: 'emails.reset_password_otp',
         );
     }
 
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, Attachment>
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {

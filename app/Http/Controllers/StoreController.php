@@ -28,19 +28,66 @@ class StoreController extends Controller
     }
 
     /**
-     * Halaman Koleksi dengan Filter & Search (INTEGRASI FUZZY SEARCH)
+     * Halaman Koleksi dengan Filter & Search (Locked Event Landing Page)
      */
     public function collection(Request $request)
     {
-        $query = Product::with(['category', 'variants']);
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
 
-        // REVISI LOGIKA: Kondisi SQL "LIKE" dihapus dari backend agar pencarian ejaan samar (Fuzzy Search)
-        // bisa dikerjakan langsung oleh Fuse.js di front-end secara real-time dan typo-tolerant.
+        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->with(['products' => function($q) {
+                $q->with(['category', 'variants', 'reviews.user'])
+                  ->withAvg('reviews', 'rating')
+                  ->withCount('reviews');
+            }])
+            ->first();
+
+        // Fallback products (e.g. new arrivals) if no active event is present
+        $products = collect();
+        if (!$activeEvent) {
+            $products = Product::with(['category', 'variants', 'reviews.user'])
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
+                ->orderBy('created_at', 'desc')
+                ->take(12)
+                ->get();
+        }
+
+        return view('store.collection', compact('activeEvent', 'products'));
+    }
+
+    /**
+     * Halaman Katalog Unfiltered dengan Filter & Search
+     */
+    public function catalog(Request $request)
+    {
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
+        $query = Product::with(['category', 'variants', 'reviews.user'])->withAvg('reviews', 'rating')->withCount('reviews');
+
+        // Search by product name, description, or SKU
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhere('sku', 'like', '%' . $search . '%');
+            });
+        }
 
         // Filter by category
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->category);
+            });
+        }
+
+        // Filter by event
+        if ($request->filled('filter_event')) {
+            $query->whereHas('events', function ($q) use ($request) {
+                $q->where('events.id', $request->filter_event);
             });
         }
 
@@ -71,12 +118,26 @@ class StoreController extends Controller
             default: $query->orderBy('created_at', 'desc'); break;
         }
 
-        $products = $query->get();
+        $products = $query->paginate(12)->withQueryString();
         $categories = Category::orderBy('name')->pluck('name');
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
 
-        return view('store.collection', compact('products', 'categories', 'genders', 'sizes'));
+        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+
+        $activeEventProductIds = [];
+        if ($activeEvent) {
+            $activeEventProductIds = $activeEvent->products()->pluck('products.id')->toArray();
+        }
+
+        $filteredEvent = null;
+        if ($request->filled('filter_event')) {
+            $filteredEvent = \App\Models\Event::find($request->filter_event);
+        }
+
+        return view('store.catalog', compact('products', 'categories', 'genders', 'sizes', 'activeEvent', 'activeEventProductIds', 'filteredEvent'));
     }
 
     /**
@@ -212,6 +273,14 @@ class StoreController extends Controller
 
         $isBuyNow = session()->has('buy_now');
         $cart = $isBuyNow ? [session('buy_now')] : session('cart', []);
+
+        $checkedKeys = [];
+        if (!$isBuyNow && $request->has('checked_items') && !empty($request->input('checked_items'))) {
+            $checkedKeys = explode(',', $request->input('checked_items'));
+            $cart = array_filter($cart, function($key) use ($checkedKeys) {
+                return in_array($key, $checkedKeys);
+            }, ARRAY_FILTER_USE_KEY);
+        }
 
         if (empty($cart)) return redirect()->back()->with('error', 'Transaction session has expired or is empty.');
         
@@ -810,6 +879,8 @@ class StoreController extends Controller
             'success' => true,
             'message' => 'Voucher "' . $voucher->code . '" successfully applied!',
             'discount' => $discountAmount,
+            'type' => $voucher->type,
+            'reward_value' => (float) $voucher->reward_value,
             'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
     }
@@ -844,6 +915,8 @@ class StoreController extends Controller
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }
+
+        $order->load(['reviews.product']);
 
         return view('store.track', compact('order'));
     }

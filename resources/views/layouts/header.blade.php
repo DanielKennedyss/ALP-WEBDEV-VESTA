@@ -19,7 +19,7 @@
             <!-- Navigation Links (desktop) -->
             <div class="hidden md:flex items-center gap-10">
                 <a href="/" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">HOME</a>
-                <a href="{{ route('collection') }}"
+                <a href="{{ route('collections.index') }}"
                     class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">COLLECTION</a>
                 <a href="{{ route('about') }}"
                     class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">ABOUT</a>
@@ -105,7 +105,7 @@
 
         <!-- Drawer Footer -->
         <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
-            <a href="{{ route('collection') }}"
+            <a href="{{ route('collections.index') }}"
                 class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 hover:bg-gray-800 transition-colors"
                 onclick="closeWishlistModal()">
                 CONTINUE SHOPPING
@@ -372,16 +372,18 @@
         html += '</div>';
         container.innerHTML = html;
     }
+
     // Redirect or open quickview logic
     function handleWishlistItemClick(productId) {
         closeWishlistModal();
-        const isCollectionPage = window.location.pathname.endsWith('/collection');
-        if (isCollectionPage) {
+        const isCatalogPage = window.location.pathname.includes('/collections') || window.location.pathname.includes('/catalog');
+        if (isCatalogPage) {
             openQuickView(productId);
         } else {
-            window.location.href = "{{ route('collection') }}?quickview=" + productId;
+            window.location.href = "{{ route('collections.index') }}?quickview=" + productId;
         }
     }
+
     // Micro-interaction: Fly animation
     function animateHeartToNavbar(startEl, endEl) {
         const startRect = startEl.getBoundingClientRect();

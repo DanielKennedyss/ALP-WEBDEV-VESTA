@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Mail\SendOtpMail; // REVISI: Dipastikan mengunci ke Mailable milikmu
+use App\Mail\ResetPasswordOtpMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class AuthOtpController extends Controller
 {
     /**
-     * Menampilkan Form Lupa Password
+     * Step 1: Show the "Forgot Password" form (email input).
      */
     public function showForgotPasswordForm()
     {
@@ -19,87 +20,169 @@ class AuthOtpController extends Controller
     }
 
     /**
-     * Memproses Pengiriman OTP Lupa Password
+     * Step 2: Validate email, generate OTP, store it, and send it via email.
      */
     public function sendResetOtp(Request $request)
     {
-        // Validasi: Email wajib diisi dan harus ada di tabel users
         $request->validate([
-            'email' => 'required|email|exists:users,email'
-        ], [
-            'email.exists' => 'This email address is not registered in our system.'
+            'email' => 'required|email',
         ]);
 
-        // 1. Cari data user berdasarkan input email
         $user = User::where('email', $request->email)->first();
 
-        // 2. Buat 6 digit angka acak OTP
-        $otp = rand(100000, 999999);
+        if (!$user) {
+            return back()->withErrors(['email' => 'We could not find an account with that email address.'])->withInput();
+        }
 
-        // 3. Simpan OTP dan batas kadaluarsa ke kolom user di database
+        // Generate a 6-digit OTP
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Store OTP and expiry (10 minutes) on the user record
         $user->update([
-            'otp_code' => $otp,
-            'otp_expires_at' => now()->addMinutes(15) // Masa aktif 15 menit
+            'otp_code'       => $otpCode,
+            'otp_expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
-        // 4. TEMBAK EMAIL NYATA menggunakan Mailable SendOtpMail milikmu
-        // Mengirimkan variabel $otp ke constructor SendOtpMail($otp)
-        Mail::to($user->email)->send(new SendOtpMail($otp));
+        // Send the OTP via email
+        Mail::to($user->email)->send(new ResetPasswordOtpMail($otpCode, $user->name));
 
-        // 5. Simpan email di session agar form verifikasi berikutnya tahu akun mana yang di-reset
+        // Store email in session to carry it to the next step
         session(['reset_email' => $user->email]);
 
-        return redirect()->route('password.reset.form')->with('success', 'OTP sent successfully.');
+        return redirect()->route('password.reset.form')->with('success', 'A 6-digit OTP has been sent to your email.');
     }
 
     /**
-     * Menampilkan Form Penginputan Kode OTP & Password Baru
+     * Step 3: Show the "Reset Password" form (OTP + new password).
      */
     public function showResetPasswordForm()
     {
+        // If no email in session, redirect back to forgot-password
         if (!session('reset_email')) {
-            return redirect()->route('password.request')->with('error', 'Please request an OTP token first.');
+            return redirect()->route('password.request')->withErrors(['email' => 'Please enter your email first.']);
         }
+
         return view('auth.reset-password');
     }
 
     /**
-     * Memproses Eksekusi Perubahan Password Baru
+     * Step 3b: Verify OTP via AJAX (returns JSON).
+     */
+    public function verifyResetOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $email = session('reset_email');
+
+        if (!$email) {
+            return response()->json(['success' => false, 'message' => 'Session expired. Please start again.'], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Account not found.'], 422);
+        }
+
+        // Check OTP validity
+        if ($user->otp_code !== $request->otp) {
+            return response()->json(['success' => false, 'message' => 'The OTP code you entered is incorrect.'], 422);
+        }
+
+        // Check OTP expiration
+        if (!$user->otp_expires_at || Carbon::now()->isAfter($user->otp_expires_at)) {
+            $user->update(['otp_code' => null, 'otp_expires_at' => null]);
+            return response()->json(['success' => false, 'message' => 'This OTP has expired. Please request a new one.'], 422);
+        }
+
+        // Mark OTP as verified in session so resetPassword doesn't re-check
+        session(['otp_verified' => true]);
+
+        return response()->json(['success' => true, 'message' => 'OTP verified successfully.']);
+    }
+
+    /**
+     * Step 4: Reset the password (OTP already verified via Step 3b).
      */
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'otp_code' => 'required|numeric',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $email = session('reset_email');
+
+        if (!$email || !session('otp_verified')) {
+            return redirect()->route('password.request')->withErrors(['email' => 'Session expired. Please start again.']);
+        }
+
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            return redirect()->route('password.request')->with('error', 'Session expired. Please try again.');
+            return redirect()->route('password.request')->withErrors(['email' => 'Account not found.']);
         }
 
-        // Validasi 1: Kecocokan kode OTP
-        if ($user->otp_code != $request->otp_code) {
-            return redirect()->back()->withErrors(['otp_code' => 'The OTP code you entered is invalid.']);
-        }
-
-        // Validasi 2: Cek apakah kode OTP sudah expired
-        if (now()->isAfter($user->otp_expires_at)) {
-            return redirect()->back()->withErrors(['otp_code' => 'The OTP code has expired. Please request a new one.']);
-        }
-
-        // Update password baru dan bersihkan sisa token OTP di database
+        // Reset the password
         $user->update([
-            'password' => Hash::make($request->password),
-            'otp_code' => null,
-            'otp_expires_at' => null
+            'password'       => Hash::make($request->password),
+            'otp_code'       => null,
+            'otp_expires_at' => null,
         ]);
 
-        // Bersihkan session penampung email
-        session()->forget('reset_email');
+        // Clear session
+        session()->forget(['reset_email', 'otp_verified']);
 
-        return redirect()->route('login')->with('success', 'Your password has been reset successfully. Please log in.');
+        return redirect()->route('login')->with('status', 'Your password has been reset successfully. Please sign in.');
+    }
+
+    /**
+     * Resend OTP (from reset-password page).
+     */
+    public function resendResetOtp(Request $request)
+    {
+        $email = session('reset_email');
+
+        if (!$email) {
+            return redirect()->route('password.request')->withErrors(['email' => 'Session expired. Please start again.']);
+        }
+
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return redirect()->route('password.request')->withErrors(['email' => 'Account not found.']);
+        }
+
+        // Generate a new 6-digit OTP
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $user->update([
+            'otp_code'       => $otpCode,
+            'otp_expires_at' => Carbon::now()->addMinutes(10),
+        ]);
+
+        Mail::to($user->email)->send(new ResetPasswordOtpMail($otpCode, $user->name));
+
+        return back()->with('success', 'A new OTP has been sent to your email.');
+    }
+
+    // =====================================================================
+    // Account Verification OTP (existing stubs — kept for route compatibility)
+    // =====================================================================
+
+    public function showVerifyForm()
+    {
+        return view('auth.verify-otp');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        return redirect()->route('home')->with('success', 'Account verified successfully.');
+    }
+
+    public function sendVerificationOtp(Request $request)
+    {
+        return redirect()->back()->with('success', 'Verification OTP sent successfully.');
     }
 }

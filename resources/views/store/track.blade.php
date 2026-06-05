@@ -2,39 +2,39 @@
 
 @section('content')
 @php
-    $status = $order->status;
+    $status = strtolower($order->status);
     
     // Progress stage mapping
-    $currentLevel = 1; // Default: Dikemas (Paid)
+    $currentLevel = 1; // Default: Pending Payment
     
-    if ($status === 'processing') {
-        $currentLevel = 2; // Disortir
+    if (in_array($status, ['processing', 'success', 'settlement', 'paid'])) {
+        $currentLevel = 2; // Processing
     } elseif ($status === 'shipped') {
-        $currentLevel = 3; // Dikirim
+        $currentLevel = 3; // Shipped
     } elseif (in_array($status, ['delivered', 'completed'])) {
-        $currentLevel = 4; // Sudah Sampai
+        $currentLevel = 4; // Delivered
     }
 
     $stages = [
         1 => [
-            'title' => 'Dikemas',
-            'desc' => 'Pesanan Anda sedang dikemas dan disiapkan oleh pihak VESTA.',
-            'time' => $order->paid_at ? $order->paid_at->format('d M Y, H:i') : $order->created_at->format('d M Y, H:i')
+            'title' => 'Payment Successful',
+            'desc' => $currentLevel > 1 ? 'Payment successfully verified.' : 'Awaiting payment verification.',
+            'time' => $order->created_at->format('d M Y, H:i')
         ],
         2 => [
-            'title' => 'Disortir',
-            'desc' => 'Pesanan telah disortir di pusat logistik kami.',
-            'time' => $status !== 'pending' && $order->updated_at ? $order->updated_at->format('d M Y, H:i') : 'Menunggu antrean'
+            'title' => 'Processing',
+            'desc' => $currentLevel < 2 ? 'Awaiting payment.' : ($currentLevel == 2 ? 'Your order is being processed and prepared by VESTA.' : 'Order has been processed and prepared.'),
+            'time' => in_array($status, ['processing', 'success', 'settlement', 'paid', 'shipped', 'delivered', 'completed']) ? ($order->paid_at ? $order->paid_at->format('d M Y, H:i') : $order->updated_at->format('d M Y, H:i')) : 'Awaiting payment'
         ],
         3 => [
-            'title' => 'Dikirim',
-            'desc' => 'Pesanan sedang dalam perjalanan ke alamat tujuan (' . strtoupper($order->shipping_courier ?? 'Kurir') . ').',
-            'time' => $currentLevel >= 3 ? $order->updated_at->format('d M Y, H:i') : 'Menunggu pengiriman'
+            'title' => 'Shipped',
+            'desc' => $currentLevel < 3 ? 'Awaiting shipment.' : ($currentLevel == 3 ? 'Your order is on its way to the destination address (' . strtoupper($order->shipping_courier ?? 'Courier') . ' - ' . ($order->shipping_service ?? 'Standard') . ').' : 'Order has been shipped and is in transit.'),
+            'time' => $currentLevel >= 3 ? $order->updated_at->format('d M Y, H:i') : 'Awaiting shipment'
         ],
         4 => [
-            'title' => 'Sudah Sampai',
-            'desc' => 'Pesanan telah diterima oleh penerima.',
-            'time' => $currentLevel >= 4 ? $order->updated_at->format('d M Y, H:i') : 'Dalam perjalanan'
+            'title' => 'Delivered',
+            'desc' => $currentLevel < 4 ? 'Awaiting delivery.' : 'Your order has been successfully delivered.',
+            'time' => $currentLevel >= 4 ? $order->updated_at->format('d M Y, H:i') : 'In transit'
         ]
     ];
 @endphp
@@ -60,13 +60,51 @@
             <div class="flex flex-col items-start md:items-end gap-1.5">
                 <span class="text-[9px] tracking-[0.2em] text-stone-400 uppercase font-bold">Order Date</span>
                 <span class="text-xs text-stone-900 font-medium">{{ $order->created_at->format('M d, Y') }}</span>
-                <span class="inline-block border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-0.5 text-[9px] tracking-[0.1em] uppercase font-bold mt-1">PAID</span>
+                @if(in_array($status, ['cancelled', 'expired', 'failed']))
+                    <span class="inline-block border border-red-200 bg-red-50 text-red-700 px-3 py-0.5 text-[9px] tracking-[0.1em] uppercase font-bold mt-1">CANCELLED</span>
+                @elseif($status === 'refunded')
+                    <span class="inline-block border border-stone-200 bg-stone-50 text-stone-700 px-3 py-0.5 text-[9px] tracking-[0.1em] uppercase font-bold mt-1">REFUNDED</span>
+                @elseif($status === 'pending')
+                    <span class="inline-block border border-amber-200 bg-amber-50 text-amber-700 px-3 py-0.5 text-[9px] tracking-[0.1em] uppercase font-bold mt-1">PENDING PAYMENT</span>
+                @else
+                    <span class="inline-block border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-0.5 text-[9px] tracking-[0.1em] uppercase font-bold mt-1">PAID</span>
+                @endif
             </div>
         </div>
 
+        @if(in_array($status, ['cancelled', 'expired', 'failed']))
+            <div class="border border-red-200 bg-red-50/50 p-6 mb-8 flex items-start gap-4">
+                <div class="shrink-0 text-red-600 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-xs uppercase font-bold text-red-900 tracking-wider">Order Cancelled</h4>
+                    <p class="text-xs text-red-500 leading-relaxed mt-1">
+                        This order has been cancelled. If you have any questions or require further assistance, please contact us.
+                    </p>
+                </div>
+            </div>
+        @elseif($status === 'refunded')
+            <div class="border border-stone-200 bg-stone-50 p-6 mb-8 flex items-start gap-4">
+                <div class="shrink-0 text-stone-600 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-xs uppercase font-bold text-stone-900 tracking-wider">Order Refunded</h4>
+                    <p class="text-xs text-stone-500 leading-relaxed mt-1">
+                        This order has been refunded. If you have any questions or require further assistance, please contact us.
+                    </p>
+                </div>
+            </div>
+        @endif
+
         <!-- Progress Tracker Section -->
         <div class="border border-stone-200 bg-white p-8 md:p-12 mb-8">
-            <h3 class="text-xs tracking-[0.2em] uppercase font-bold text-stone-950 mb-10 pb-4 border-b border-stone-100">Pesanan Saya</h3>
+            <h3 class="text-xs tracking-[0.2em] uppercase font-bold text-stone-950 mb-10 pb-4 border-b border-stone-100">My Order Status</h3>
 
             <!-- Desktop Horizontal Stepper (hidden on mobile) -->
             <div class="hidden md:flex justify-between items-start relative mb-12">
@@ -83,7 +121,7 @@
                             {{ $currentLevel >= $num 
                                 ? 'bg-stone-900 text-white shadow-md' 
                                 : 'bg-white border-2 border-stone-200 text-stone-400' }}">
-                            @if($currentLevel > $num)
+                            @if($currentLevel > $num || $currentLevel == 4)
                                 <!-- Check Icon for Completed -->
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -123,7 +161,7 @@
                             {{ $currentLevel >= $num 
                                 ? 'bg-stone-900 text-white shadow' 
                                 : 'bg-white border-2 border-stone-200 text-stone-400' }}">
-                            @if($currentLevel > $num)
+                            @if($currentLevel > $num || $currentLevel == 4)
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
@@ -159,7 +197,7 @@
                         </svg>
                     </div>
                     <div>
-                        <span class="text-[9px] tracking-wider uppercase text-stone-400 font-bold block mb-1">Status Terkini</span>
+                        <span class="text-[9px] tracking-wider uppercase text-stone-400 font-bold block mb-1">Current Status</span>
                         <h4 class="text-xs uppercase font-bold text-stone-900 tracking-wider">
                             {{ $stages[$currentLevel]['title'] }}
                         </h4>
@@ -222,6 +260,51 @@
             </div>
         </div>
 
+        @if($order->reviews && $order->reviews->isNotEmpty())
+            <!-- User Reviews Section -->
+            <div class="border border-stone-200 bg-white p-8 mb-8 animate-fade-in">
+                <h3 class="text-xs tracking-[0.2em] uppercase font-bold text-stone-950 mb-6 pb-4 border-b border-stone-100">Your Review</h3>
+                <div class="space-y-6 divide-y divide-stone-100">
+                    @foreach($order->reviews as $review)
+                        <div class="pt-6 first:pt-0">
+                            <div class="flex items-start gap-4">
+                                <!-- Product Image -->
+                                <div class="w-12 h-16 bg-stone-100 shrink-0 overflow-hidden border border-stone-100">
+                                    <img src="{{ $review->product && $review->product->image_path ? $review->product->image_path : 'https://ui-avatars.com/api/?name=' . urlencode($review->product ? $review->product->name : 'Product') . '&background=1a1a1a&color=fff' }}" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                                        <h4 class="text-xs font-semibold text-stone-900">
+                                            {{ $review->product ? $review->product->name : 'Product' }}
+                                        </h4>
+                                        <!-- Stars -->
+                                        <div class="flex gap-0.5 text-black">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 {{ $i <= $review->rating ? 'fill-current' : 'text-stone-200' }}" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            @endfor
+                                        </div>
+                                    </div>
+                                    @if($review->comment)
+                                        <p class="text-xs text-stone-600 leading-relaxed italic bg-stone-50 p-4 border border-stone-100 rounded-sm">
+                                            "{{ $review->comment }}"
+                                        </p>
+                                    @else
+                                        <p class="text-xs text-stone-400 italic">No comment provided.</p>
+                                    @endif
+                                    <span class="text-[9px] text-stone-400 font-mono mt-2 block">
+                                        Reviewed on {{ $review->created_at->format('d M Y, H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <!-- Refund Policy Warning Card -->
         <div class="border border-stone-200 bg-white p-6 flex items-start gap-4">
             <div class="shrink-0 text-stone-900 mt-0.5">
@@ -230,16 +313,16 @@
                 </svg>
             </div>
             <div>
-                <h5 class="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-900 mb-1">Kebijakan Pengembalian Dana & Refund</h5>
+                <h5 class="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-900 mb-1">Refund & Return Policy</h5>
                 <p class="text-xs text-stone-500 leading-relaxed">
-                    Jika Anda ingin melakukan refund atau pengembalian dana setelah pembayaran berhasil, silakan hubungi kami melalui email resmi di <a href="mailto:evanvarian39@gmail.com" class="text-stone-900 underline underline-offset-2 hover:text-stone-700 transition-colors">evanvarian39@gmail.com</a>.
+                    If you wish to request a refund or return after a successful payment, please contact us via our official email at <a href="mailto:vestaclothingg@gmail.com" class="text-stone-900 underline underline-offset-2 hover:text-stone-700 transition-colors">vestaclothingg@gmail.com</a>.
                 </p>
             </div>
         </div>
 
         <div class="mt-8 text-center">
             <a href="{{ route('profile') }}" class="inline-block border border-stone-950 text-stone-950 px-8 py-3 text-[10px] tracking-[0.2em] uppercase font-bold hover:bg-stone-950 hover:text-white transition-all duration-300">
-                Kembali ke Profile
+                Back to Profile
             </a>
         </div>
     </div>

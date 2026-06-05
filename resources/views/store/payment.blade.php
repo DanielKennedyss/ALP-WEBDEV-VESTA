@@ -3,7 +3,7 @@
 @section('content')
 <style>
     .vesta-toast {
-        position: fixed; top: 2rem; right: 2rem; z-index: 200;
+        position: fixed; top: 1.5rem; right: 2rem; z-index: 200;
         padding: 1.25rem 2rem; min-width: 320px; max-width: 420px;
         border: 1px solid; opacity: 0; transform: translateX(100%);
         animation: toastIn 0.5s ease forwards;
@@ -85,7 +85,7 @@
 
         {{-- Status Badge --}}
         <div id="statusBadge" class="mb-8 text-center">
-            <span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Pending</span>
+            <span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Pending Payment</span>
         </div>
 
         {{-- Instructions --}}
@@ -104,7 +104,7 @@
                 ← Back to Profile
             </a>
             <span class="text-gray-300 hidden sm:inline">|</span>
-            <a href="{{ route('collection') }}" class="text-xs tracking-[0.2em] text-gray-400 hover:text-black transition-colors uppercase">
+            <a href="{{ route('collections.index') }}" class="text-xs tracking-[0.2em] text-gray-400 hover:text-black transition-colors uppercase">
                 Continue Shopping
             </a>
         </div>
@@ -140,12 +140,12 @@ function updateStatus(status) {
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');
     } else if (status === 'failed') {
-        badge.innerHTML = '<span class="inline-block border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Failed</span>';
+        badge.innerHTML = '<span class="inline-block border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Cancelled / Refunded</span>';
         btn.textContent = 'RETRY PAYMENT';
         btn.disabled = false;
         btn.classList.remove('opacity-50', 'cursor-not-allowed');
     } else {
-        badge.innerHTML = '<span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Pending</span>';
+        badge.innerHTML = '<span class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-4 py-2 text-[10px] tracking-[0.2em] uppercase">Status: Pending Payment</span>';
         btn.textContent = 'PROCEED TO PAYMENT';
         btn.disabled = false;
         btn.classList.remove('opacity-50', 'cursor-not-allowed');

@@ -171,6 +171,10 @@
             <a href="{{ route('admin.inventory') }}" class="nav-link-admin {{ request()->routeIs('admin.inventory*') ? 'active' : '' }}">
                 <i class="bi bi-box-seam"></i> <span>Inventory</span>
             </a>
+
+            <a href="{{ route('admin.events.index') }}" class="nav-link-admin {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-event"></i> <span>Collections</span>
+            </a>
             
             <a href="{{ route('admin.transactions.index') }}" class="nav-link-admin {{ request()->routeIs('admin.transactions*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> <span>Transactions</span>
@@ -188,6 +192,11 @@
                 <span class="nav-label">Administration</span>
                 <a href="{{ route('admin.staff.index') }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
                     <i class="bi bi-people"></i> <span>Staff Management</span>
+                </a>
+            @elseif(auth()->user()->role === 'staff')
+                <span class="nav-label">Administration</span>
+                <a href="{{ route('admin.staff.edit', auth()->id()) }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
+                    <i class="bi bi-person-gear"></i> <span>My Account</span>
                 </a>
             @endif
         </nav>

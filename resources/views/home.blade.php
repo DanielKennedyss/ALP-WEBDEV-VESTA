@@ -272,7 +272,7 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Elegant Silhouettes &amp; Timeless Textures</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     Explore Collection
                 </a>
             </div>
@@ -303,7 +303,7 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Meticulously Crafted for the Modern Icon</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     Shop The Edit
                 </a>
             </div>
@@ -334,9 +334,19 @@
                 <p
                     class="text-white/70 text-xs md:text-sm tracking-[0.3em] uppercase max-w-xl leading-relaxed font-light">
                     Sophistication in Every Single Thread</p>
-                <a href="{{ route('collection') }}" class="cta-btn">
+                <a href="{{ route('collections.index') }}" class="cta-btn">
                     View Selection
                 </a>
+            </div>
+
+            <!-- Down Arrow Hint to Loop back to Slide 1 -->
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 scroll-indicator cursor-pointer"
+                onclick="scrollToSlide(0)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
             </div>
         </section>
 
@@ -346,10 +356,43 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.querySelector('.hero-scroll-container');
-            const slides = document.querySelectorAll('.hero-slide');
+            const originalSlides = Array.from(document.querySelectorAll('.hero-slide'));
             const dotWrappers = document.querySelectorAll('.dot-wrapper');
 
-            // Scroll indicator dots updater
+            // --- INFINITE SCROLL CLONING SETUP ---
+            // Clone first and last slides for infinite snapping
+            const firstSlideClone = originalSlides[0].cloneNode(true);
+            const lastSlideClone = originalSlides[originalSlides.length - 1].cloneNode(true);
+
+            // Mark clones with specific classes/attributes and remove id/active states
+            firstSlideClone.classList.add('hero-slide-clone');
+            firstSlideClone.classList.remove('active');
+            firstSlideClone.removeAttribute('id');
+            // Update cloned arrow onclick if present to snap back correctly
+            const firstCloneDownArrow = firstSlideClone.querySelector('.scroll-indicator');
+            if (firstCloneDownArrow) {
+                firstCloneDownArrow.setAttribute('onclick', 'scrollToSlide(1)');
+            }
+
+            lastSlideClone.classList.add('hero-slide-clone');
+            lastSlideClone.classList.remove('active');
+            lastSlideClone.removeAttribute('id');
+            const lastCloneDownArrow = lastSlideClone.querySelector('.scroll-indicator');
+            if (lastCloneDownArrow) {
+                lastCloneDownArrow.setAttribute('onclick', 'scrollToSlide(0)');
+            }
+
+            // Prepend and Append clones
+            container.appendChild(firstSlideClone);
+            container.insertBefore(lastSlideClone, originalSlides[0]);
+
+            // Ensure video plays in first slide clone if present
+            const clonedVideo = firstSlideClone.querySelector('video');
+            if (clonedVideo) {
+                clonedVideo.play().catch(() => {});
+            }
+
+            // --- INTERSECTION OBSERVER FOR ACTIVE STATES ---
             const observerOptions = {
                 root: container,
                 threshold: 0.5
@@ -357,19 +400,12 @@
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
+                    const slide = entry.target;
                     if (entry.isIntersecting) {
-                        const activeIndex = entry.target.dataset.slideIndex;
-
-                        // Set active class on slides for text animation trigger
-                        slides.forEach((slide, idx) => {
-                            if (idx == activeIndex) {
-                                slide.classList.add('active');
-                            } else {
-                                slide.classList.remove('active');
-                            }
-                        });
+                        slide.classList.add('active');
 
                         // Set active dot
+                        const activeIndex = slide.dataset.slideIndex;
                         dotWrappers.forEach(wrapper => {
                             if (wrapper.dataset.slideTarget == activeIndex) {
                                 wrapper.classList.add('active');
@@ -377,20 +413,104 @@
                                 wrapper.classList.remove('active');
                             }
                         });
+                    } else {
+                        // Remove active class when it goes out of view
+                        slide.classList.remove('active');
                     }
                 });
             }, observerOptions);
 
-            slides.forEach(slide => observer.observe(slide));
+            // Observe all slides including clones
+            const allSlides = container.querySelectorAll('.hero-slide');
+            allSlides.forEach(slide => observer.observe(slide));
 
-            // Smooth scroll click handler
+            // --- SMOOTH SCROLL DOTS CLICK HANDLER ---
             window.scrollToSlide = function(index) {
-                if (slides[index]) {
-                    slides[index].scrollIntoView({
+                if (originalSlides[index]) {
+                    originalSlides[index].scrollIntoView({
                         behavior: 'smooth'
                     });
                 }
             };
+
+            // --- INFINITE TELEPORT LOGIC ---
+            let isJumping = true; // Disable jumps during initial setup
+
+            // Initialize to real first slide (Slide 1)
+            requestAnimationFrame(() => {
+                container.style.scrollSnapType = 'none';
+                container.style.scrollBehavior = 'auto';
+                container.scrollTop = originalSlides[0].offsetTop;
+                container.offsetHeight; // force reflow
+                container.style.scrollSnapType = '';
+                container.style.scrollBehavior = '';
+                
+                setTimeout(() => {
+                    isJumping = false;
+                }, 150);
+            });
+
+            // Handlers for scroll settlement to avoid momentum scrolling issues
+            let scrollTimeout;
+            const handleScrollEnd = () => {
+                if (isJumping) return;
+
+                const scrollTop = container.scrollTop;
+                const maxScroll = container.scrollHeight - container.clientHeight;
+
+                // 1. Settled at top boundary (Last Slide Clone) -> Teleport to Real Last Slide
+                if (scrollTop <= 5) {
+                    isJumping = true;
+                    
+                    // Pre-activate destination to avoid text animation flash
+                    originalSlides[originalSlides.length - 1].classList.add('active');
+                    lastSlideClone.classList.remove('active');
+
+                    container.style.scrollSnapType = 'none';
+                    container.style.scrollBehavior = 'auto';
+                    
+                    container.scrollTop = originalSlides[originalSlides.length - 1].offsetTop;
+                    container.offsetHeight; // force reflow
+                    
+                    container.style.scrollSnapType = '';
+                    container.style.scrollBehavior = '';
+
+                    setTimeout(() => {
+                        isJumping = false;
+                    }, 50);
+                } 
+                // 2. Settled at bottom boundary (First Slide Clone) -> Teleport to Real First Slide
+                else if (scrollTop >= maxScroll - 5) {
+                    isJumping = true;
+                    
+                    // Pre-activate destination to avoid text animation flash
+                    originalSlides[0].classList.add('active');
+                    firstSlideClone.classList.remove('active');
+
+                    container.style.scrollSnapType = 'none';
+                    container.style.scrollBehavior = 'auto';
+                    
+                    container.scrollTop = originalSlides[0].offsetTop;
+                    container.offsetHeight; // force reflow
+                    
+                    container.style.scrollSnapType = '';
+                    container.style.scrollBehavior = '';
+
+                    setTimeout(() => {
+                        isJumping = false;
+                    }, 50);
+                }
+            };
+
+            // Use native scrollend if available, otherwise fallback to debounce scroll event
+            if ('onscrollend' in window) {
+                container.addEventListener('scrollend', handleScrollEnd);
+            } else {
+                container.addEventListener('scroll', () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(handleScrollEnd, 100);
+                });
+            }
         });
     </script>
 </body>

@@ -149,7 +149,7 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="bg-light rounded-3" style="width: 44px; height: 55px; margin-right: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
-                                    <img src="{{ asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
+                                    <img src="{{ ($trx->product->image_path ?? null) && Str::startsWith($trx->product->image_path, 'http') ? $trx->product->image_path : asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
                                          class="w-100 h-100 object-fit-cover" 
                                          onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
                                 </div>
@@ -178,16 +178,25 @@
                             @php
                                 $statusColor = match(strtolower($trx->status)) {
                                     'pending'    => 'bg-warning-subtle text-warning border border-warning-subtle',
-                                    'processing' => 'bg-info-subtle text-info border border-info-subtle',
+                                    'processing', 'success', 'settlement', 'paid' => 'bg-info-subtle text-info border border-info-subtle',
                                     'shipped'    => 'bg-primary-subtle text-primary border border-primary-subtle',
-                                    'delivered'  => 'bg-success-subtle text-success border border-success-subtle',
-                                    'cancelled', 'failed' => 'bg-danger-subtle text-danger border border-danger-subtle',
-                                    'expired'    => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+                                    'delivered', 'completed'  => 'bg-success-subtle text-success border border-success-subtle',
+                                    'cancelled', 'failed', 'expired' => 'bg-danger-subtle text-danger border border-danger-subtle',
+                                    'refunded'   => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
                                     default      => 'bg-secondary-subtle text-secondary'
+                                };
+                                $statusLabel = match(strtolower($trx->status)) {
+                                    'pending'    => 'Pending Payment',
+                                    'processing', 'success', 'settlement', 'paid' => 'Processing',
+                                    'shipped'    => 'Shipped',
+                                    'delivered', 'completed'  => 'Delivered',
+                                    'cancelled', 'failed', 'expired' => 'Cancelled',
+                                    'refunded'   => 'Refunded',
+                                    default      => $trx->status
                                 };
                             @endphp
                             <span class="badge rounded-pill {{ $statusColor }} uppercase font-bold tracking-widest" style="font-size: 9px; padding: 6px 12px;">
-                                {{ $trx->status }}
+                                {{ $statusLabel }}
                             </span>
                         </td>
                         
@@ -200,8 +209,18 @@
 
                         {{-- 6. Hybrid Action Controls --}}
                         <td class="text-end">
-                            @if(in_array(strtolower($trx->status), ['cancelled', 'expired', 'failed', 'delivered']))
+                            @if(in_array(strtolower($trx->status), ['cancelled', 'expired', 'failed', 'refunded']))
                                 <span class="text-muted small fst-italic" style="font-size: 11px;">No actions available</span>
+                            @elseif(strtolower($trx->status) === 'delivered')
+                                {{-- Tombol Refund Terpisah --}}
+                                <form id="form-refund-{{ $trx->id }}" action="{{ route('admin.transactions.updateStatus', $trx->id) }}" method="POST" class="m-0">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="refunded">
+                                    <button type="button" onclick="triggerRefundAlert('{{ $trx->id }}', '{{ $trx->invoice_number }}')" class="btn btn-outline-danger btn-sm shadow-sm" style="font-size: 11px; padding: 6px 12px; border-radius: 8px; font-weight: 600;" title="Refund Order">
+                                        Refund
+                                    </button>
+                                </form>
                             @else
                                 <div class="d-inline-flex align-items-center gap-2">
                                     
@@ -213,12 +232,12 @@
                                         <select name="status" data-old-value="{{ strtolower($trx->status) }}" onchange="triggerLogisticsAlert(this, '{{ $trx->invoice_number }}')" class="form-select form-select-sm select-luxury-sm shadow-sm">
                                             
                                             {{-- SAFEGUARD OPTION: Mencegah kotak blank jika data DB berisi status di luar opsi logistik utama --}}
-                                            @if(!in_array(strtolower($trx->status), ['pending', 'processing', 'shipped', 'delivered']))
+                                            @if(!in_array(strtolower($trx->status), ['pending', 'processing', 'shipped', 'delivered', 'success', 'settlement', 'paid']))
                                                 <option value="{{ strtolower($trx->status) }}" selected disabled>{{ ucfirst($trx->status) }}</option>
                                             @endif
 
-                                            <option value="pending" {{ $trx->status === 'pending' ? 'selected' : '' }} disabled>Pending</option>
-                                            <option value="processing" {{ $trx->status === 'processing' ? 'selected' : '' }}>Processing</option>
+                                            <option value="pending" {{ $trx->status === 'pending' ? 'selected' : '' }} disabled>Pending Payment</option>
+                                            <option value="processing" {{ in_array(strtolower($trx->status), ['processing', 'success', 'settlement', 'paid']) ? 'selected' : '' }}>Processing</option>
                                             <option value="shipped" {{ $trx->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
                                             <option value="delivered" {{ $trx->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
                                         </select>
@@ -353,7 +372,7 @@
                                             <td class="py-3 px-0">
                                                 <div class="d-flex align-items-center">
                                                     <div class="bg-light rounded overflow-hidden me-3" style="width: 44px; height: 56px;">
-                                                        <img src="{{ asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
+                                                        <img src="{{ ($trx->product->image_path ?? null) && Str::startsWith($trx->product->image_path, 'http') ? $trx->product->image_path : asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
                                                              class="w-100 h-100 object-fit-cover"
                                                              onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
                                                     </div>
@@ -496,6 +515,30 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('form-cancel-' + transactionId).submit();
+            }
+        });
+    }
+
+    /**
+     * 4. SweetAlert2 untuk Konfirmasi Refund Pesanan (Refund Order)
+     */
+    function triggerRefundAlert(transactionId, invoiceNumber) {
+        Swal.fire({
+            title: 'Refund This Order?',
+            text: `Are you sure you want to refund order ${invoiceNumber}? This will mark the order as Refunded and return any redeemed loyalty points back to the customer's ledger. This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Refund Order',
+            cancelButtonText: 'Keep Active',
+            customClass: {
+                popup: 'vesta-swal-popup',
+                confirmButton: 'btn btn-danger px-4 py-2 me-2 font-semibold text-uppercase tracking-wider rounded-3', 
+                cancelButton: 'vesta-swal-cancel'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('form-refund-' + transactionId).submit();
             }
         });
     }

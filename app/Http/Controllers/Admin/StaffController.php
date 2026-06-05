@@ -12,14 +12,27 @@ class StaffController extends Controller
 {
     public function __construct()
     {
-        // REVISI: Izinkan Owner DAN Manager untuk masuk ke controller ini
         $this->middleware(function ($request, $next) {
-            $authorizedRoles = ['owner', 'manager'];
+            $currentUser = Auth::user();
+            $action = $request->route()->getActionMethod();
             
-            if (!in_array(Auth::user()->role, $authorizedRoles)) {
-                abort(403, 'Unauthorized action. Only Owner and Manager can access this page.');
+            // Staff role is allowed to access ONLY 'edit' and 'update' for their OWN account
+            if ($currentUser->role === 'staff') {
+                if (in_array($action, ['edit', 'update'])) {
+                    $staffId = $request->route('staff');
+                    if ((int)$staffId === $currentUser->id) {
+                        return $next($request);
+                    }
+                }
+                abort(403, 'Unauthorized action. Store Staff can only modify their own profile.');
             }
-            return $next($request);
+            
+            // Manager and Owner roles are allowed to access everything
+            if (in_array($currentUser->role, ['owner', 'manager'])) {
+                return $next($request);
+            }
+            
+            abort(403, 'Unauthorized action.');
         });
     }
 
@@ -39,11 +52,14 @@ class StaffController extends Controller
 
     public function store(Request $request)
     {
+        // Manager hanya boleh menambah Staff (tidak boleh menambah Manager)
+        $roleRule = Auth::user()->role === 'manager' ? 'required|in:staff' : 'required|in:manager,staff';
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:manager,staff',
+            'role' => $roleRule,
         ]);
 
         User::create([

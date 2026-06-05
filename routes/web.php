@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController;
-use App\Http\Controllers\Admin\SupportController; // REVISI: Import SupportController Baru
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
 use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
@@ -26,6 +26,8 @@ use App\Http\Controllers\ProfileController;
 */
 
 Route::get('/', function () {
+    session()->forget('buy_now');
+    session()->forget('applied_voucher');
     $products = \App\Models\Product::orderBy('created_at', 'desc')->take(8)->get();
     return view('home', compact('products'));
 })->name('home');
@@ -46,11 +48,8 @@ Route::middleware(['web'])->group(function () {
             'message'    => 'required|string|max:5000',
         ]);
         
-        // 1. Simpan rekaman pesan bantuan ke database agar muncul di panel admin
-        \App\Models\ContactInquiry::create($validatedData);
-
-        // 2. Mengirim email rangkuman tiket bantuan ke evanvarian39@gmail.com
-        Mail::to('evanvarian39@gmail.com')->send(new ContactInquiryMail($validatedData));
+        // 1. Mengirim email rangkuman tiket bantuan ke vestaclothingg@gmail.com
+        Mail::to('vestaclothingg@gmail.com')->send(new ContactInquiryMail($validatedData));
 
         // 3. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
         $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
@@ -61,6 +60,8 @@ Route::middleware(['web'])->group(function () {
 
     Route::controller(StoreController::class)->group(function () {
         Route::get('/collection', 'collection')->name('collection');
+        Route::get('/catalog', 'catalog')->name('catalog');
+        Route::get('/collections', 'catalog')->name('collections.index');
         Route::get('/cart', 'view_cart')->name('cart.view');
         Route::post('/cart/add/{product_id}', 'add_to_cart')->name('cart.add');
         Route::post('/cart/remove/{cart_key}', 'remove_from_cart')->name('cart.remove');
@@ -107,8 +108,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
     Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
-    // PERBAIKAN: Mengubah nama rute agar tidak bentrok dengan password.update milik profile
     Route::post('/reset-password', [AuthOtpController::class, 'resetPassword'])->name('password.reset.update');
+    Route::post('/verify-reset-otp', [AuthOtpController::class, 'verifyResetOtp'])->name('password.verify.otp');
+    Route::post('/resend-reset-otp', [AuthOtpController::class, 'resendResetOtp'])->name('password.resend.otp');
 });
 
 /*
@@ -138,6 +140,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/resend-otp', [AuthOtpController::class, 'sendVerificationOtp'])->name('otp.resend');
 
     Route::get('/profile', function () {
+        session()->forget('buy_now');
+        session()->forget('applied_voucher');
         $user = auth()->user();
         if (in_array($user->role, ['owner', 'manager', 'staff'])) {
             return redirect()->route('admin.dashboard');
@@ -191,7 +195,10 @@ Route::middleware('auth')->group(function () {
         });
 
         // Voucher Management
-        Route::resource('vouchers', VoucherController::class)->names('vouchers');
+        Route::resource('vouchers', VoucherController::class)->names('admin.vouchers');
+
+        // Event Collection Management
+        Route::resource('events', EventController::class)->names('admin.events');
 
         // Staff Management
         Route::resource('staff', StaffController::class)->names('staff');

@@ -146,6 +146,13 @@
                            placeholder="0" value="{{ old('price') }}" required>
                 </div>
 
+                {{-- Weight --}}
+                <div class="mb-4">
+                    <label class="stat-label d-block mb-2">Weight (Grams)</label>
+                    <input type="number" name="weight" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
+                           placeholder="e.g. 500" value="{{ old('weight', 500) }}" min="1" required>
+                </div>
+
                 {{-- Product Image --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Image</label>

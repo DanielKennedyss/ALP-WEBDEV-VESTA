@@ -10,9 +10,14 @@
         </div>
 
         @if(empty($cart))
-            <div class="text-center py-28 border border-dashed border-stone-200">
-                <p class="text-xs tracking-[0.25em] text-stone-400 uppercase mb-8">Your shopping bag is empty</p>
-                <a href="{{ route('collection') }}" class="inline-block bg-stone-900 text-white text-[10px] tracking-[0.2em] px-8 py-4 uppercase hover:bg-stone-800 transition-all">Browse Collection</a>
+            <div class="text-center py-24">
+                <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                <p class="text-sm tracking-widest text-gray-400 uppercase mb-6">Your cart is empty</p>
+                <a href="{{ route('collections.index') }}" class="inline-block border border-black text-xs tracking-[0.2em] px-8 py-4 hover:bg-black hover:text-white transition-colors">
+                    BROWSE COLLECTION
+                </a>
             </div>
         @else
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -23,10 +28,27 @@
                     
                     {{-- STEP 1: REVIEW ITEMS --}}
                     <div id="checkout_step_1" class="space-y-6 transition-all duration-500">
+                        @if(!$isBuyNow)
+                            <div class="flex items-center gap-3 pb-4 border-b border-stone-200 mb-2">
+                                <input type="checkbox" id="select_all_cart" checked 
+                                       class="w-4 h-4 text-black border-stone-300 focus:ring-black cursor-pointer rounded-sm"
+                                       onchange="toggleSelectAll(this)">
+                                <label for="select_all_cart" class="text-[10px] tracking-widest uppercase font-semibold text-stone-600 cursor-pointer select-none">Select All Items</label>
+                            </div>
+                        @endif
                         <div class="divide-y divide-stone-100 border-t border-b border-stone-200">
                             @foreach($cart as $cart_key => $item)
                                 @php $product = $cartProducts[$cart_key] ?? null; @endphp
                                 <div class="flex gap-6 py-6 items-start cart-item" data-key="{{ $cart_key }}" data-price="{{ $item['price'] }}" data-qty="{{ $item['quantity'] }}">
+                                    
+                                    {{-- Checklist Checkbox --}}
+                                    @if(!$isBuyNow)
+                                    <div class="flex items-center justify-center pt-20 shrink-0">
+                                        <input type="checkbox" name="cart_items_checked[]" value="{{ $cart_key }}" checked 
+                                               class="cart-item-checkbox w-4 h-4 text-black border-stone-300 focus:ring-black cursor-pointer rounded-sm"
+                                               onchange="onCartCheckboxChange()">
+                                    </div>
+                                    @endif
                                     
                                     {{-- Kiri: Gambar Item --}}
                                     <div class="w-32 h-44 shrink-0 bg-stone-50 shadow-sm border border-stone-100 overflow-hidden">
@@ -114,33 +136,49 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {{-- Dropdown Provinsi --}}
-                                <div class="space-y-2">
+                                <div class="space-y-2" id="province_dropdown_container">
                                     <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">Province</label>
                                     <div class="relative group">
-                                        <select id="select_province" onchange="onProvinceChange(this.value)"
-                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 cursor-pointer appearance-none text-stone-800 pr-6">
-                                            <option value="">Select Province</option>
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-stone-400 group-hover:text-stone-900 transition-colors">
+                                        <input type="text" id="select_province" onfocus="showProvinceDropdown()" oninput="filterProvinces(this.value)" onchange="onProvinceInput(this.value)" placeholder="TYPE OR SELECT PROVINCE" autocomplete="off"
+                                               class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800">
+                                        {{-- Custom Centered SVG Arrow on the Far Right --}}
+                                        <div id="province_arrow" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
                                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 9l-7 7-7-7" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
                                             </svg>
+                                        </div>
+                                        {{-- Clear Button (x) --}}
+                                        <button type="button" id="clear_province_btn" onclick="clearProvinceSelection()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-black hidden cursor-pointer">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        {{-- Custom Dropdown List Container --}}
+                                        <div id="province_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100">
                                         </div>
                                     </div>
                                 </div>
 
                                 {{-- Dropdown Kota/Kabupaten --}}
-                                <div class="space-y-2">
+                                <div class="space-y-2" id="city_dropdown_container">
                                     <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">City / Kabupaten</label>
                                     <div class="relative group">
-                                        <select id="select_city" onchange="onCityChange()" disabled
-                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 cursor-pointer appearance-none text-stone-800 pr-6 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <option value="">Select Province First</option>
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-stone-400 group-hover:text-stone-900 transition-colors">
+                                        <input type="text" id="select_city" disabled onfocus="showCityDropdown()" oninput="filterCities(this.value)" onchange="onCityInput(this.value)" placeholder="SELECT PROVINCE FIRST" autocomplete="off"
+                                               class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        {{-- Custom Centered SVG Arrow on the Far Right --}}
+                                        <div id="city_arrow" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
                                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 9l-7 7-7-7" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
                                             </svg>
+                                        </div>
+                                        {{-- Clear Button (x) --}}
+                                        <button type="button" id="clear_city_btn" onclick="clearCitySelection()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-black hidden cursor-pointer">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        {{-- Custom Dropdown List Container --}}
+                                        <div id="city_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100">
                                         </div>
                                     </div>
                                 </div>
@@ -148,36 +186,40 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {{-- Dropdown Kurir --}}
-                                <div class="space-y-2">
+                                <div class="space-y-2" id="courier_dropdown_container">
                                     <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">Courier</label>
                                     <div class="relative group">
-                                        <select id="select_courier" onchange="fetchShippingCost()" disabled
-                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 cursor-pointer appearance-none text-stone-800 pr-6 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <option value="">Select City First</option>
-                                            <option value="jne">JNE (Jalur Nugraha Ekakurir)</option>
-                                            <option value="pos">POS Indonesia</option>
-                                            <option value="tiki">TIKI (Titipan Kilat)</option>
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-stone-400 group-hover:text-stone-900 transition-colors">
+                                        <input type="text" id="select_courier" readonly disabled onfocus="showCourierDropdown()" placeholder="SELECT CITY FIRST" autocomplete="off"
+                                               class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                                        <input type="hidden" id="select_courier_code" value="">
+                                        {{-- Custom Centered SVG Arrow on the Far Right --}}
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
                                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 9l-7 7-7-7" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
                                             </svg>
+                                        </div>
+                                        {{-- Custom Dropdown List Container --}}
+                                        <div id="courier_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100">
                                         </div>
                                     </div>
                                 </div>
 
                                 {{-- Dropdown Layanan --}}
-                                <div class="space-y-2">
+                                <div class="space-y-2" id="service_dropdown_container">
                                     <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">Delivery Service</label>
                                     <div class="relative group">
-                                        <select id="select_service" onchange="onServiceChange(this)" disabled
-                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 cursor-pointer appearance-none text-stone-800 pr-6 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <option value="">Select Courier First</option>
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-stone-400 group-hover:text-stone-900 transition-colors">
+                                        <input type="text" id="select_service" readonly disabled onfocus="showServiceDropdown()" placeholder="SELECT COURIER FIRST" autocomplete="off"
+                                               class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                                        <input type="hidden" id="select_service_code" value="">
+                                        <input type="hidden" id="select_service_cost" value="0">
+                                        {{-- Custom Centered SVG Arrow on the Far Right --}}
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
                                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 9l-7 7-7-7" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
                                             </svg>
+                                        </div>
+                                        {{-- Custom Dropdown List Container --}}
+                                        <div id="service_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100">
                                         </div>
                                     </div>
                                     <div id="shipping_loading" class="text-[8px] uppercase tracking-widest text-stone-400 hidden mt-1.5 animate-pulse font-semibold">Fetching shipping services...</div>
@@ -202,23 +244,23 @@
                         <div class="space-y-4 text-xs">
                             <div class="flex justify-between text-stone-500">
                                 <span>Jumlah Item</span>
-                                <span class="font-mono text-stone-800">{{ collect($cart)->sum('quantity') }} items</span>
+                                <span id="summary_items_count" class="font-mono text-stone-800">{{ collect($cart)->sum('quantity') }} items</span>
                             </div>
                             
                             <div class="flex justify-between text-stone-500">
                                 <span>Subtotal</span>
-                                <span class="font-mono text-stone-800">IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
+                                <span id="summary_subtotal_val" class="font-mono text-stone-800">IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
                             </div>
                             
-                            <div class="flex justify-between text-stone-500">
+                            <div id="summary_shipping_row" class="flex justify-between text-stone-500 hidden">
                                 <span>Shipping</span>
                                 <span id="summary_shipping_val" class="uppercase tracking-widest text-[9px] font-bold text-stone-400">TBD</span>
                             </div>
                             
                             @php $vatAmount = $subtotal * 0.10; @endphp
                             <div class="flex justify-between text-stone-500 border-b border-stone-100 pb-4">
-                                <span>VAT (10% Included)</span>
-                                <span class="font-mono text-stone-800">IDR {{ number_format($vatAmount, 0, ',', '.') }}</span>
+                                <span>VAT (10%)</span>
+                                <span id="summary_vat_val" class="font-mono text-stone-800">IDR {{ number_format($vatAmount, 0, ',', '.') }}</span>
                             </div>
                             
                             {{-- Voucher Discount (Dynamic) --}}
@@ -234,9 +276,10 @@
                             </div>
                             
                             {{-- Grand Total --}}
+                            @php $initialTotal = $subtotal + $vatAmount; @endphp
                             <div class="flex justify-between font-serif text-base font-semibold pt-4 text-stone-900 border-t border-stone-100">
                                 <span>Total</span>
-                                <span id="final_total_val" class="font-mono text-stone-955 text-lg font-bold">IDR {{ number_format($subtotal, 0, ',', '.') }}</span>
+                                <span id="final_total_val" class="font-mono text-stone-955 text-lg font-bold">IDR {{ number_format($initialTotal, 0, ',', '.') }}</span>
                             </div>
                         </div>
                         
@@ -281,6 +324,7 @@
                             {{-- Place Order Form Action --}}
                             <form id="checkout_form" action="{{ route('checkout.process') }}" method="POST" class="mt-8">
                                 @csrf
+                                <input type="hidden" id="checked_items_hidden" name="checked_items" value="">
                                 <input type="hidden" id="points_input_hidden" name="points_to_redeem" value="0">
                                 <input type="hidden" id="voucher_code_hidden" name="applied_voucher_code" value="">
                                 
@@ -345,6 +389,12 @@
     .message-pop { animation: msgPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     @keyframes msgPop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     
+    /* Hide native calendar picker indicator in Chrome/Safari/Edge to avoid duplicate dropdown arrows */
+    input::-webkit-calendar-picker-indicator {
+        display: none !important;
+        -webkit-appearance: none !important;
+    }
+    
     /* Background colors for active/hover */
     .bg-stone-955 {
         background-color: #1c1917; /* stone-900 */
@@ -399,13 +449,38 @@
         });
     }
 
-    const baseSubtotal = {{ $subtotal }};
     const userPoints = {{ Auth::check() ? (Auth::user()->loyalty_points ?? 0) : 0 }};
-    let activeVoucherDiscount = 0;
+    let activeVoucherType = null;
+    let activeVoucherRewardValue = 0;
     
-    // RajaOngkir State Variables
+    // RajaOngkir & Shipping State Variables
     let currentStep = 1;
     let selectedShippingCost = 0;
+    let allProvinces = [];
+    let allCities = [];
+    let isManualShipping = false;
+
+    // =========================================================================
+    // CHECKLIST & SELECTION JS
+    // =========================================================================
+
+    function toggleSelectAll(selectAllCheckbox) {
+        const checkboxes = document.querySelectorAll('.cart-item-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = selectAllCheckbox.checked;
+        });
+        calculateTotal();
+    }
+
+    function onCartCheckboxChange() {
+        const selectAll = document.getElementById('select_all_cart');
+        const checkboxes = document.querySelectorAll('.cart-item-checkbox');
+        const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length;
+        if (selectAll) {
+            selectAll.checked = (checkedCount === checkboxes.length);
+        }
+        calculateTotal();
+    }
 
     function calculateTotal() {
         const checkbox = document.getElementById('use_points');
@@ -414,7 +489,65 @@
         const finalTotalVal = document.getElementById('final_total_val');
         const hiddenInput = document.getElementById('points_input_hidden');
 
-        let currentSubtotalAfterVoucher = baseSubtotal - activeVoucherDiscount;
+        // Dynamic subtotal and quantity calculation based on checked items
+        let currentSubtotal = 0;
+        let checkedItemCount = 0;
+        let checkedKeys = [];
+
+        document.querySelectorAll('.cart-item').forEach(item => {
+            const cb = item.querySelector('.cart-item-checkbox');
+            if (isBuyNowFlowActive || (cb && cb.checked)) {
+                const price = parseFloat(item.getAttribute('data-price')) || 0;
+                const qty = parseInt(item.getAttribute('data-qty')) || 0;
+                currentSubtotal += price * qty;
+                checkedItemCount += qty;
+                checkedKeys.push(item.getAttribute('data-key'));
+            }
+        });
+
+        // Update hidden inputs for controller
+        const checkedItemsHidden = document.getElementById('checked_items_hidden');
+        if (checkedItemsHidden) {
+            checkedItemsHidden.value = checkedKeys.join(',');
+        }
+
+        // Update items count and subtotal displays
+        const itemsCountVal = document.getElementById('summary_items_count');
+        if (itemsCountVal) {
+            itemsCountVal.textContent = checkedItemCount + ' items';
+        }
+
+        const subtotalVal = document.getElementById('summary_subtotal_val');
+        if (subtotalVal) {
+            subtotalVal.textContent = 'IDR ' + currentSubtotal.toLocaleString('id-ID');
+        }
+
+        // Update VAT (10% Included) display
+        let vatAmount = Math.round(currentSubtotal * 0.10);
+        const vatVal = document.getElementById('summary_vat_val');
+        if (vatVal) {
+            vatVal.textContent = 'IDR ' + vatAmount.toLocaleString('id-ID');
+        }
+
+        // Calculate Voucher discount dynamically
+        let activeVoucherDiscount = 0;
+        if (activeVoucherType === 'percentage') {
+            activeVoucherDiscount = Math.round((currentSubtotal * activeVoucherRewardValue) / 100);
+        } else if (activeVoucherType === 'fixed') {
+            activeVoucherDiscount = Math.min(activeVoucherRewardValue, currentSubtotal);
+        }
+        
+        // Show/hide voucher row and update value
+        const voucherRow = document.getElementById('voucher_discount_row');
+        const voucherVal = document.getElementById('voucher_discount_val');
+        if (activeVoucherDiscount > 0) {
+            if (voucherVal) voucherVal.textContent = activeVoucherDiscount.toLocaleString('id-ID');
+            if (voucherRow) voucherRow.classList.remove('hidden');
+        } else {
+            if (voucherRow) voucherRow.classList.add('hidden');
+        }
+
+        let currentSubtotalAfterVoucher = currentSubtotal - activeVoucherDiscount;
         if (currentSubtotalAfterVoucher < 0) {
             currentSubtotalAfterVoucher = 0;
         }
@@ -422,7 +555,7 @@
         let pointsToUse = 0;
         let discountAmount = 0;
 
-        if (checkbox && checkbox.checked) {
+        if (checkbox && checkbox.checked && checkedItemCount > 0) {
             let maxAllowedDiscount = Math.max(0, currentSubtotalAfterVoucher - 1000);
             let maxPointsNeeded = Math.floor(maxAllowedDiscount / 1000);
             pointsToUse = Math.min(userPoints, maxPointsNeeded);
@@ -435,13 +568,28 @@
             if (hiddenInput) hiddenInput.value = 0;
         }
 
-        let finalTotal = currentSubtotalAfterVoucher - discountAmount + selectedShippingCost;
-        if (finalTotal < 1000) {
+        let finalTotal = currentSubtotalAfterVoucher + vatAmount - discountAmount + selectedShippingCost;
+        
+        if (checkedItemCount === 0) {
+            finalTotal = 0;
+        } else if (finalTotal < 1000) {
             finalTotal = 1000;
         }
         
         if (discountVal) discountVal.textContent = discountAmount.toLocaleString('id-ID');
         if (finalTotalVal) finalTotalVal.textContent = 'IDR ' + finalTotal.toLocaleString('id-ID');
+
+        // Disable Proceed button if no items are checked
+        const mainBtn = document.getElementById('checkout_main_btn');
+        if (mainBtn) {
+            if (checkedItemCount === 0) {
+                mainBtn.disabled = true;
+                mainBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                mainBtn.disabled = false;
+                mainBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
     }
 
     function applyVoucher() {
@@ -491,11 +639,11 @@
             btnSpinner.classList.add('hidden');
             
             if (data.success) {
-                activeVoucherDiscount = data.discount;
+                activeVoucherType = data.type || 'fixed';
+                activeVoucherRewardValue = parseFloat(data.reward_value) || 0;
                 if (hiddenVoucherInput) hiddenVoucherInput.value = code.toUpperCase();
                 
                 if (voucherBadge) voucherBadge.textContent = code.toUpperCase();
-                if (voucherVal) voucherVal.textContent = data.discount.toLocaleString('id-ID');
                 if (voucherRow) voucherRow.classList.remove('hidden');
                 
                 msgBox.className = "text-[10px] tracking-wide mt-2 text-stone-900 font-semibold message-pop";
@@ -504,7 +652,8 @@
                 
                 calculateTotal();
             } else {
-                activeVoucherDiscount = 0;
+                activeVoucherType = null;
+                activeVoucherRewardValue = 0;
                 if (hiddenVoucherInput) hiddenVoucherInput.value = "";
                 if (voucherRow) voucherRow.classList.add('hidden');
                 
@@ -533,6 +682,7 @@
         const step1Div = document.getElementById('checkout_step_1');
         const step2Div = document.getElementById('checkout_step_2');
         const mainBtn = document.getElementById('checkout_main_btn');
+        const shippingRow = document.getElementById('summary_shipping_row');
         
         if (step === 2) {
             step1Div.classList.add('hidden');
@@ -540,6 +690,9 @@
             currentStep = 2;
             if (mainBtn) {
                 mainBtn.textContent = "Place Order & Pay";
+            }
+            if (shippingRow) {
+                shippingRow.classList.remove('hidden');
             }
             loadProvinces();
         } else {
@@ -549,6 +702,9 @@
             if (mainBtn) {
                 mainBtn.textContent = "Proceed";
             }
+            if (shippingRow) {
+                shippingRow.classList.add('hidden');
+            }
         }
     }
 
@@ -557,22 +713,19 @@
             toggleCheckoutStep(2);
         } else {
             // We are on step 2, validate and submit the form
-            const province = document.getElementById('select_province').value;
-            const city = document.getElementById('select_city').value;
-            const courier = document.getElementById('select_courier').value;
-            const service = document.getElementById('select_service').value;
+            const provinceName = document.getElementById('select_province').value.trim();
+            const cityName = document.getElementById('select_city').value.trim();
+            const courier = document.getElementById('select_courier_code').value;
+            const service = document.getElementById('select_service_code').value;
             const address = document.getElementById('input_address').value.trim();
             
-            if (!province || !city || !courier || !service || !address) {
+            if (!provinceName || !cityName || !courier || !service || !address) {
                 alert("Please fill in your complete shipping address and select a courier service.");
                 return;
             }
             
             // Populating the hidden checkout form values
-            const provText = document.getElementById('select_province').options[document.getElementById('select_province').selectedIndex].text;
-            const cityText = document.getElementById('select_city').options[document.getElementById('select_city').selectedIndex].text;
-            
-            document.getElementById('shipping_address_hidden').value = address + ", " + cityText + ", " + provText;
+            document.getElementById('shipping_address_hidden').value = address + ", " + cityName + ", " + provinceName;
             document.getElementById('shipping_courier_hidden').value = courier.toUpperCase();
             document.getElementById('shipping_service_hidden').value = service;
             document.getElementById('shipping_cost_hidden').value = selectedShippingCost;
@@ -584,81 +737,341 @@
     }
 
     function loadProvinces() {
-        const provSelect = document.getElementById('select_province');
-        if (provSelect.options.length > 1) return; // already loaded
+        if (allProvinces.length > 0) return; // already loaded
         
         fetch('/shipping/provinces')
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    const sortedProvinces = [...data.data].sort((a, b) => 
+                    allProvinces = [...data.data].sort((a, b) => 
                         a.province.localeCompare(b.province)
                     );
-                    sortedProvinces.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.province_id;
-                        opt.textContent = p.province;
-                        provSelect.appendChild(opt);
-                    });
                 }
             });
     }
 
-    function onProvinceChange(provinceId) {
-        const citySelect = document.getElementById('select_city');
-        const courierSelect = document.getElementById('select_courier');
-        const serviceSelect = document.getElementById('select_service');
+    function showProvinceDropdown() {
+        const dropdown = document.getElementById('province_list_dropdown');
+        dropdown.classList.remove('hidden');
         
-        citySelect.innerHTML = '<option value="">Select City / Kabupaten</option>';
-        citySelect.disabled = true;
-        
-        courierSelect.value = "";
-        courierSelect.disabled = true;
-        
-        serviceSelect.innerHTML = '<option value="">Select Courier First</option>';
-        serviceSelect.disabled = true;
-        
-        if (!provinceId) return;
+        if (allProvinces.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic animate-pulse">Loading provinces...</div>';
+            fetch('/shipping/provinces')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        allProvinces = [...data.data].sort((a, b) => 
+                            a.province.localeCompare(b.province)
+                        );
+                        filterProvinces(document.getElementById('select_province').value);
+                    } else {
+                        dropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Failed to load provinces</div>';
+                    }
+                })
+                .catch(err => {
+                    dropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Error loading provinces</div>';
+                });
+        } else {
+            filterProvinces(document.getElementById('select_province').value);
+        }
+    }
 
+    function filterProvinces(query) {
+        const dropdown = document.getElementById('province_list_dropdown');
+        dropdown.classList.remove('hidden');
+        
+        const filtered = allProvinces.filter(p => 
+            p.province.toUpperCase().includes(query.toUpperCase())
+        );
+        
+        dropdown.innerHTML = "";
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic font-mono uppercase tracking-wider text-[10px]">No provinces found</div>';
+        } else {
+            filtered.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                div.textContent = p.province;
+                div.onmousedown = (e) => {
+                    e.preventDefault();
+                };
+                div.onclick = () => {
+                    selectProvince(p.province);
+                };
+                dropdown.appendChild(div);
+            });
+        }
+    }
+
+    function selectProvince(provinceName) {
+        const input = document.getElementById('select_province');
+        input.value = provinceName;
+        document.getElementById('province_list_dropdown').classList.add('hidden');
+        onProvinceInput(provinceName);
+    }
+
+    function onProvinceInput(provinceName) {
+        const matchingProv = allProvinces.find(p => p.province.toUpperCase() === provinceName.toUpperCase());
+        const cityInput = document.getElementById('select_city');
+        const courierInput = document.getElementById('select_courier');
+        const courierCodeHidden = document.getElementById('select_courier_code');
+        const serviceInput = document.getElementById('select_service');
+        const serviceCodeHidden = document.getElementById('select_service_code');
+        const serviceCostHidden = document.getElementById('select_service_cost');
+        
+        if (matchingProv) {
+            isManualShipping = false;
+            cityInput.value = "";
+            cityInput.placeholder = "LOADING CITIES...";
+            cityInput.disabled = true;
+            courierInput.value = "";
+            courierInput.placeholder = "SELECT CITY FIRST";
+            courierInput.disabled = true;
+            courierCodeHidden.value = "";
+            serviceInput.value = "";
+            serviceInput.placeholder = "SELECT COURIER FIRST";
+            serviceInput.disabled = true;
+            serviceCodeHidden.value = "";
+            serviceCostHidden.value = "0";
+            
+            loadCities(matchingProv.province_id);
+            
+            document.getElementById('clear_province_btn').classList.remove('hidden');
+            document.getElementById('province_arrow').classList.add('hidden');
+        } else {
+            isManualShipping = false;
+            cityInput.value = "";
+            cityInput.placeholder = "SELECT PROVINCE FIRST";
+            cityInput.disabled = true;
+            courierInput.value = "";
+            courierInput.placeholder = "SELECT CITY FIRST";
+            courierInput.disabled = true;
+            courierCodeHidden.value = "";
+            serviceInput.value = "";
+            serviceInput.placeholder = "SELECT COURIER FIRST";
+            serviceInput.disabled = true;
+            serviceCodeHidden.value = "";
+            serviceCostHidden.value = "0";
+            
+            selectedShippingCost = 0;
+            const shippingVal = document.getElementById('summary_shipping_val');
+            if (shippingVal) {
+                shippingVal.textContent = 'TBD';
+                shippingVal.className = 'uppercase tracking-widest text-[9px] font-bold text-stone-400';
+            }
+            calculateTotal();
+            
+            document.getElementById('clear_province_btn').classList.add('hidden');
+            document.getElementById('province_arrow').classList.remove('hidden');
+        }
+    }
+
+    function clearProvinceSelection() {
+        const provinceInput = document.getElementById('select_province');
+        provinceInput.value = "";
+        onProvinceInput("");
+    }
+
+    function loadCities(provinceId) {
+        allCities = [];
+        const cityDropdown = document.getElementById('city_list_dropdown');
+        cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic animate-pulse">Loading cities...</div>';
+        
         fetch(`/shipping/cities/${provinceId}`)
             .then(res => res.json())
             .then(data => {
+                const cityInput = document.getElementById('select_city');
                 if (data.success) {
-                    const sortedCities = [...data.data].sort((a, b) => {
+                    allCities = [...data.data].sort((a, b) => {
                         const aName = (a.type ? a.type + " " : "") + a.city_name;
                         const bName = (b.type ? b.type + " " : "") + b.city_name;
                         return aName.localeCompare(bName);
                     });
-                    sortedCities.forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c.city_id;
-                        opt.textContent = (c.type ? c.type + " " : "") + c.city_name;
-                        citySelect.appendChild(opt);
-                    });
-                    citySelect.disabled = false;
+                    cityDropdown.innerHTML = "";
+                    if (cityInput) {
+                        cityInput.placeholder = "TYPE OR SELECT CITY";
+                        cityInput.disabled = false;
+                    }
+                } else {
+                    cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Failed to load cities</div>';
+                    if (cityInput) cityInput.placeholder = "FAILED TO LOAD CITIES";
                 }
+            })
+            .catch(err => {
+                cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Error loading cities</div>';
             });
     }
 
-    function onCityChange() {
-        const courierSelect = document.getElementById('select_courier');
-        const serviceSelect = document.getElementById('select_service');
+    function showCityDropdown() {
+        const input = document.getElementById('select_city');
+        if (input.disabled) return;
+        const dropdown = document.getElementById('city_list_dropdown');
+        dropdown.classList.remove('hidden');
+        filterCities(input.value);
+    }
+
+    function filterCities(query) {
+        const dropdown = document.getElementById('city_list_dropdown');
+        dropdown.classList.remove('hidden');
+        const filtered = allCities.filter(c => {
+            const fullName = (c.type ? c.type + " " : "") + c.city_name;
+            return fullName.toUpperCase().includes(query.toUpperCase());
+        });
+        dropdown.innerHTML = "";
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic font-mono uppercase tracking-wider text-[10px]">No cities found</div>';
+        } else {
+            filtered.forEach(c => {
+                const fullName = (c.type ? c.type + " " : "") + c.city_name;
+                const div = document.createElement('div');
+                div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                div.textContent = fullName;
+                div.onmousedown = (e) => e.preventDefault();
+                div.onclick = () => selectCity(fullName);
+                dropdown.appendChild(div);
+            });
+        }
+    }
+
+    function selectCity(cityName) {
+        const input = document.getElementById('select_city');
+        input.value = cityName;
+        document.getElementById('city_list_dropdown').classList.add('hidden');
+        onCityInput(cityName);
+    }
+
+    function onCityInput(cityName) {
+        const courierInput = document.getElementById('select_courier');
+        const courierCodeHidden = document.getElementById('select_courier_code');
+        const serviceInput = document.getElementById('select_service');
+        const serviceCodeHidden = document.getElementById('select_service_code');
+        const serviceCostHidden = document.getElementById('select_service_cost');
         
-        courierSelect.value = "";
-        courierSelect.disabled = false;
+        const matchingCity = allCities.find(c => {
+            const fullName = (c.type ? c.type + " " : "") + c.city_name;
+            return fullName.toUpperCase() === cityName.toUpperCase();
+        });
         
-        serviceSelect.innerHTML = '<option value="">Select Courier First</option>';
-        serviceSelect.disabled = true;
+        if (matchingCity) {
+            courierInput.value = "";
+            courierInput.placeholder = "SELECT COURIER";
+            courierInput.disabled = false;
+            courierCodeHidden.value = "";
+            serviceInput.value = "";
+            serviceInput.placeholder = "SELECT COURIER FIRST";
+            serviceInput.disabled = true;
+            serviceCodeHidden.value = "";
+            serviceCostHidden.value = "0";
+            
+            document.getElementById('clear_city_btn').classList.remove('hidden');
+            document.getElementById('city_arrow').classList.add('hidden');
+        } else {
+            courierInput.value = "";
+            courierInput.placeholder = "SELECT CITY FIRST";
+            courierInput.disabled = true;
+            courierCodeHidden.value = "";
+            serviceInput.value = "";
+            serviceInput.placeholder = "SELECT COURIER FIRST";
+            serviceInput.disabled = true;
+            serviceCodeHidden.value = "";
+            serviceCostHidden.value = "0";
+            
+            selectedShippingCost = 0;
+            const shippingVal = document.getElementById('summary_shipping_val');
+            if (shippingVal) {
+                shippingVal.textContent = 'TBD';
+                shippingVal.className = 'uppercase tracking-widest text-[9px] font-bold text-stone-400';
+            }
+            calculateTotal();
+            
+            document.getElementById('clear_city_btn').classList.add('hidden');
+            document.getElementById('city_arrow').classList.remove('hidden');
+        }
+    }
+
+    function clearCitySelection() {
+        const cityInput = document.getElementById('select_city');
+        cityInput.value = "";
+        onCityInput("");
+    }
+
+    function checkInitialSelection() {
+        const provinceVal = document.getElementById('select_province').value;
+        const cityVal = document.getElementById('select_city').value;
+        
+        if (provinceVal) {
+            document.getElementById('clear_province_btn').classList.remove('hidden');
+            document.getElementById('province_arrow').classList.add('hidden');
+        }
+        if (cityVal) {
+            document.getElementById('clear_city_btn').classList.remove('hidden');
+            document.getElementById('city_arrow').classList.add('hidden');
+        }
+    }
+
+    function showCourierDropdown() {
+        const input = document.getElementById('select_courier');
+        if (input.disabled) return;
+        
+        const dropdown = document.getElementById('courier_list_dropdown');
+        dropdown.classList.remove('hidden');
+        
+        dropdown.innerHTML = "";
+        
+        if (isManualShipping) {
+            const div = document.createElement('div');
+            div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+            div.textContent = "Standard Delivery";
+            div.onmousedown = (e) => e.preventDefault();
+            div.onclick = () => selectCourier("manual", "Standard Delivery");
+            dropdown.appendChild(div);
+        } else {
+            const options = [
+                { code: "jne", name: "JNE (Jalur Nugraha Ekakurir)" },
+                { code: "pos", name: "POS Indonesia" },
+                { code: "tiki", name: "TIKI (Titipan Kilat)" }
+            ];
+            
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                div.textContent = opt.name;
+                div.onmousedown = (e) => e.preventDefault();
+                div.onclick = () => selectCourier(opt.code, opt.name);
+                dropdown.appendChild(div);
+            });
+        }
+    }
+
+    function selectCourier(code, name) {
+        const input = document.getElementById('select_courier');
+        input.value = name;
+        document.getElementById('select_courier_code').value = code;
+        document.getElementById('courier_list_dropdown').classList.add('hidden');
+        
+        fetchShippingCost();
     }
 
     function fetchShippingCost() {
-        const cityId = document.getElementById('select_city').value;
-        const courier = document.getElementById('select_courier').value;
-        const serviceSelect = document.getElementById('select_service');
+        const cityName = document.getElementById('select_city').value.trim();
+        const matchingCity = allCities.find(c => {
+            const fullName = (c.type ? c.type + " " : "") + c.city_name;
+            return fullName.toUpperCase() === cityName.toUpperCase();
+        });
+        
+        const cityId = matchingCity ? matchingCity.city_id : null;
+        const postalCode = matchingCity ? (matchingCity.postal_code || "") : "";
+        const courier = document.getElementById('select_courier_code').value;
+        const serviceInput = document.getElementById('select_service');
+        const serviceCodeHidden = document.getElementById('select_service_code');
+        const serviceCostHidden = document.getElementById('select_service_cost');
         const loading = document.getElementById('shipping_loading');
         
-        serviceSelect.innerHTML = '<option value="">Select Service</option>';
-        serviceSelect.disabled = true;
+        serviceInput.value = "";
+        serviceInput.placeholder = "SELECT SERVICE";
+        serviceInput.disabled = true;
+        serviceCodeHidden.value = "";
+        serviceCostHidden.value = "0";
         
         if (!cityId || !courier) return;
         
@@ -672,6 +1085,7 @@
             },
             body: JSON.stringify({
                 destination_city_id: cityId,
+                destination_postal_code: postalCode,
                 courier: courier
             })
         })
@@ -679,7 +1093,6 @@
         .then(data => {
             loading.classList.add('hidden');
             if (data.success && data.services.length > 0) {
-                // First pass: clean up ETD and find maximum length of the left part (service + description)
                 let maxLeftLength = 0;
                 const processedServices = data.services.map(s => {
                     const leftPart = s.service + " (" + (s.description || "") + ")";
@@ -689,7 +1102,6 @@
                     
                     let etdStr = '';
                     if (s.etd) {
-                        // Clean up DAY, DAYS, HARI, HARIS case-insensitively to avoid duplication
                         let cleanEtd = s.etd.toString().toUpperCase().replace(/\b(DAY|DAYS|HARI|HARIS)\b/g, '').trim();
                         if (cleanEtd) {
                             etdStr = " (" + cleanEtd + " DAYS)";
@@ -705,21 +1117,27 @@
                     };
                 });
 
+                const dropdown = document.getElementById('service_list_dropdown');
+                dropdown.innerHTML = "";
+                
                 processedServices.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.service;
-                    opt.dataset.cost = s.cost;
+                    const div = document.createElement('div');
+                    div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
                     
-                    // Pad the left part with non-breaking spaces for perfect vertical alignment
                     const paddingLength = (maxLeftLength + 2) - s.leftPart.length;
                     const paddedLeft = s.leftPart + "\u00A0".repeat(paddingLength);
+                    const displayText = paddedLeft + "- IDR " + s.cost.toLocaleString('id-ID') + s.etdStr;
                     
-                    opt.textContent = paddedLeft + "- IDR " + s.cost.toLocaleString('id-ID') + s.etdStr;
-                    serviceSelect.appendChild(opt);
+                    div.textContent = displayText;
+                    div.onmousedown = (e) => e.preventDefault();
+                    div.onclick = () => selectService(s.service, s.cost, displayText);
+                    dropdown.appendChild(div);
                 });
-                serviceSelect.disabled = false;
+                serviceInput.disabled = false;
             } else {
-                alert(data.message || "No shipping services available for the selected destination.");
+                const errMsg = data.message || "No shipping services available for the selected destination.";
+                console.warn("Biteship rates calculation failed: " + errMsg);
+                alert("Biteship Rate Calculation: " + errMsg);
             }
         })
         .catch(err => {
@@ -729,29 +1147,58 @@
         });
     }
 
-    function onServiceChange(selectElement) {
-        const selectedOpt = selectElement.options[selectElement.selectedIndex];
-        if (!selectedOpt || !selectedOpt.value) {
-            selectedShippingCost = 0;
-        } else {
-            selectedShippingCost = parseInt(selectedOpt.dataset.cost) || 0;
-        }
+    function showServiceDropdown() {
+        const input = document.getElementById('select_service');
+        if (input.disabled) return;
         
-        // Update summary shipping cost display
+        const dropdown = document.getElementById('service_list_dropdown');
+        dropdown.classList.remove('hidden');
+    }
+
+    function selectService(code, cost, name) {
+        const input = document.getElementById('select_service');
+        input.value = name;
+        document.getElementById('select_service_code').value = code;
+        document.getElementById('select_service_cost').value = cost;
+        document.getElementById('service_list_dropdown').classList.add('hidden');
+        
+        selectedShippingCost = parseInt(cost) || 0;
+        
         const shippingVal = document.getElementById('summary_shipping_val');
         if (selectedShippingCost > 0) {
             shippingVal.textContent = 'IDR ' + selectedShippingCost.toLocaleString('id-ID');
-            shippingVal.classList.remove('text-stone-400', 'uppercase');
-            shippingVal.classList.add('font-mono', 'text-stone-850');
+            shippingVal.className = 'font-mono text-stone-800';
         } else {
             shippingVal.textContent = 'TBD';
-            shippingVal.classList.remove('font-mono', 'text-stone-850');
-            shippingVal.classList.add('text-stone-400', 'uppercase');
+            shippingVal.className = 'uppercase tracking-widest text-[9px] font-bold text-stone-400';
         }
         
-        // Update Grand Total
         calculateTotal();
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        onCartCheckboxChange();
+        checkInitialSelection();
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#province_dropdown_container')) {
+            const dropdown = document.getElementById('province_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+        if (!e.target.closest('#city_dropdown_container')) {
+            const dropdown = document.getElementById('city_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+        if (!e.target.closest('#courier_dropdown_container')) {
+            const dropdown = document.getElementById('courier_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+        if (!e.target.closest('#service_dropdown_container')) {
+            const dropdown = document.getElementById('service_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+    });
 
     @if($isBuyNow)
     let targetUrlToNavigate = null;

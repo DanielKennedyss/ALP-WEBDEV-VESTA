@@ -27,8 +27,9 @@
                                     </label>
                                 </div>
                                 <div class="col-md-6">
-                                    <input type="radio" class="btn-check" name="role" id="role_manager" value="manager">
-                                    <label class="btn btn-outline-dark w-100 py-3 rounded-3 shadow-sm d-flex flex-column align-items-center" for="role_manager">
+                                    <input type="radio" class="btn-check" name="role" id="role_manager" value="manager"
+                                        {{ auth()->user()->role === 'manager' ? 'disabled' : '' }}>
+                                    <label class="btn btn-outline-dark w-100 py-3 rounded-3 shadow-sm d-flex flex-column align-items-center {{ auth()->user()->role === 'manager' ? 'opacity-50' : '' }}" for="role_manager">
                                         <i class="bi bi-shield-lock mb-2 fs-4"></i>
                                         <span class="fw-bold small">MANAGER</span>
                                     </label>
