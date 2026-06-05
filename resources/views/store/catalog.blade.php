@@ -393,10 +393,8 @@
             {{-- Dynamic Event Banner / Fallback Section --}}
             <div class="mb-12 w-full">
                 @if($activeEvent)
-                    {{-- Active Event Banner --}}
                     <div class="relative overflow-hidden border p-8 md:p-12 transition-all duration-500 rounded-lg shadow-sm"
                          style="background-color: {{ $activeEvent->theme_color ?? '#000000' }}; color: {{ $activeEvent->text_color ?? '#ffffff' }}; border-color: {{ ($activeEvent->text_color ?? '#ffffff') }}44;">
-                        {{-- Decorative pattern / background image with overlay --}}
                         @if($activeEvent->banner_image)
                             <div class="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-25 pointer-events-none" style="background-image: url('{{ $activeEvent->banner_image }}')"></div>
                         @endif
@@ -418,7 +416,7 @@
                                    style="background-color: {{ $activeEvent->text_color ?? '#ffffff' }}; color: {{ $activeEvent->theme_color ?? '#000000' }}; border-color: {{ $activeEvent->text_color ?? '#ffffff' }};"
                                    onmouseover="this.style.backgroundColor='transparent'; this.style.color='{{ $activeEvent->text_color ?? '#ffffff' }}'"
                                    onmouseout="this.style.backgroundColor='{{ $activeEvent->text_color ?? '#ffffff' }}'; this.style.color='{{ $activeEvent->theme_color ?? '#000000' }}'">
-                                    EXPLORE COLLECTION
+                                     EXPLORE COLLECTION
                                 </a>
                             </div>
                             
@@ -431,7 +429,6 @@
                         </div>
                     </div>
                 @else
-                    {{-- Fallback Default Banner (New Arrivals) --}}
                     <div class="relative overflow-hidden bg-gradient-to-r from-stone-900 via-neutral-900 to-stone-900 text-white border border-stone-800 p-8 md:p-12 rounded-lg shadow-sm">
                         <div class="relative z-10 flex flex-col items-center text-center py-6">
                             <span class="text-xs tracking-[0.4em] text-amber-400/90 uppercase mb-3 font-semibold">Exclusively VESTA</span>
@@ -446,7 +443,6 @@
                                 </a>
                             </div>
                         </div>
-                        {{-- subtle decorative luxury ring --}}
                         <div class="absolute -right-20 -bottom-20 w-96 h-96 border border-white/5 rounded-full pointer-events-none"></div>
                         <div class="absolute -left-20 -top-20 w-96 h-96 border border-white/5 rounded-full pointer-events-none"></div>
                     </div>
@@ -462,7 +458,8 @@
 
             {{-- Search Bar --}}
             <div class="max-w-2xl mx-auto mb-10">
-                <form id="mainFilterForm" action="{{ route('catalog') }}" method="GET">
+                {{-- REVISI ROUTE: Disinkronkan murni ke route collections.index --}}
+                <form id="mainFilterForm" action="{{ route('collections.index') }}" method="GET">
                     <div class="relative">
                         <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
                             placeholder="Search by name, description, or SKU..."
@@ -473,7 +470,7 @@
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         @if (request('search'))
-                            <a href="{{ route('catalog') }}"
+                            <a href="{{ route('collections.index') }}"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -582,7 +579,7 @@
                         </div>
 
                         <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
-                            <span class="text-xs text-gray-500 whitespace-nowrap"><span
+                            <span class="text-xs text-gray-500 whitespace-nowrap"><span id="liveTotalCount"
                                     class="text-black font-medium">{{ $products->total() }}</span> Results</span>
 
                             {{-- Sort Dropdown --}}
@@ -635,144 +632,118 @@
                         </div>
                     @endif
 
-                    @if ($products->isEmpty())
-                        <div class="text-center py-24">
-                            <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <p class="text-sm tracking-widest text-gray-400 uppercase mb-4">No products found</p>
-                            <a href="{{ route('catalog') }}"
-                                class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR
-                                FILTERS</a>
-                        </div>
-                    @else
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                            @foreach ($products as $index => $product)
-                                <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
-                                    <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer"
-                                        onclick="openQuickView({{ $product->id }})">
-                                        <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
-                                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                            loading="lazy">
-
-                                        {{-- Badges Wrapper (Gender & Event) --}}
-                                        <div class="absolute top-[10px] left-[10px] z-10 flex flex-row gap-2 items-center">
-                                            @php $gc = strtolower($product->gender ?? ''); @endphp
-                                            <span class="gender-badge {{ $gc == 'male' ? 'gender-male' : ($gc == 'female' ? 'gender-female' : 'gender-unisex') }}">
-                                                @if ($gc == 'male')
-                                                    ♂
-                                                @elseif($gc == 'female')
-                                                    ♀
-                                                @else
-                                                    ⚥
-                                                @endif
-                                                {{ $product->gender }}
-                                            </span>
-
-                                            @if ($activeEvent && in_array($product->id, $activeEventProductIds))
-                                                <span class="event-badge" 
-                                                      style="background-color: {{ $activeEvent->theme_color ?? '#0d9488' }}; 
-                                                             color: {{ $activeEvent->text_color ?? '#ffffff' }};
-                                                             border: 1px solid {{ ($activeEvent->text_color ?? '#ffffff') }}22;">
-                                                    {{ $activeEvent->short_name ?? $activeEvent->name }}
-                                                </span>
+                    {{-- REVISI ANCHOR DOM: Memasang ID Pembungkus Utama Kontainer Produk --}}
+                    <div id="productContainer" class="w-full">
+                        @if ($products->isEmpty())
+                            <div class="text-center py-24">
+                                <svg class="mx-auto h-16 w-16 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                <p class="text-sm tracking-widest text-gray-400 uppercase mb-4">No products found</p>
+                                <a href="{{ route('collections.index') }}"
+                                    class="inline-block border border-black text-xs tracking-widest px-8 py-3 hover:bg-black hover:text-white transition-colors">CLEAR
+                                    FILTERS</a>
+                            </div>
+                        @else
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                                @foreach ($products as $index => $product)
+                                    <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
+                                        <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer"
+                                            onclick="openQuickView({{ $product->id }})">
+                                            {{-- REVISI GAMBAR: Menggunakan conditional Str::startsWith aslimu agar gambar Unsplash ter-load sempurna --}}
+                                            @if($product->image_path)
+                                                <img src="{{ \Illuminate\Support\Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('storage/' . $product->image_path) }}" 
+                                                    alt="{{ $product->name }}"
+                                                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                    loading="lazy">
+                                            @else
+                                                <div class="w-full h-full flex items-center justify-center bg-stone-100 text-stone-400 text-xs tracking-widest uppercase">No Photo</div>
                                             @endif
+
+                                            {{-- Badges Wrapper (Gender & Event) --}}
+                                            <div class="absolute top-[10px] left-[10px] z-10 flex flex-row gap-2 items-center">
+                                                @php $gc = strtolower($product->gender ?? ''); @endphp
+                                                <span class="gender-badge {{ $gc == 'male' ? 'gender-male' : ($gc == 'female' ? 'gender-female' : 'gender-unisex') }}">
+                                                    @if ($gc == 'male')
+                                                        ♂
+                                                    @elseif($gc == 'female')
+                                                        ♀
+                                                    @else
+                                                        ⚥
+                                                    @endif
+                                                    {{ $product->gender }}
+                                                </span>
+
+                                                @if ($activeEvent && in_array($product->id, $activeEventProductIds))
+                                                    <span class="event-badge" 
+                                                          style="background-color: {{ $activeEvent->theme_color ?? '#0d9488' }}; 
+                                                                 color: {{ $activeEvent->text_color ?? '#ffffff' }};
+                                                                 border: 1px solid {{ ($activeEvent->text_color ?? '#ffffff') }}22;">
+                                                        {{ $activeEvent->short_name ?? $activeEvent->name }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            @if ($product->total_stock == 0)
+                                                <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                                    <span class="text-white text-xs tracking-[0.3em] border border-white px-6 py-3">SOLD OUT</span>
+                                                </div>
+                                            @endif
+
+                                            <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                                                <button onclick="openQuickView({{ $product->id }})"
+                                                    class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
+                                                    QUICK VIEW
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        @if ($product->total_stock == 0)
-                                            <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
-                                                <span
-                                                    class="text-white text-xs tracking-[0.3em] border border-white px-6 py-3">SOLD
-                                                    OUT</span>
-                                            </div>
-                                        @endif
+                                        <div class="relative w-full flex flex-col items-center text-center pt-2">
+                                            <span class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">{{ $product->category->name ?? '' }}</span>
+                                            <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">
+                                                {{ $product->name }}</h3>
+                                            
+                                            @if ($product->reviews_count > 0)
+                                                <div class="flex items-center gap-1 mb-2 text-black">
+                                                    <div class="flex gap-0.5">
+                                                        @for ($i = 1; $i <= 5; $i++)
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 {{ $i <= round($product->reviews_avg_rating) ? 'fill-current' : 'text-stone-200' }}" viewBox="0 0 20 20">
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                            </svg>
+                                                        @endfor
+                                                    </div>
+                                                    <span class="text-[9px] text-stone-400 font-mono">({{ $product->reviews_count }})</span>
+                                                </div>
+                                            @endif
 
-                                        <div
-                                            class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                                            <button onclick="openQuickView({{ $product->id }})"
-                                                class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
-                                                QUICK VIEW
+                                            <p class="text-sm font-light text-gray-800">IDR {{ number_format($product->price, 0, ',', '.') }}</p>
+
+                                            <button
+                                                onclick="toggleWishlist(event, {{ json_encode([
+                                                    'id' => $product->id,
+                                                    'name' => $product->name,
+                                                    'price' => $product->price,
+                                                    'image_path' => $product->image_path,
+                                                    'category' => $product->category->name ?? '',
+                                                ]) }})"
+                                                class="absolute right-2 bottom-1.5 p-2 text-gray-400 hover:text-red-500 transition-colors z-20 origin-center"
+                                                id="wishlist-heart-{{ $product->id }}" aria-label="Add to Wishlist">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-5 w-5 stroke-current transition-colors duration-300 origin-center"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                </svg>
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div class="relative w-full flex flex-col items-center text-center pt-2">
-                                        <span
-                                            class="text-[10px] tracking-[0.2em] text-gray-400 mb-2 uppercase">{{ $product->category->name ?? '' }}</span>
-                                        <h3 class="text-sm tracking-wide mb-1.5 group-hover:underline underline-offset-4">
-                                            {{ $product->name }}</h3>
-                                        
-                                        @if ($product->reviews_count > 0)
-                                            <div class="flex items-center gap-1 mb-2 text-black">
-                                                <div class="flex gap-0.5">
-                                                    @for ($i = 1; $i <= 5; $i++)
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 {{ $i <= round($product->reviews_avg_rating) ? 'fill-current' : 'text-stone-200' }}" viewBox="0 0 20 20">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                    @endfor
-                                                </div>
-                                                <span class="text-[9px] text-stone-400 font-mono">({{ $product->reviews_count }})</span>
-                                            </div>
-                                        @endif
-
-                                        <p class="text-sm font-light text-gray-800">IDR
-                                            {{ number_format($product->price, 0, ',', '.') }}</p>
-
-                                        <!-- Heart button at the bottom-right of the card -->
-                                        <button
-                                            onclick="toggleWishlist(event, {{ json_encode([
-                                                'id' => $product->id,
-                                                'name' => $product->name,
-                                                'price' => $product->price,
-                                                'image_path' => $product->image_path,
-                                                'category' => $product->category->name ?? '',
-                                            ]) }})"
-                                            class="absolute right-2 bottom-1.5 p-2 text-gray-400 hover:text-red-500 transition-colors z-20 origin-center"
-                                            id="wishlist-heart-{{ $product->id }}" aria-label="Add to Wishlist">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                class="h-5 w-5 stroke-current transition-colors duration-300 origin-center"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-
-                        {{-- Pagination Links --}}
-                        @if ($products->hasPages())
-                            <nav class="mt-16 flex justify-center items-center gap-4" role="navigation" aria-label="Pagination Navigation">
-                                {{-- Previous Page Link --}}
-                                @if ($products->onFirstPage())
-                                    <span class="px-5 py-3 text-[10px] tracking-widest text-gray-300 border border-gray-100 cursor-not-allowed uppercase font-medium">PREV</span>
-                                @else
-                                    <a href="{{ $products->previousPageUrl() }}" class="px-5 py-3 text-[10px] tracking-widest text-stone-700 hover:text-black border border-gray-200 hover:border-black transition-colors uppercase font-medium">PREV</a>
-                                @endif
-
-                                {{-- Page Numbers --}}
-                                <div class="flex items-center gap-1.5">
-                                    @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                                        @if ($page == $products->currentPage())
-                                            <span class="w-10 h-10 flex items-center justify-center text-xs font-semibold bg-stone-900 text-white border border-stone-900">{{ $page }}</span>
-                                        @else
-                                            <a href="{{ $url }}" class="w-10 h-10 flex items-center justify-center text-xs text-stone-600 hover:text-black border border-gray-200 hover:border-stone-400 transition-colors">{{ $page }}</a>
-                                        @endif
-                                    @endforeach
-                                </div>
-
-                                {{-- Next Page Link --}}
-                                @if ($products->hasMorePages())
-                                    <a href="{{ $products->nextPageUrl() }}" class="px-5 py-3 text-[10px] tracking-widest text-stone-700 hover:text-black border border-gray-200 hover:border-black transition-colors uppercase font-medium">NEXT</a>
-                                @else
-                                    <span class="px-5 py-3 text-[10px] tracking-widest text-gray-300 border border-gray-100 cursor-not-allowed uppercase font-medium">NEXT</span>
-                                @endif
-                            </nav>
+                                    </article>
+                                @endforeach
+                            </div>
                         @endif
-                    @endif
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -873,83 +844,124 @@
         // Filter system
         function setFilter(name, value) {
             document.getElementById('filter' + name.charAt(0).toUpperCase() + name.slice(1)).value = value;
-            document.getElementById('mainFilterForm').submit();
+            fetchLiveResults(); // REVISI: Mengarahkan langsung ke live async trigger
         }
 
-        // Debounced search
+        // ==========================================================================
+        // REVISI TOTAL: SINGLE-FILE LIVE SEARCH ENGINE (ANTI REFRESH PAGE & NO EXTRA FILES)
+        // ==========================================================================
         let searchTimer;
         document.getElementById('searchInput').addEventListener('input', function() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
-                document.getElementById('mainFilterForm').submit();
-            }, 600);
+                fetchLiveResults(); // Update otomatis saat user mengetik tanpa refresh
+            }, 300); // Debounce pas di 300ms, responsif!
         });
+
+        function fetchLiveResults() {
+            const filterForm = document.getElementById('mainFilterForm');
+            const formData = new FormData(filterForm);
+            const searchParams = new URLSearchParams(formData);
+            const targetUrl = `${filterForm.action}?${searchParams.toString()}`;
+
+            // Tarik seluruh halaman HTML di background via Fetch API
+            fetch(targetUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.text())
+            .then(htmlString => {
+                // Konversi string HTML mentah menjadi dokumen DOM virtual menggunakan DOMParser
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlString, 'text/html');
+
+                // Potong area 'productContainer' dari hasil virtual dan timpa ke layar nyata
+                const newContent = doc.getElementById('productContainer');
+                if (newContent) {
+                    document.getElementById('productContainer').innerHTML = newContent.innerHTML;
+                }
+
+                // Potong total count agregat terbaru dan perbarui teks visual di layar
+                const newTotal = doc.getElementById('liveTotalCount');
+                if (newTotal) {
+                    document.getElementById('liveTotalCount').textContent = newTotal.textContent;
+                }
+
+                // Sinkronisasikan kembali icon hati wishlist pasca manipulasi DOM asinkronus
+                if(typeof syncCardHearts === 'function') syncCardHearts();
+
+                // Perbarui bar alamat URL agar bookmark/history pembeli tetap sinkron
+                window.history.pushState({}, '', targetUrl);
+            })
+            .catch(error => console.error('Live search failure:', error));
+        }
+        // ==========================================================================
 
         // Quantity sync with max stock enforcement
         let prevQtyValue = 1;
-
         const qtyInput = document.getElementById('modalQuantity');
 
-        qtyInput.addEventListener('focus', function() {
-            prevQtyValue = parseInt(this.value) || 1;
-        });
+        if(qtyInput) {
+            qtyInput.addEventListener('focus', function() {
+                prevQtyValue = parseInt(this.value) || 1;
+            });
 
-        qtyInput.addEventListener('input', function() {
-            const max = parseInt(this.max) || 0;
-            let val = parseInt(this.value) || 1;
-            const warning = document.getElementById('qtyWarning');
-
-            if (val > max) {
-                val = max;
-                this.value = max;
-                warning.style.display = 'block';
-            } else if (val >= max && prevQtyValue >= max) {
-                warning.style.display = 'block';
-            } else if (val < 1) {
-                val = 1;
-                this.value = 1;
-                warning.style.display = 'none';
-            } else {
-                warning.style.display = 'none';
-            }
-            prevQtyValue = val;
-            document.getElementById('modalQuantityInput').value = val;
-        });
-
-        qtyInput.addEventListener('change', function() {
-            const max = parseInt(this.max) || 0;
-            let val = parseInt(this.value) || 1;
-            const warning = document.getElementById('qtyWarning');
-
-            if (val >= max) {
-                val = max;
-                this.value = max;
-                warning.style.display = 'block';
-            } else if (val < 1) {
-                val = 1;
-                this.value = 1;
-                warning.style.display = 'none';
-            } else {
-                warning.style.display = 'none';
-            }
-            prevQtyValue = val;
-            document.getElementById('modalQuantityInput').value = val;
-        });
-
-        qtyInput.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowUp') {
+            qtyInput.addEventListener('input', function() {
                 const max = parseInt(this.max) || 0;
-                const val = parseInt(this.value) || 1;
-                if (val >= max) {
-                    e.preventDefault();
+                let val = parseInt(this.value) || 1;
+                const warning = document.getElementById('qtyWarning');
+
+                if (val > max) {
+                    val = max;
                     this.value = max;
-                    document.getElementById('qtyWarning').style.display = 'block';
-                    document.getElementById('modalQuantityInput').value = max;
+                    warning.style.display = 'block';
+                } else if (val >= max && prevQtyValue >= max) {
+                    warning.style.display = 'block';
+                } else if (val < 1) {
+                    val = 1;
+                    this.value = 1;
+                    warning.style.display = 'none';
+                } else {
+                    warning.style.display = 'none';
                 }
-            } else if (e.key === 'ArrowDown') {
-                document.getElementById('qtyWarning').style.display = 'none';
-            }
-        });
+                prevQtyValue = val;
+                document.getElementById('modalQuantityInput').value = val;
+            });
+
+            qtyInput.addEventListener('change', function() {
+                const max = parseInt(this.max) || 0;
+                let val = parseInt(this.value) || 1;
+                const warning = document.getElementById('qtyWarning');
+
+                if (val >= max) {
+                    val = max;
+                    this.value = max;
+                    warning.style.display = 'block';
+                } else if (val < 1) {
+                    val = 1;
+                    this.value = 1;
+                    warning.style.display = 'none';
+                } else {
+                    warning.style.display = 'none';
+                }
+                prevQtyValue = val;
+                document.getElementById('modalQuantityInput').value = val;
+            });
+
+            qtyInput.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowUp') {
+                    const max = parseInt(this.max) || 0;
+                    const val = parseInt(this.value) || 1;
+                    if (val >= max) {
+                        e.preventDefault();
+                        this.value = max;
+                        document.getElementById('qtyWarning').style.display = 'block';
+                        document.getElementById('modalQuantityInput').value = max;
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    document.getElementById('qtyWarning').style.display = 'none';
+                }
+            });
+        }
 
         function openQuickView(productId) {
             const product = products.find(p => p.id === productId);
@@ -958,12 +970,16 @@
             selectedSize = null;
 
             document.getElementById('modalAddToCartForm').action = '/cart/add/' + productId;
-            document.getElementById('modalImage').src = product.image_path;
+            
+            // Image Resolver Inside Modal
+            const imgPath = product.image_path;
+            const absoluteImgUrl = (imgPath && (imgPath.startsWith('http://') || imgPath.startsWith('https://'))) ? imgPath : '/storage/' + imgPath;
+            document.getElementById('modalImage').src = absoluteImgUrl;
             document.getElementById('modalImage').alt = product.name;
+            
             document.getElementById('modalCategory').textContent = product.category ? product.category.name : '';
             document.getElementById('modalName').textContent = product.name;
-            document.getElementById('modalPrice').textContent = 'IDR ' + new Intl.NumberFormat('id-ID').format(product
-                .price);
+            document.getElementById('modalPrice').textContent = 'IDR ' + new Intl.NumberFormat('id-ID').format(product.price);
             document.getElementById('modalDescription').textContent = product.description || 'No description available.';
             document.getElementById('modalQuantity').value = '1';
             document.getElementById('modalQuantityInput').value = '1';
@@ -997,8 +1013,7 @@
             const g = (product.gender || '').toLowerCase();
             const symbol = g === 'male' ? '♂' : g === 'female' ? '♀' : '⚥';
             const cls = g === 'male' ? 'gender-male' : g === 'female' ? 'gender-female' : 'gender-unisex';
-            genderDiv.innerHTML = '<span class="gender-badge ' + cls + '">' + symbol + ' ' + (product.gender || 'Unisex') +
-                '</span>';
+            genderDiv.innerHTML = '<span class="gender-badge ' + cls + '">' + symbol + ' ' + (product.gender || 'Unisex') + '</span>';
 
             // Size buttons
             const sizesDiv = document.getElementById('modalSizes');
@@ -1150,23 +1165,11 @@
             reviewItems = container.querySelectorAll('.review-slide-item');
             reviewCurrentIndex = 0;
 
-            // Stagger reveal: delay the overlay appearance
-            setTimeout(() => {
-                overlay.classList.add('visible');
-            }, 400);
+            setTimeout(() => { overlay.classList.add('visible'); }, 400);
+            setTimeout(() => { if (reviewItems[0]) reviewItems[0].classList.add('active'); }, 700);
 
-            // Show first review with a slight delay for the "pop-up" feel
-            setTimeout(() => {
-                if (reviewItems[0]) {
-                    reviewItems[0].classList.add('active');
-                }
-            }, 700);
-
-            // Auto-cycle if more than 1 review
             if (reviews.length > 1) {
-                reviewSliderInterval = setInterval(() => {
-                    advanceReviewSlide();
-                }, 4000);
+                reviewSliderInterval = setInterval(() => { advanceReviewSlide(); }, 4000);
             }
         }
 
@@ -1176,25 +1179,15 @@
             const currentSlide = reviewItems[reviewCurrentIndex];
             const dots = document.querySelectorAll('#reviewProgressDots .review-dot');
 
-            // Exit current slide upward
             currentSlide.classList.remove('active');
             currentSlide.classList.add('exit-up');
 
-            // Calculate next index
             const nextIndex = (reviewCurrentIndex + 1) % reviewItems.length;
 
-            // After exit transition, reset and show next
             setTimeout(() => {
                 currentSlide.classList.remove('exit-up');
-
-                // Activate next slide (slides in from bottom)
                 reviewItems[nextIndex].classList.add('active');
-
-                // Update dots
-                dots.forEach((d, i) => {
-                    d.classList.toggle('active', i === nextIndex);
-                });
-
+                dots.forEach((d, i) => { d.classList.toggle('active', i === nextIndex); });
                 reviewCurrentIndex = nextIndex;
             }, 350);
         }
@@ -1208,9 +1201,7 @@
             reviewItems = [];
         }
 
-        // Sync card heart icons with the global wishlistItems array
         function syncCardHearts() {
-            // Reset all cards first
             document.querySelectorAll('[id^="wishlist-heart-"]').forEach(btn => {
                 btn.classList.add('text-gray-400', 'hover:text-red-500');
                 btn.classList.remove('text-red-500');
@@ -1221,7 +1212,6 @@
                 }
             });
 
-            // Check against global wishlistItems array
             if (typeof wishlistItems !== 'undefined' && wishlistItems.length > 0) {
                 wishlistItems.forEach(item => {
                     const btn = document.getElementById('wishlist-heart-' + item.id);
@@ -1237,28 +1227,5 @@
                 });
             }
         }
-
-        // Check query param for quickview on load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Sync hearts initial call
-            syncCardHearts();
-
-            // Check query params
-            const urlParams = new URLSearchParams(window.location.search);
-            const quickviewId = urlParams.get('quickview');
-            if (quickviewId) {
-                openQuickView(parseInt(quickviewId));
-                // Clean URL
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (
-                    window.location.search.replace(/quickview=\d+&?/, '').replace(/\?$/, ''));
-                window.history.replaceState({
-                    path: newUrl
-                }, '', newUrl);
-            }
-        });
-
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeQuickView();
-        });
     </script>
 @endsection

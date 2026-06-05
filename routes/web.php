@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\AuthOtpController; // REVISI: Import Controller OTP Baru
+use App\Http\Controllers\AuthOtpController; 
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -13,9 +13,10 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\Admin\SupportController; // FIXED: Import SupportController agar tidak error class not found
 use App\Http\Middleware\AdminMiddleware;
-use App\Mail\ContactInquiryMail; // REVISI: Import Mailable Baru untuk Fitur Kontak
-use App\Mail\ContactAutoResponseMail; // REVISI: Import Mailable Baru untuk Auto-Responder Customer
+use App\Mail\ContactInquiryMail; 
+use App\Mail\ContactAutoResponseMail; 
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\ProfileController;
 
@@ -37,7 +38,6 @@ Route::middleware(['web'])->group(function () {
     Route::get('/about', function () { return view('about'); })->name('about');
     Route::get('/contact', function () { return view('contact'); })->name('contact');
     
-    // REVISI (LANGKAH 2): Menyimpan pesan masuk ke DB sebelum mengirim email notifikasi otomatis
     Route::post('/contact', function (\Illuminate\Http\Request $request) {
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -48,10 +48,8 @@ Route::middleware(['web'])->group(function () {
             'message'    => 'required|string|max:5000',
         ]);
         
-        // 1. Mengirim email rangkuman tiket bantuan ke vestaclothingg@gmail.com
         Mail::to('vestaclothingg@gmail.com')->send(new ContactInquiryMail($validatedData));
 
-        // 3. Mengirim balasan otomatis (Auto-Responder Receipt) ke email milik customer/sender
         $customerName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
         Mail::to($validatedData['email'])->send(new ContactAutoResponseMail($customerName));
 
@@ -71,7 +69,6 @@ Route::middleware(['web'])->group(function () {
         Route::post('/direct-checkout/{product_id}', 'direct_checkout')->name('direct.checkout');
         Route::get('/checkout', 'view_checkout')->name('checkout.view');
         
-        // FIX BARIS 67: Mengubah Route::checkout menjadi Route::post agar tidak memicu HTTP Error 500
         Route::post('/checkout/process', 'checkout')->name('checkout.process');
 
         // Shipping Routes (RajaOngkir Proxy)
@@ -104,7 +101,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
 
-    // REVISI: Tambahan Rute Lupa Password via OTP (Brevo / Gmail SMTP)
     Route::get('/forgot-password', [AuthOtpController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthOtpController::class, 'sendResetOtp'])->name('password.email');
     Route::get('/reset-password', [AuthOtpController::class, 'showResetPasswordForm'])->name('password.reset.form');
@@ -131,10 +127,8 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleC
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // REVISI PINDAH TEMPAT: Rute Klaim Voucher ditaruh di bawah kawalan Middleware Auth agar Session Cookie aman 100%
     Route::post('/checkout/apply-voucher', [StoreController::class, 'apply_voucher'])->name('checkout.applyVoucher');
 
-    // REVISI: Tambahan Rute Verifikasi & Resend OTP Akun (Brevo / Gmail SMTP)
     Route::get('/verify-otp', [AuthOtpController::class, 'showVerifyForm'])->name('otp.verify.form');
     Route::post('/verify-otp', [AuthOtpController::class, 'verifyOtp'])->name('otp.verify.submit');
     Route::post('/resend-otp', [AuthOtpController::class, 'sendVerificationOtp'])->name('otp.resend');
@@ -165,42 +159,36 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', function () { return redirect()->route('profile'); });
 
-    // PERBAIKAN STRUKTURAL: Ditambahkan ->name('admin.') agar semua rute di dalam grup ini mendapatkan prefix nama "admin."
+    // PERBAIKAN STRUKTURAL: Semua Resource Route di dalam group ini otomatis mewarisi prefix nama 'admin.'
     Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
-        // INTEGRASI LAPORAN: Rute penembak unduhan laporan Excel Sales Intelligence VESTA
         Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
         
-        // REVISI OPTIMASI (LANGKAH 5): Grouping Rute Manajemen Support / Customer Care VESTA
+        // Support Management
         Route::controller(SupportController::class)->group(function () {
             Route::get('/support', 'index')->name('support.index');
             Route::get('/support/{id}', 'show')->name('support.show');
             Route::post('/support/{id}/reply', 'reply')->name('support.reply');
         });
         
-        // Product Management
-        Route::resource('products', ProductController::class)->except(['show'])->names('products');
+        // Product Management (Otomatis menghasilkan rute admin.products.*)
+        Route::resource('products', ProductController::class)->except(['show']);
         Route::get('/inventory', [ProductController::class, 'index'])->name('inventory');
 
-        // Transaction & Report Management
+        // Transaction Management
         Route::controller(TransactionController::class)->group(function () {
             Route::get('/transactions', 'index')->name('transactions.index');
             Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('transactions.updateStatus');
-            
-            // ==========================================================================
-            // REVISI CORE: Rute POST Penembak Ekspor Laporan Finansial Multi-Format ke Email
-            // ==========================================================================
             Route::post('/transactions/export-email', 'sendReportToEmail')->name('transactions.export_email');
         });
 
-        // Voucher Management
-        Route::resource('vouchers', VoucherController::class)->names('admin.vouchers');
+        // Voucher Management (FIXED: Diubah menjadi 'vouchers' agar tidak ter-generate double 'admin.admin.vouchers')
+        Route::resource('vouchers', VoucherController::class);
 
-        // Event Collection Management
-        Route::resource('events', EventController::class)->names('admin.events');
+        // Event Collection Management (FIXED: Diubah menjadi 'events' supaya menghasilkan rute presisi 'admin.events.*')
+        Route::resource('events', EventController::class);
 
-        // Staff Management
-        Route::resource('staff', StaffController::class)->names('staff');
+        // Staff Management (Otomatis menghasilkan rute admin.staff.*)
+        Route::resource('staff', StaffController::class);
     });
 });

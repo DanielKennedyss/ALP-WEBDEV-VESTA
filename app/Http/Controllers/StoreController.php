@@ -8,34 +8,38 @@ use App\Models\ProductVariant;
 use App\Models\Transaction;
 use App\Models\LoyaltyPointHistory;
 use App\Models\ProductReview;
-use App\Models\Voucher; // REVISI: Import Model Voucher untuk Logika Klaim Potongan Harga
+use App\Models\Voucher;
+use App\Models\CartItem;
+use App\Models\Event;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail; // REVISI: Import Facade Mail untuk sistem notifikasi
+use Illuminate\Support\Facades\Mail;
 
 class StoreController extends Controller
 {
     /**
-     * Tampilan Landing Page
+     * Tampilan Landing Page VESTA
      */
-    public function show()
+    public function show(): View
     {
         $products = Product::with(['category', 'variants'])->get();
         return view('home', compact('products'));
     }
 
     /**
-     * Halaman Koleksi dengan Filter & Search (Locked Event Landing Page)
+     * Halaman Koleksi Terkunci Berbasis Event Aktif (Locked Event Landing Page)
      */
-    public function collection(Request $request)
+    public function collection(Request $request): View
     {
         session()->forget('buy_now');
         session()->forget('applied_voucher');
 
-        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+        $activeEvent = Event::where('start_date', '<=', now())
             ->where('end_date', '>=', now())
             ->with(['products' => function($q) {
                 $q->with(['category', 'variants', 'reviews.user'])
@@ -44,7 +48,7 @@ class StoreController extends Controller
             }])
             ->first();
 
-        // Fallback products (e.g. new arrivals) if no active event is present
+        // Fallback ke produk terbaru jika tidak ada event kurasi yang aktif
         $products = collect();
         if (!$activeEvent) {
             $products = Product::with(['category', 'variants', 'reviews.user'])
@@ -59,56 +63,95 @@ class StoreController extends Controller
     }
 
     /**
-     * Halaman Katalog Unfiltered dengan Filter & Search
+     * Halaman Katalog Utama: Integrasi Multi-Column Fonetik Typo-Tolerant Fuzzy Search
      */
     public function catalog(Request $request)
     {
         session()->forget('buy_now');
         session()->forget('applied_voucher');
-        $query = Product::with(['category', 'variants', 'reviews.user'])->withAvg('reviews', 'rating')->withCount('reviews');
 
-        // Search by product name, description, or SKU
+        $query = Product::with(['category', 'variants', 'reviews.user'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews');
+
+// ==========================================================================
+        // ADVANCED TYPO-TOLERANT ENGINE (Native SQL Fuzziness + Soundex)
+        // ==========================================================================
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
+            
             $query->where(function ($q) use ($search) {
+                // 1. EXACT & STANDARD LIKE (Prioritas Utama untuk exact match)
                 $q->where('name', 'like', '%' . $search . '%')
                   ->orWhere('description', 'like', '%' . $search . '%')
-                  ->orWhere('sku', 'like', '%' . $search . '%');
+                  ->orWhere('sku', 'like', '%' . $search . '%')
+                  ->orWhere('season', 'like', '%' . $search . '%')
+                  ->orWhereHas('category', function ($catQ) use ($search) {
+                      $catQ->where('name', 'like', '%' . $search . '%');
+                  });
+
+                // Memecah kata untuk safety net
+                $words = explode(' ', $search);
+                
+                foreach ($words as $word) {
+                    if (strlen($word) > 2) { // Hanya memproses kata > 2 huruf
+                        
+                        // 2. WILDCARD CHARACTER INJECTION (Deteksi Typo Hilang Huruf)
+                        // Mengubah input typo "shrt" menjadi "%s%h%r%t%"
+                        $fuzzyWord = '%' . implode('%', str_split($word)) . '%';
+                        
+                        $q->orWhere('name', 'like', $fuzzyWord)
+                          ->orWhere('season', 'like', $fuzzyWord)
+                          ->orWhere('description', 'like', $fuzzyWord);
+
+                        // 3. SOUNDEX FALLBACK (Deteksi Typo Fonetik)
+                        // Mempertahankan fallback suara untuk kasus salah eja vokal
+                        $q->orWhereRaw("SOUNDEX(name) = SOUNDEX(?)", [$word])
+                          ->orWhereRaw("SOUNDEX(season) = SOUNDEX(?)", [$word])
+                          ->orWhereRaw("SOUNDEX(description) LIKE CONCAT('%', SOUNDEX(?), '%')", [$word]);
+                    }
+                }
             });
         }
+        // ==========================================================================
 
-        // Filter by category
+        // Filter Berdasarkan Musim Mode (Seasonal Filter)
+        if ($request->filled('season')) {
+            $query->where('season', $request->season);
+        }
+
+        // Filter Berdasarkan Kategori Pakaian
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->category);
             });
         }
 
-        // Filter by event
+        // Filter Berdasarkan Keterikatan Event Curated
         if ($request->filled('filter_event')) {
             $query->whereHas('events', function ($q) use ($request) {
                 $q->where('events.id', $request->filter_event);
             });
         }
 
-        // Filter by gender
+        // Filter Berdasarkan Target Gender (Include Unisex Allocation)
         if ($request->filled('gender')) {
             $selectedGender = $request->gender;
-            if (strtolower($selectedGender) === 'male' || strtolower($selectedGender) === 'female') {
+            if (in_array(strtolower($selectedGender), ['male', 'female'])) {
                 $query->whereIn('gender', [$selectedGender, 'Unisex', 'unisex']);
             } else {
                 $query->where('gender', $selectedGender);
             }
         }
 
-        // Filter by size
+        // Filter Berdasarkan Ukuran Stok Pakaian
         if ($request->filled('size')) {
             $query->whereHas('variants', function ($q) use ($request) {
                 $q->where('size_label', $request->size);
             });
         }
 
-        // Sorting Logic
+        // Aturan Pengurutan Katalog (Sorting Engine)
         $sort = $request->input('sort', 'newest');
         switch ($sort) {
             case 'price_low': $query->orderBy('price', 'asc'); break;
@@ -118,12 +161,16 @@ class StoreController extends Controller
             default: $query->orderBy('created_at', 'desc'); break;
         }
 
+        // Eksekusi data kompilasi dengan Pagination
         $products = $query->paginate(12)->withQueryString();
+        
+        // Pengambilan data penunjang filter untuk antarmuka komponen Blade
         $categories = Category::orderBy('name')->pluck('name');
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');
+        $seasons = ['Spring', 'Summer', 'Autumn', 'Winter']; 
 
-        $activeEvent = \App\Models\Event::where('start_date', '<=', now())
+        $activeEvent = Event::where('start_date', '<=', now())
             ->where('end_date', '>=', now())
             ->first();
 
@@ -132,29 +179,41 @@ class StoreController extends Controller
             $activeEventProductIds = $activeEvent->products()->pluck('products.id')->toArray();
         }
 
-        $filteredEvent = null;
-        if ($request->filled('filter_event')) {
-            $filteredEvent = \App\Models\Event::find($request->filter_event);
-        }
+        $filteredEvent = $request->filled('filter_event') ? Event::find($request->filter_event) : null;
 
-        return view('store.catalog', compact('products', 'categories', 'genders', 'sizes', 'activeEvent', 'activeEventProductIds', 'filteredEvent'));
+        // ==========================================================================
+        // REVISI UTAMA: INTERSEPTOR AJAX/XMLHTTPREQUEST UNTUK LIVE SEARCH BOX
+        // ==========================================================================
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return view('store.catalog', compact(
+                'products', 'categories', 'genders', 'sizes', 'seasons', 
+                'activeEvent', 'activeEventProductIds', 'filteredEvent'
+            ));
+        }
+        // ==========================================================================
+
+        return view('store.catalog', compact(
+            'products', 'categories', 'genders', 'sizes', 'seasons', 
+            'activeEvent', 'activeEventProductIds', 'filteredEvent'
+        ));
     }
 
     /**
-     * Tambah ke Keranjang (Session Based)
+     * Tambah ke Keranjang Belanja (Session-Based with DB Sync Capability)
      */
-    public function add_to_cart(Request $request, $product_id)
+    public function add_to_cart(Request $request, $product_id): RedirectResponse
     {
         $product = Product::with('variants')->findOrFail($product_id);
-        $quantity = $request->input('quantity', 1);
+        $quantity = (int) $request->input('quantity', 1);
         $selectedSize = $request->input('size', null);
 
-        if ($quantity < 1) return redirect()->back()->with('error', 'Quantity must be at least 1.');
+        if ($quantity < 1) {
+            return redirect()->back()->with('error', 'Quantity must be at least 1.');
+        }
 
-        // Cek Stok Berdasarkan Ukuran
         if ($selectedSize) {
             $variant = $product->variants->where('size_label', $selectedSize)->first();
-            if (!$variant) return redirect()->back()->with('error', 'Size not available.');
+            if (!$variant) return redirect()->back()->with('error', 'Selected size option is unavailable.');
             $availableStock = $variant->stock;
         } else {
             $availableStock = $product->total_stock;
@@ -166,32 +225,31 @@ class StoreController extends Controller
         $totalQuantity = $existingQuantity + $quantity;
 
         if ($totalQuantity > $availableStock) {
-            return redirect()->back()->with('error', 'Requested quantity exceeds stock.');
+            return redirect()->back()->with('error', 'Requested volume exceeds current inventory allocation.');
         }
 
         $cart[$cartKey] = [
             'product_id' => $product->id,
-            'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => $totalQuantity,
-            'size' => $selectedSize,
+            'name'       => $product->name,
+            'price'      => $product->price,
+            'quantity'   => $totalQuantity,
+            'size'       => $selectedSize,
             'image_path' => $product->image_path,
         ];
 
         session()->put('cart', $cart);
 
-        // Sync to database if user is logged in
         if (Auth::check()) {
-            \App\Models\CartItem::saveSessionCartToDb(Auth::user());
+            CartItem::saveSessionCartToDb(Auth::user());
         }
 
-        return redirect()->back()->with('success', $product->name . ' added to cart.');
+        return redirect()->back()->with('success', "{$product->name} successfully appended to cart.");
     }
 
     /**
-     * Tampilan Halaman Cart (Keranjang)
+     * Render Halaman Keranjang Belanja (Cart View Summary)
      */
-    public function view_cart(Request $request)
+    public function view_cart(Request $request): View
     {
         if ($request->has('cancel_buy_now')) {
             session()->forget('buy_now');
@@ -216,7 +274,7 @@ class StoreController extends Controller
     }
 
     /**
-     * Review Checkout
+     * Interseptor Pengaman Alur Checkout Direct Link
      */
     public function view_checkout()
     {
@@ -224,12 +282,12 @@ class StoreController extends Controller
     }
 
     /**
-     * Direct Checkout (Beli Sekarang)
+     * Alur Instant Purchase (Beli Sekarang Bypass Cart)
      */
-    public function direct_checkout(Request $request, $product_id)
+    public function direct_checkout(Request $request, $product_id): RedirectResponse
     {
         if (!Auth::check()) {
-            return redirect()->back()->with('error', 'Please login or sign up first to buy products.');
+            return redirect()->back()->with('error', 'Please authenticate your identity first to acquire products.');
         }
 
         $product = Product::with('variants')->findOrFail($product_id);
@@ -238,14 +296,14 @@ class StoreController extends Controller
 
         if ($selectedSize) {
             $variant = $product->variants->where('size_label', $selectedSize)->first();
-            if (!$variant) return redirect()->back()->with('error', 'Size not available.');
+            if (!$variant) return redirect()->back()->with('error', 'Size variant is out of scope.');
             $availableStock = $variant->stock;
         } else {
             $availableStock = $product->total_stock;
         }
 
         if ($quantity < 1 || $quantity > $availableStock) {
-            return redirect()->back()->with('error', 'Requested quantity is invalid or exceeds available stock.');
+            return redirect()->back()->with('error', 'Requested volume is mathematically invalid or out of stock.');
         }
 
         session()->forget('buy_now');
@@ -253,7 +311,7 @@ class StoreController extends Controller
 
         session()->put('buy_now', [
             'product_id' => $product->id,
-            'name'        => $product->name,
+            'name'       => $product->name,
             'price'      => $product->price,
             'quantity'   => $quantity,
             'size'       => $selectedSize,
@@ -264,12 +322,12 @@ class StoreController extends Controller
     }
 
     /**
-     * Proses Pembuatan Transaksi Utama & Integrasi Midtrans Token
+     * Core Checkout Workflow & Integrasi Kalkulasi Pajak Dinamis (PPN 11%)
      */
     public function checkout(Request $request)
     {
         $user = Auth::user();
-        if (!$user) return redirect()->back()->with('error', 'Unauthenticated context.');
+        if (!$user) return redirect()->back()->with('error', 'Unauthenticated secure context.');
 
         $isBuyNow = session()->has('buy_now');
         $cart = $isBuyNow ? [session('buy_now')] : session('cart', []);
@@ -282,7 +340,7 @@ class StoreController extends Controller
             }, ARRAY_FILTER_USE_KEY);
         }
 
-        if (empty($cart)) return redirect()->back()->with('error', 'Transaction session has expired or is empty.');
+        if (empty($cart)) return redirect()->back()->with('error', 'Transaction compilation scope is empty.');
         
         $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
         
@@ -309,32 +367,35 @@ class StoreController extends Controller
             
             if ($discountPoints >= $priceAfterVoucher) {
                 $discountPoints = max(0, $priceAfterVoucher - 1000);
-                $pointsRedeemed = ceil($discountPoints / 1000);
+                $pointsRedeemed = (int) ceil($discountPoints / 1000);
             }
         }
+
+        $baseTaxableAmount = max(0, $priceAfterVoucher - $discountPoints);
+        
+        $taxPercentage = 0.11;
+        $calculatedTax = (int) round($baseTaxableAmount * $taxPercentage);
 
         $shippingAddress = $request->input('shipping_address', null);
         $shippingCourier = $request->input('shipping_courier', null);
         $shippingService = $request->input('shipping_service', null);
         $shippingCost = (int) $request->input('shipping_cost', 0);
 
-        $totalPrice = max(1000, $priceAfterVoucher - $discountPoints + $shippingCost);
+        $totalPrice = max(1000, $baseTaxableAmount + $calculatedTax + $shippingCost);
 
         DB::beginTransaction();
         try {
             if ($pointsRedeemed > 0) {
                 $user = $user->fresh();
                 if ($user->loyalty_points < $pointsRedeemed) {
-                    throw new \Exception('Manipulated or insufficient loyalty points value.');
+                    throw new \Exception('Security warning: Manipulated or sync error regarding customer loyalty points.');
                 }
                 $user->decrement('loyalty_points', $pointsRedeemed);
             }
 
             if ($voucherId) {
                 $voucher = Voucher::find($voucherId);
-                if ($voucher) {
-                    $voucher->increment('used_quota');
-                }
+                if ($voucher) $voucher->increment('used_quota');
             }
 
             $stockItems = collect($cart)->map(function($item) {
@@ -360,6 +421,7 @@ class StoreController extends Controller
                 'discount_voucher' => $discountVoucher,
                 'discount_points'  => $discountPoints,
                 'points_redeemed'  => $pointsRedeemed,
+                'tax'              => $calculatedTax, 
                 'shipping_address' => $shippingAddress,
                 'shipping_courier' => $shippingCourier,
                 'shipping_service' => $shippingService,
@@ -379,7 +441,7 @@ class StoreController extends Controller
                     'transaction_id' => $order->id,
                     'type'           => 'redeem',
                     'points'         => $pointsRedeemed,
-                    'description'    => "Redeemed points for Order #" . $invoiceNumber,
+                    'description'    => "Redeemed points for Order #{$invoiceNumber}",
                 ]);
             }
 
@@ -409,6 +471,15 @@ class StoreController extends Controller
                     'price'    => -(int) $discountPoints,
                     'quantity' => 1,
                     'name'     => 'Privilege Points Discount',
+                ];
+            }
+
+            if ($calculatedTax > 0) {
+                $item_details[] = [
+                    'id'       => 'GOVT-TAX-11',
+                    'price'    => (int) $calculatedTax,
+                    'quantity' => 1,
+                    'name'     => 'Government Tax (PPN 11%)',
                 ];
             }
 
@@ -446,34 +517,33 @@ class StoreController extends Controller
             } else {
                 session()->forget('cart');
                 if (Auth::check()) {
-                    \App\Models\CartItem::where('user_id', Auth::id())->delete();
+                    CartItem::where('user_id', Auth::id())->delete();
                 }
             }
 
-            // REVISI EMAIL: Kirim email tagihan pembayaran 1x24 jam secara otomatis ke Gmail Pembeli
             try {
                 Mail::to($order->customer_email)->send(new \App\Mail\OrderPlacedMail($order));
             } catch (\Exception $mailEx) {
-                Log::error('Mail Placement Warning: ' . $mailEx->getMessage());
+                Log::error('Mail Placement Notification Exception Captured: ' . $mailEx->getMessage());
             }
 
-            return view('store.payment', compact('snapToken', 'order', 'cartItems'));
+            return view('store(' . $order->id . ').payment', compact('snapToken', 'order', 'cartItems'));
             
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Unified Checkout Execution Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Checkout workflow failed: ' . $e->getMessage());
+            Log::error('Unified Checkout Execution Error Architecture Broken: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Checkout pipeline structural error: ' . $e->getMessage());
         }
     }
 
     /**
-     * Sinkronisasi Status Pembayaran dengan Midtrans
+     * Sinkronisasi Status Pembayaran Gateway dengan Core Database
      */
     public function payment_status($order_id)
     {
         $order = Transaction::findOrFail($order_id);
         if ($order->status === 'success') {
-            return redirect()->route('profile')->with('success', 'Payment Successful! Thank you.');
+            return redirect()->route('profile')->with('success', 'Payment Route Complete. Executive Verification Passed.');
         }
 
         $this->initMidtrans();
@@ -487,12 +557,11 @@ class StoreController extends Controller
                 if (!$order->paid_at) $order->paid_at = now();
                 $order->save();
 
-                // REVISI EMAIL: Pengaman jika webhook asinkronus terhambat, tembak invoice dari alur return status
                 if ($oldStatus !== 'success') {
                     try {
                         Mail::to($order->customer_email)->send(new \App\Mail\PaymentSuccessMail($order));
                     } catch (\Exception $mailEx) {
-                        Log::error('Mail Status Return Warning: ' . $mailEx->getMessage());
+                        Log::error('Mail Status Client Return Execution Warning: ' . $mailEx->getMessage());
                     }
                 }
             } elseif ($transactionStatus == 'pending') {
@@ -505,17 +574,17 @@ class StoreController extends Controller
             }
             
         } catch (\Exception $e) {
-            Log::error('Payment Status Error: ' . $e->getMessage());
+            Log::error('Payment Status Verification Framework Fallback Error: ' . $e->getMessage());
         }
 
         if ($order->status == 'success') {
             return redirect()->route('profile')->with('success', 'Payment Successful! Thank you.');
         }
-        return redirect()->route('profile')->with('error', 'Payment status: ' . $order->status);
+        return redirect()->route('profile')->with('error', 'Payment current deployment state: ' . $order->status);
     }
 
     /**
-     * Callback dari Midtrans Snap JS (Webhook Backend)
+     * Webhook Backend Gateway Async Processor (Kunci Sinkronisasi Real-Time)
      */
     public function payment_callback(Request $request, $order_id)
     {
@@ -528,11 +597,10 @@ class StoreController extends Controller
             $order->paid_at = now();
             $order->save();
 
-            // REVISI EMAIL: Kirim digital receipt invoice lunas otomatis secara real-time via background queue
             try {
                 Mail::to($order->customer_email)->send(new \App\Mail\PaymentSuccessMail($order));
             } catch (\Exception $mailEx) {
-                Log::error('Mail Success Notification Callback Warning: ' . $mailEx->getMessage());
+                Log::error('Mail Success Notification Webhook Exception Warning: ' . $mailEx->getMessage());
             }
         } elseif ($callbackStatus === 'failed' && $oldStatus === 'pending') {
             $order->status = 'failed';
@@ -544,9 +612,9 @@ class StoreController extends Controller
     }
 
     /**
-     * Helper Method untuk Refund Poin
+     * Manajemen Reverse Engine Pengembalian Poin Loyalitas Jika Transaksi Korup/Batal
      */
-    private function handleFailedTransactionRefund(Transaction $order, $oldStatus, $newStatus)
+    private function handleFailedTransactionRefund(Transaction $order, $oldStatus, $newStatus): void
     {
         if (in_array($newStatus, ['failed', 'cancelled', 'expired']) && !in_array($oldStatus, ['failed', 'cancelled', 'expired'])) {
             $user = $order->user;
@@ -558,30 +626,30 @@ class StoreController extends Controller
                     'transaction_id' => $order->id,
                     'type'           => 'refund',
                     'points'         => $order->points_redeemed,
-                    'description'    => "Points refunded from failed Order #" . $order->invoice_number,
+                    'description'    => "Automatic safety rollback points from broken Order #{$order->invoice_number}",
                 ]);
             }
         }
     }
 
     /**
-     * Retry payment for pending orders
+     * Fungsionalitas Mengulang Request Token Snap Pembayaran untuk Status Order Pending
      */
-    public function payment_retry($order_id)
+    public function payment_retry($order_id): View|RedirectResponse
     {
         $order = Transaction::findOrFail($order_id);
         if ($order->status === 'success') {
-            return redirect()->route('profile')->with('success', 'This order has already been paid.');
+            return redirect()->route('profile')->with('success', 'This configuration payload has already been completed.');
         }
 
         if (!$order->payment_url) {
-            return redirect()->route('profile')->with('error', 'No payment token available for this order.');
+            return redirect()->route('profile')->with('error', 'Token execution buffer missing for this transaction allocation.');
         }
 
         $snapToken = $order->payment_url;
         $cartItems = collect($order->cart_items ?? [])->map(function($item) {
             return [
-                'name'        => $item['name'] ?? 'Unknown',
+                'name'       => $item['name'] ?? 'Unknown Collection Piece',
                 'price'      => $item['price'] ?? 0,
                 'quantity'   => $item['quantity'] ?? 1,
                 'size'       => $item['size'] ?? null,
@@ -594,9 +662,9 @@ class StoreController extends Controller
     }
 
     /**
-     * Konfigurasi Internal Midtrans
+     * Deklarasi Konfigurasi Proteksi Enkapsulasi Client Curl Midtrans
      */
-    private function initMidtrans()
+    private function initMidtrans(): void
     {
         \Midtrans\Config::$serverKey = config('midtrans.server_key');
         \Midtrans\Config::$isProduction = config('midtrans.is_production');
@@ -614,7 +682,10 @@ class StoreController extends Controller
         return request()->has('order_id') ? $this->payment_status($order_id) : redirect()->route('payment_status', $order_id);
     }
 
-    public function update_cart(Request $request, $cart_key)
+    /**
+     * Fungsionalitas Modifikasi Kuantitas Item di Sisi Keranjang Belanja
+     */
+    public function update_cart(Request $request, $cart_key): RedirectResponse
     {
         if ($cart_key === 'buy_now') {
             $item = session()->get('buy_now');
@@ -623,21 +694,16 @@ class StoreController extends Controller
                 if ($newQuantity <= 0) {
                     session()->forget('buy_now');
                     session()->forget('applied_voucher');
-                    return redirect()->back()->with('success', 'Item removed from cart.');
+                    return redirect()->back()->with('success', 'Item removed from context successfully.');
                 }
 
                 $product = Product::with('variants')->find($item['product_id']);
                 if ($product) {
                     $size = $item['size'] ?? null;
-                    if ($size) {
-                        $variant = $product->variants->where('size_label', $size)->first();
-                        $maxStock = $variant ? $variant->stock : 0;
-                    } else {
-                        $maxStock = $product->total_stock;
-                    }
+                    $maxStock = $size ? ($product->variants->where('size_label', $size)->first()?->stock ?? 0) : $product->total_stock;
 
                     if ($newQuantity > $maxStock) {
-                        return redirect()->back()->with('error', 'Quantity exceeds available stock.');
+                        return redirect()->back()->with('error', 'Requested amount hits the maximum boundary limit of storage allocation.');
                     }
                 }
 
@@ -653,43 +719,36 @@ class StoreController extends Controller
             if ($newQuantity <= 0) {
                 unset($cart[$cart_key]);
                 session()->put('cart', $cart);
-                if (Auth::check()) {
-                    \App\Models\CartItem::saveSessionCartToDb(Auth::user());
-                }
-                return redirect()->back()->with('success', 'Item removed from cart.');
+                if (Auth::check()) CartItem::saveSessionCartToDb(Auth::user());
+                return redirect()->back()->with('success', 'Item removed from context successfully.');
             }
 
             $product = Product::with('variants')->find($cart[$cart_key]['product_id']);
             if ($product) {
                 $size = $cart[$cart_key]['size'] ?? null;
-                if ($size) {
-                    $variant = $product->variants->where('size_label', $size)->first();
-                    $maxStock = $variant ? $variant->stock : 0;
-                } else {
-                    $maxStock = $product->total_stock;
-                }
+                $maxStock = $size ? ($product->variants->where('size_label', $size)->first()?->stock ?? 0) : $product->total_stock;
 
                 if ($newQuantity > $maxStock) {
-                    return redirect()->back()->with('error', 'Quantity exceeds available stock.');
+                    return redirect()->back()->with('error', 'Requested amount hits the maximum boundary limit of storage allocation.');
                 }
             }
 
             $cart[$cart_key]['quantity'] = $newQuantity;
             session()->put('cart', $cart);
-            if (Auth::check()) {
-                \App\Models\CartItem::saveSessionCartToDb(Auth::user());
-            }
+            if (Auth::check()) CartItem::saveSessionCartToDb(Auth::user());
         }
         return redirect()->back();
     }
 
-    public function update_cart_size(Request $request, $cart_key)
+    /**
+     * Modifikasi Ukuran Stok Pakaian dari Komponen Dropdown Keranjang Belanja
+     */
+    public function update_cart_size(Request $request, $cart_key): RedirectResponse
     {
         if ($cart_key === 'buy_now') {
             $item = session()->get('buy_now');
             if ($item) {
-                $newSize = $request->input('new_size');
-                $item['size'] = $newSize;
+                $item['size'] = $request->input('new_size');
                 session()->put('buy_now', $item);
             }
             return redirect()->back();
@@ -710,14 +769,15 @@ class StoreController extends Controller
                 $cart[$newKey] = $item;
             }
             session()->put('cart', $cart);
-            if (Auth::check()) {
-                \App\Models\CartItem::saveSessionCartToDb(Auth::user());
-            }
+            if (Auth::check()) CartItem::saveSessionCartToDb(Auth::user());
         }
         return redirect()->back();
     }
 
-    public function remove_from_cart($cart_key)
+    /**
+     * Penghapusan Item Tertentu Secara Instan dari Keranjang Belanja
+     */
+    public function remove_from_cart($cart_key): RedirectResponse
     {
         if ($cart_key === 'buy_now') {
             session()->forget('buy_now');
@@ -730,20 +790,15 @@ class StoreController extends Controller
             unset($cart[$cart_key]);
             session()->put('cart', $cart);
             if (Auth::check()) {
-                \App\Models\CartItem::where('user_id', Auth::id())->delete();
+                CartItem::where('user_id', Auth::id())->delete();
             }
         }
         return redirect()->back();
     }
 
-    /**
-     * Get Wishlist Items
-     */
     public function get_wishlist()
     {
-        if (!Auth::check()) {
-            return response()->json([]);
-        }
+        if (!Auth::check()) return response()->json([]);
         $user = Auth::user();
         $products = Product::join('wishlists', 'products.id', '=', 'wishlists.product_id')
             ->where('wishlists.user_id', $user->id)
@@ -753,14 +808,9 @@ class StoreController extends Controller
         return response()->json($products);
     }
 
-    /**
-     * Toggle Wishlist Item
-     */
     public function toggle_wishlist($product_id)
     {
-        if (!Auth::check()) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
-        }
+        if (!Auth::check()) return response()->json(['error' => 'Unauthenticated access parameter.'], 401);
         $user = Auth::user();
         $product = Product::findOrFail($product_id);
         $wishlist = DB::table('wishlists')
@@ -785,26 +835,17 @@ class StoreController extends Controller
         }
 
         $count = DB::table('wishlists')->where('user_id', $user->id)->count();
-        return response()->json([
-            'status' => $status,
-            'count'  => $count
-        ]);
+        return response()->json(['status' => $status, 'count' => $count]);
     }
 
-    /**
-     * Sync Wishlist Items dari LocalStorage saat Login
-     */
     public function sync_wishlist(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
-        }
+        if (!Auth::check()) return response()->json(['error' => 'Unauthenticated access parameter.'], 401);
         $user = Auth::user();
         $productIds = $request->input('product_ids', []);
 
         foreach ($productIds as $id) {
-            $exists = Product::find($id);
-            if ($exists) {
+            if (Product::find($id)) {
                 $alreadyInWishlist = DB::table('wishlists')
                     ->where('user_id', $user->id)
                     ->where('product_id', $id)
@@ -820,10 +861,7 @@ class StoreController extends Controller
             }
         }
         $count = DB::table('wishlists')->where('user_id', $user->id)->count();
-        return response()->json([
-            'status' => 'synced',
-            'count'  => $count
-        ]);
+        return response()->json(['status' => 'synced', 'count' => $count]);
     }
 
     /**
@@ -832,71 +870,52 @@ class StoreController extends Controller
     public function apply_voucher(Request $request)
     {
         if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Please login to use voucher.'], 401);
+            return response()->json(['success' => false, 'message' => 'Please authenticate to use promotional vouchers.'], 401);
         }
 
-        $request->validate([
-            'voucher_code' => 'required|string',
-        ]);
+        $request->validate(['voucher_code' => 'required|string']);
 
         $voucherCode = strtoupper($request->input('voucher_code'));
         $voucher = Voucher::where('code', $voucherCode)->first();
 
-        if (!$voucher) {
-            return response()->json(['success' => false, 'message' => 'Voucher code is invalid.']);
-        }
-
-        if ($voucher->isExpired()) {
-            return response()->json(['success' => false, 'message' => 'This voucher has expired.']);
-        }
-
-        if ($voucher->isSoldOut()) {
-            return response()->json(['success' => false, 'message' => 'Voucher quota has been fully redeemed.']);
-        }
+        if (!$voucher) return response()->json(['success' => false, 'message' => 'Voucher code is non-existent.']);
+        if ($voucher->isExpired()) return response()->json(['success' => false, 'message' => 'This allocation time boundary has expired.']);
+        if ($voucher->isSoldOut()) return response()->json(['success' => false, 'message' => 'Voucher total quota has reached its limits.']);
 
         $isBuyNow = session()->has('buy_now');
         $cartItems = $isBuyNow ? [session('buy_now')] : session('cart', []);
 
-        if (empty($cartItems)) {
-            return response()->json(['success' => false, 'message' => 'Your checkout items are empty.']);
-        }
+        if (empty($cartItems)) return response()->json(['success' => false, 'message' => 'Checkout workspace is vacant.']);
 
         $subtotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['quantity']);
         $discountAmount = (int) $voucher->calculateDiscount($subtotal);
         $discountAmount = min($discountAmount, $subtotal - 1000);
         
-        if ($discountAmount < 0) {
-            $discountAmount = 0;
-        }
+        if ($discountAmount < 0) $discountAmount = 0;
 
         session()->put('applied_voucher', [
-            'id' => $voucher->id,
-            'code' => $voucher->code,
+            'id'       => $voucher->id,
+            'code'     => $voucher->code,
             'discount' => $discountAmount
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Voucher "' . $voucher->code . '" successfully applied!',
-            'discount' => $discountAmount,
-            'type' => $voucher->type,
-            'reward_value' => (float) $voucher->reward_value,
+            'success'            => true,
+            'message'            => "Voucher \"{$voucher->code}\" successfully injected into core context!",
+            'discount'           => $discountAmount,
+            'type'               => $voucher->type,
+            'reward_value'       => (float) $voucher->reward_value,
             'formatted_discount' => 'Rp ' . number_format($discountAmount, 0, ',', '.')
         ]);
     }
 
     /**
-     * Cancel a pending order
+     * Membatalkan Pesanan yang Berstatus Pending Sebelum Kadaluarsa
      */
-    public function cancelOrder(Transaction $order)
+    public function cancelOrder(Transaction $order): RedirectResponse
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        if ($order->status !== 'pending') {
-            return redirect()->back()->with('error', 'Only pending orders can be cancelled.');
-        }
+        if ($order->user_id !== Auth::id()) abort(403);
+        if ($order->status !== 'pending') return redirect()->back()->with('error', 'Only unfulfilled metrics can be terminated.');
 
         $oldStatus = $order->status;
         $order->status = 'cancelled';
@@ -904,72 +923,67 @@ class StoreController extends Controller
         $this->handleFailedTransactionRefund($order, $oldStatus, 'cancelled');
         $order->save();
 
-        return redirect()->back()->with('success', 'Order #' . $order->invoice_number . ' has been cancelled successfully.');
+        return redirect()->back()->with('success', "Order #{$order->invoice_number} successfully aborted.");
     }
 
     /**
-     * View tracking status of an order
+     * Monitoring Status Pelacakan Kiriman Logistik Pesanan (Include Review History Check)
      */
-    public function trackOrder(Transaction $order)
+    public function trackOrder(Transaction $order): View
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
+        if ($order->user_id !== Auth::id()) abort(403);
         $order->load(['reviews.product']);
-
         return view('store.track', compact('order'));
     }
 
     /**
-     * Mark shipped order as received
+     * Konfirmasi Penerimaan Barang dari Sisi Pembeli (Mark Cargo Delivered)
      */
-    public function markAsReceived(Transaction $order)
+    public function markAsReceived(Transaction $order): RedirectResponse
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        if ($order->status !== 'shipped') {
-            return redirect()->back()->with('error', 'Only shipped orders can be marked as received.');
-        }
+        if ($order->user_id !== Auth::id()) abort(403);
+        if ($order->status !== 'shipped') return redirect()->back()->with('error', 'Only active shipping routes can be configured as delivered.');
 
         $order->status = 'delivered';
         $order->save();
 
-        return redirect()->back()->with('success', 'Order #' . $order->invoice_number . ' has been marked as received.');
+        return redirect()->back()->with('success', "Order #{$order->invoice_number} has been updated to delivered state.");
     }
 
     /**
-     * Submit reviews for products in a transaction
+     * Submit Ulasan & Rating Produk Pasca Penerimaan Barang (CRM Implementation)
      */
-    public function submitReview(Request $request, Transaction $order)
+    public function submitReview(Request $request, Transaction $order): RedirectResponse
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
+        if ($order->user_id !== Auth::id()) abort(403);
         if (!in_array($order->status, ['delivered', 'completed'])) {
-            return redirect()->back()->with('error', 'You can only review items on delivered or completed orders.');
+            return redirect()->back()->with('error', 'Feedback form is locked until product delivery verification.');
         }
 
         $request->validate([
-            'reviews' => 'required|array',
+            'reviews'              => 'required|array',
             'reviews.*.product_id' => 'required|exists:products,id',
-            'reviews.*.rating' => 'required|integer|min:1|max:5',
-            'reviews.*.comment' => 'nullable|string|max:1000',
+            'reviews.*.rating'     => 'required|integer|min:1|max:5',
+            'reviews.*.comment'    => 'nullable|string|max:1000',
         ]);
 
         foreach ($request->input('reviews') as $reviewData) {
-            ProductReview::create([
-                'user_id' => Auth::id(),
-                'product_id' => $reviewData['product_id'],
-                'transaction_id' => $order->id,
-                'rating' => $reviewData['rating'],
-                'comment' => $reviewData['comment'] ?? null,
-            ]);
+            $exists = ProductReview::where('user_id', Auth::id())
+                ->where('product_id', $reviewData['product_id'])
+                ->where('transaction_id', $order->id)
+                ->exists();
+
+            if (!$exists) {
+                ProductReview::create([
+                    'user_id'        => Auth::id(),
+                    'product_id'     => $reviewData['product_id'],
+                    'transaction_id' => $order->id,
+                    'rating'         => $reviewData['rating'],
+                    'comment'        => $reviewData['comment'] ?? null,
+                ]);
+            }
         }
 
-        return redirect()->back()->with('success', 'Thank you for your review!');
+        return redirect()->back()->with('success', 'Thank you for documenting your luxury product feedback experience!');
     }
 }

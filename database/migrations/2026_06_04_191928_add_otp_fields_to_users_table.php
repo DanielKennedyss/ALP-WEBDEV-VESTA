@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('otp_code', 6)->nullable()->after('password');
-            $table->timestamp('otp_expires_at')->nullable()->after('otp_code');
-        });
+        // Mengecek apakah kolom 'otp_code' BELUM ada di tabel users
+        if (!Schema::hasColumn('users', 'otp_code')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('otp_code', 6)->nullable()->after('password');
+                $table->timestamp('otp_expires_at')->nullable()->after('otp_code');
+            });
+        }
     }
 
     /**
@@ -23,7 +26,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['otp_code', 'otp_expires_at']);
+            // Menggunakan if untuk memastikan kolomnya ada sebelum di-drop (lebih aman)
+            if (Schema::hasColumn('users', 'otp_code')) {
+                $table->dropColumn(['otp_code', 'otp_expires_at']);
+            }
         });
     }
 };
