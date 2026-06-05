@@ -104,4 +104,102 @@ class ProfileController extends Controller
 
         return redirect()->to('/')->with('success', 'Your account has been deleted successfully.');
     }
+
+    /**
+     * Store a new address for the user.
+     */
+    public function storeAddress(\Illuminate\Http\Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'label' => ['required', 'string', 'max:255'],
+            'province_name' => ['required', 'string', 'max:255'],
+            'city_name' => ['required', 'string', 'max:255'],
+            'full_address' => ['required', 'string'],
+        ]);
+
+        $isDefault = $request->has('is_default');
+
+        // If this is the first address or marked as default, unset other defaults
+        if ($isDefault || $user->addresses()->count() === 0) {
+            $user->addresses()->update(['is_default' => false]);
+            $isDefault = true;
+        }
+
+        $user->addresses()->create([
+            'label' => $request->label,
+            'province_name' => $request->province_name,
+            'city_name' => $request->city_name,
+            'full_address' => $request->full_address,
+            'is_default' => $isDefault,
+        ]);
+
+        return redirect()->route('profile')->with([
+            'success' => 'Address added successfully.',
+            'open-addresses-tab' => true,
+        ]);
+    }
+
+    /**
+     * Update an existing address.
+     */
+    public function updateAddress(\Illuminate\Http\Request $request, \App\Models\Address $address)
+    {
+        if ($address->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'label' => ['required', 'string', 'max:255'],
+            'province_name' => ['required', 'string', 'max:255'],
+            'city_name' => ['required', 'string', 'max:255'],
+            'full_address' => ['required', 'string'],
+        ]);
+
+        $isDefault = $request->has('is_default');
+
+        if ($isDefault) {
+            Auth::user()->addresses()->where('id', '!=', $address->id)->update(['is_default' => false]);
+        }
+
+        $address->update([
+            'label' => $request->label,
+            'province_name' => $request->province_name,
+            'city_name' => $request->city_name,
+            'full_address' => $request->full_address,
+            'is_default' => $isDefault,
+        ]);
+
+        return redirect()->route('profile')->with([
+            'success' => 'Address updated successfully.',
+            'open-addresses-tab' => true,
+        ]);
+    }
+
+    /**
+     * Delete an address.
+     */
+    public function destroyAddress(\App\Models\Address $address)
+    {
+        if ($address->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $wasDefault = $address->is_default;
+        $address->delete();
+
+        // If we deleted the default address, set another one as default if exists
+        if ($wasDefault) {
+            $next = Auth::user()->addresses()->first();
+            if ($next) {
+                $next->update(['is_default' => true]);
+            }
+        }
+
+        return redirect()->route('profile')->with([
+            'success' => 'Address deleted successfully.',
+            'open-addresses-tab' => true,
+        ]);
+    }
 }

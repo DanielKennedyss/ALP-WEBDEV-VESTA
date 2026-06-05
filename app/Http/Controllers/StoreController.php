@@ -66,13 +66,21 @@ class StoreController extends Controller
         session()->forget('applied_voucher');
         $query = Product::with(['category', 'variants', 'reviews.user'])->withAvg('reviews', 'rating')->withCount('reviews');
 
-        // Search by product name, description, or SKU
+        // Search by product name, description, or SKU with fuzzy matching
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('description', 'like', '%' . $search . '%')
-                  ->orWhere('sku', 'like', '%' . $search . '%');
+            $words = array_filter(explode(' ', trim($search)));
+            $query->where(function ($q) use ($words) {
+                foreach ($words as $word) {
+                    $chars = mb_str_split($word);
+                    $fuzzyWord = '%' . implode('%', $chars) . '%';
+                    
+                    $q->where(function ($sub) use ($fuzzyWord) {
+                        $sub->where('name', 'like', $fuzzyWord)
+                           ->orWhere('description', 'like', $fuzzyWord)
+                           ->orWhere('sku', 'like', $fuzzyWord);
+                    });
+                }
             });
         }
 
@@ -386,6 +394,33 @@ class StoreController extends Controller
                 'payment_url'      => null,
                 'paid_at'          => null,
             ]);
+
+            // Save address if checked and user is logged in
+            if ($request->boolean('save_address') && $user) {
+                $label = $request->input('save_address_label') ?: 'Home';
+                $provinceName = $request->input('province_name');
+                $cityName = $request->input('city_name');
+                $rawAddress = $request->input('raw_address');
+                
+                if ($provinceName && $cityName && $rawAddress) {
+                    $exists = $user->addresses()
+                        ->where('province_name', $provinceName)
+                        ->where('city_name', $cityName)
+                        ->where('full_address', $rawAddress)
+                        ->exists();
+                        
+                    if (!$exists) {
+                        $isFirst = $user->addresses()->count() === 0;
+                        $user->addresses()->create([
+                            'label' => $label,
+                            'province_name' => $provinceName,
+                            'city_name' => $cityName,
+                            'full_address' => $rawAddress,
+                            'is_default' => $isFirst,
+                        ]);
+                    }
+                }
+            }
 
             // 8. Catat Mutasi Poin ke Ledger History Auditing
             if ($pointsRedeemed > 0) {

@@ -72,3 +72,46 @@ test('catalog page filters products when filter_event is present', function () {
     expect($productIds)->toContain($product1->id);
     expect($productIds)->not->toContain($product2->id);
 });
+
+test('catalog page fuzzy searches products by name, description, or SKU', function () {
+    // Get or create category
+    $category = Category::first() ?? Category::create(['name' => 'Test Category']);
+
+    // Create a product: T-Shirt
+    $product1 = Product::create([
+        'name' => 'Premium T-Shirt',
+        'sku' => 'TS-001',
+        'description' => 'A wonderful summer clothing item.',
+        'price' => 100000,
+        'category_id' => $category->id,
+        'gender' => 'Unisex',
+        'image_path' => 'https://example.com/img1.jpg',
+    ]);
+
+    // Create a product: Blue Suit
+    $product2 = Product::create([
+        'name' => 'Elegant Blue Suit',
+        'sku' => 'BS-002',
+        'description' => 'Formal suit for special events.',
+        'price' => 500000,
+        'category_id' => $category->id,
+        'gender' => 'Male',
+        'image_path' => 'https://example.com/img2.jpg',
+    ]);
+
+    // 1. Fuzzy search "tsirt" should match "Premium T-Shirt" (T-Shirt has t, s, i, r, t in that order)
+    $response = $this->get(route('collections.index', ['search' => 'tsirt']));
+    $response->assertStatus(200);
+    $products = $response->viewData('products');
+    $productIds = collect($products->items())->pluck('id')->all();
+    expect($productIds)->toContain($product1->id);
+    expect($productIds)->not->toContain($product2->id);
+
+    // 2. Fuzzy search "blu suit" should match "Elegant Blue Suit"
+    $response = $this->get(route('collections.index', ['search' => 'blu suit']));
+    $response->assertStatus(200);
+    $products = $response->viewData('products');
+    $productIds = collect($products->items())->pluck('id')->all();
+    expect($productIds)->toContain($product2->id);
+    expect($productIds)->not->toContain($product1->id);
+});

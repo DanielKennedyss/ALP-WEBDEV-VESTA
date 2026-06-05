@@ -22,7 +22,7 @@
     .delay-4 { animation-delay: 0.4s; }
 </style>
 
-<div class="pt-32 pb-24 px-6 lg:px-8 bg-white min-h-screen" x-data="{ activeTab: '{{ ($errors->any() || session('open-profile-tab')) ? 'my-profile' : 'order-history' }}' }">
+<div class="pt-32 pb-24 px-6 lg:px-8 bg-white min-h-screen" x-data="{ activeTab: '{{ session('open-addresses-tab') ? 'saved-addresses' : (($errors->any() || session('open-profile-tab')) ? 'my-profile' : 'order-history') }}' }">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 animate-fade-in">
             <div>
@@ -69,6 +69,12 @@
                 </button>
                 <button type="button" @click="activeTab = 'my-profile'" :class="activeTab === 'my-profile' ? 'bg-stone-900 text-white border-black' : 'border-stone-200 hover:border-black text-stone-900 bg-white'" class="w-full text-left py-4 px-6 border font-semibold text-[11px] tracking-[0.2em] uppercase transition-all duration-300 flex justify-between items-center group">
                     <span>My Profile</span>
+                    <svg class="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                <button type="button" @click="activeTab = 'saved-addresses'" :class="activeTab === 'saved-addresses' ? 'bg-stone-900 text-white border-black' : 'border-stone-200 hover:border-black text-stone-900 bg-white'" class="w-full text-left py-4 px-6 border font-semibold text-[11px] tracking-[0.2em] uppercase transition-all duration-300 flex justify-between items-center group">
+                    <span>Saved Addresses</span>
                     <svg class="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -288,6 +294,7 @@
                         </form>
                     </div>
 
+
                     <!-- Section 2: Change Password -->
                     <div class="border border-stone-200 p-8 bg-white">
                         <h4 class="text-xs tracking-[0.2em] uppercase font-bold mb-8 text-stone-900 border-b border-stone-100 pb-4">Security & Password</h4>
@@ -346,8 +353,137 @@
                     </div>
                 </div>
 
+                <!-- Content Area: Saved Addresses -->
+                <div x-show="activeTab === 'saved-addresses'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0">
+                    <!-- Section: Saved Addresses -->
+                    <div class="border border-stone-200 p-8 bg-white" x-data="{ showForm: false, editMode: false, addressId: null, label: '', province: '', city: '', fullAddress: '', isDefault: false }">
+                        <div class="flex justify-between items-center border-b border-stone-100 pb-4 mb-6">
+                            <h4 class="text-xs tracking-[0.2em] uppercase font-bold text-stone-900">Saved Addresses</h4>
+                            <button type="button" @click="showForm = true; editMode = false; addressId = null; label = ''; province = ''; city = ''; fullAddress = ''; isDefault = false; document.getElementById('addr_clear_province_btn').click(); document.getElementById('addr_clear_city_btn').click();" class="bg-black text-white text-[9px] tracking-[0.2em] uppercase px-4 py-2 hover:bg-stone-850 transition-colors" x-show="!showForm">
+                                + Add Address
+                            </button>
+                            <button type="button" @click="showForm = false" class="text-[10px] tracking-widest uppercase font-bold text-stone-500 hover:text-black" x-show="showForm" style="display: none;">
+                                Cancel
+                            </button>
+                        </div>
+
+                        <!-- Address Form -->
+                        <div x-show="showForm" class="mb-8 p-6 bg-stone-50 border border-stone-100 space-y-6" style="display: none;">
+                            <form :action="editMode ? '/profile/addresses/' + addressId : '{{ route('profile.addresses.store') }}'" method="POST" id="addressForm" class="space-y-6">
+                                @csrf
+                                <template x-if="editMode">
+                                    <input type="hidden" name="_method" value="PUT">
+                                </template>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold mb-2">Address Label (e.g. Home, Office)</label>
+                                        <input type="text" name="label" x-model="label" required placeholder="HOME / OFFICE" class="w-full border border-stone-200 p-4 text-xs focus:outline-none focus:border-black bg-white transition-colors uppercase font-mono tracking-wider">
+                                    </div>
+                                    <div class="flex items-center pt-8">
+                                        <label class="flex items-center gap-3 cursor-pointer select-none">
+                                            <input type="checkbox" name="is_default" value="1" x-model="isDefault" class="w-4 h-4 text-black border-stone-300 focus:ring-black cursor-pointer rounded-sm">
+                                            <span class="text-[10px] tracking-widest uppercase font-semibold text-stone-600">Set as default address</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {{-- Province selection with autocomplete --}}
+                                    <div class="space-y-2 relative" id="addr_province_container">
+                                        <label class="block text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold">Province</label>
+                                        <div class="relative group">
+                                            <input type="text" name="province_name" id="addr_select_province" required onfocus="showAddrProvinceDropdown()" oninput="filterAddrProvinces(this.value)" placeholder="TYPE OR SELECT PROVINCE" autocomplete="off"
+                                                   class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-white border border-stone-200 p-4 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800">
+                                            <div id="addr_province_arrow" class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-stone-400">
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                            <button type="button" id="addr_clear_province_btn" onclick="clearAddrProvince()" class="absolute inset-y-0 right-0 flex items-center pr-4 text-stone-400 hover:text-black hidden cursor-pointer">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                            <div id="addr_province_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100"></div>
+                                        </div>
+                                    </div>
+
+                                    {{-- City selection with autocomplete --}}
+                                    <div class="space-y-2 relative" id="addr_city_container">
+                                        <label class="block text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold">City / Kabupaten</label>
+                                        <div class="relative group">
+                                            <input type="text" name="city_name" id="addr_select_city" disabled required onfocus="showAddrCityDropdown()" oninput="filterAddrCities(this.value)" placeholder="SELECT PROVINCE FIRST" autocomplete="off"
+                                                   class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-white border border-stone-200 p-4 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <div id="addr_city_arrow" class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-stone-400">
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                            <button type="button" id="addr_clear_city_btn" onclick="clearAddrCity()" class="absolute inset-y-0 right-0 flex items-center pr-4 text-stone-400 hover:text-black hidden cursor-pointer">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                            <div id="addr_city_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold mb-2">Full Street Address</label>
+                                    <textarea name="full_address" x-model="fullAddress" required placeholder="ENTER YOUR FULL ADDRESS (STREET NAME, BUILDING, SUITE, ETC.)" rows="3" class="w-full border border-stone-200 px-4 py-3 text-[10px] tracking-widest uppercase focus:outline-none focus:border-black bg-white transition-all font-mono resize-none"></textarea>
+                                </div>
+
+                                <div class="text-right">
+                                    <button type="submit" class="bg-black text-white text-[10px] tracking-[0.2em] uppercase px-8 py-4 hover:bg-stone-800 transition-colors">
+                                        Save Address
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Saved Addresses List -->
+                        <div class="space-y-4">
+                            @forelse($addresses as $addr)
+                                <div class="border border-stone-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-stone-50/30">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs font-semibold text-stone-900 uppercase tracking-wider font-mono bg-stone-200 px-2 py-0.5">{{ $addr->label }}</span>
+                                            @if($addr->is_default)
+                                                <span class="text-[8px] bg-black text-white px-2 py-0.5 uppercase tracking-widest font-bold font-mono">Default</span>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs font-mono text-stone-800 uppercase tracking-wide leading-relaxed">
+                                            {{ $addr->full_address }}<br>
+                                            {{ $addr->city_name }}, {{ $addr->province_name }}
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <button type="button" @click="showForm = true; editMode = true; addressId = '{{ $addr->id }}'; label = '{{ $addr->label }}'; province = '{{ $addr->province_name }}'; city = '{{ $addr->city_name }}'; fullAddress = '{{ $addr->full_address }}'; isDefault = {{ $addr->is_default ? 'true' : 'false' }}; populateEditForm('{{ $addr->province_name }}', '{{ $addr->city_name }}');" class="text-[9px] border border-stone-300 text-stone-700 px-3 py-2 uppercase tracking-widest font-semibold hover:border-black hover:text-black transition-all bg-white font-mono">
+                                            Edit
+                                        </button>
+                                        <form action="/profile/addresses/{{ $addr->id }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this address?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-[9px] border border-red-200 text-red-600 px-3 py-2 uppercase tracking-widest font-semibold hover:border-red-600 hover:text-red-700 transition-all bg-white font-mono">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="border border-stone-100 p-12 text-center bg-stone-50/50">
+                                    <p class="text-xs tracking-widest text-stone-400 uppercase">You haven't saved any addresses yet.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+
 
         <div class="bg-black text-white p-12 text-center profile-card delay-4">
             <h3 class="text-2xl md:text-3xl font-serif tracking-[0.1em] mb-4">VESTA Winter Collection '26 is coming.</h3>
@@ -488,6 +624,241 @@
         modal.classList.add('hidden');
         document.body.style.overflow = '';
     }
+
+    // RajaOngkir integration for profile page addresses
+    let addrAllProvinces = [];
+    let addrAllCities = [];
+
+    async function loadAddrProvincesAsync() {
+        try {
+            const res = await fetch('/shipping/provinces');
+            const data = await res.json();
+            if (data.success) {
+                addrAllProvinces = [...data.data].sort((a, b) => 
+                    a.province.localeCompare(b.province)
+                );
+            }
+        } catch (e) {
+            console.error('Error pre-loading provinces:', e);
+        }
+    }
+
+    function showAddrProvinceDropdown() {
+        const dropdown = document.getElementById('addr_province_list_dropdown');
+        dropdown.classList.remove('hidden');
+        
+        if (addrAllProvinces.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic animate-pulse">Loading provinces...</div>';
+            fetch('/shipping/provinces')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        addrAllProvinces = [...data.data].sort((a, b) => 
+                            a.province.localeCompare(b.province)
+                        );
+                        filterAddrProvinces(document.getElementById('addr_select_province').value);
+                    } else {
+                        dropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Failed to load provinces</div>';
+                    }
+                })
+                .catch(err => {
+                    dropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Error loading provinces</div>';
+                });
+        } else {
+            filterAddrProvinces(document.getElementById('addr_select_province').value);
+        }
+    }
+
+    function filterAddrProvinces(query) {
+        const dropdown = document.getElementById('addr_province_list_dropdown');
+        dropdown.classList.remove('hidden');
+        
+        const filtered = addrAllProvinces.filter(p => 
+            p.province.toUpperCase().includes(query.toUpperCase())
+        );
+        
+        dropdown.innerHTML = "";
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic font-mono uppercase tracking-wider text-[10px]">No provinces found</div>';
+        } else {
+            filtered.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                div.textContent = p.province;
+                div.onmousedown = (e) => e.preventDefault();
+                div.onclick = () => selectAddrProvince(p.province);
+                dropdown.appendChild(div);
+            });
+        }
+    }
+
+    function selectAddrProvince(provinceName) {
+        const input = document.getElementById('addr_select_province');
+        input.value = provinceName;
+        document.getElementById('addr_province_list_dropdown').classList.add('hidden');
+        onAddrProvinceInput(provinceName);
+    }
+
+    function onAddrProvinceInput(provinceName, savedCityToSelect = null) {
+        const matchingProv = addrAllProvinces.find(p => p.province.toUpperCase() === provinceName.toUpperCase());
+        const cityInput = document.getElementById('addr_select_city');
+        
+        if (matchingProv) {
+            cityInput.value = "";
+            cityInput.placeholder = "LOADING CITIES...";
+            cityInput.disabled = true;
+            
+            loadAddrCities(matchingProv.province_id, savedCityToSelect);
+            
+            document.getElementById('addr_clear_province_btn').classList.remove('hidden');
+            document.getElementById('addr_province_arrow').classList.add('hidden');
+        } else {
+            cityInput.value = "";
+            cityInput.placeholder = "SELECT PROVINCE FIRST";
+            cityInput.disabled = true;
+            
+            document.getElementById('addr_clear_province_btn').classList.add('hidden');
+            document.getElementById('addr_province_arrow').classList.remove('hidden');
+        }
+    }
+
+    function clearAddrProvince() {
+        const provinceInput = document.getElementById('addr_select_province');
+        provinceInput.value = "";
+        onAddrProvinceInput("");
+    }
+
+    function loadAddrCities(provinceId, savedCityToSelect = null) {
+        addrAllCities = [];
+        const cityDropdown = document.getElementById('addr_city_list_dropdown');
+        cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic animate-pulse">Loading cities...</div>';
+        
+        fetch(`/shipping/cities/${provinceId}`)
+            .then(res => res.json())
+            .then(data => {
+                const cityInput = document.getElementById('addr_select_city');
+                if (data.success) {
+                    addrAllCities = [...data.data].sort((a, b) => {
+                        const aName = (a.type ? a.type + " " : "") + a.city_name;
+                        const bName = (b.type ? b.type + " " : "") + b.city_name;
+                        return aName.localeCompare(bName);
+                    });
+                    cityDropdown.innerHTML = "";
+                    if (cityInput) {
+                        cityInput.placeholder = "TYPE OR SELECT CITY";
+                        cityInput.disabled = false;
+                        if (savedCityToSelect) {
+                            selectAddrCity(savedCityToSelect);
+                        }
+                    }
+                } else {
+                    cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Failed to load cities</div>';
+                    if (cityInput) cityInput.placeholder = "FAILED TO LOAD CITIES";
+                }
+            })
+            .catch(err => {
+                cityDropdown.innerHTML = '<div class="px-4 py-2.5 text-red-500">Error loading cities</div>';
+            });
+    }
+
+    function showAddrCityDropdown() {
+        const input = document.getElementById('addr_select_city');
+        if (input.disabled) return;
+        const dropdown = document.getElementById('addr_city_list_dropdown');
+        dropdown.classList.remove('hidden');
+        filterAddrCities(input.value);
+    }
+
+    function filterAddrCities(query) {
+        const dropdown = document.getElementById('addr_city_list_dropdown');
+        dropdown.classList.remove('hidden');
+        const filtered = addrAllCities.filter(c => {
+            const fullName = (c.type ? c.type + " " : "") + c.city_name;
+            return fullName.toUpperCase().includes(query.toUpperCase());
+        });
+        dropdown.innerHTML = "";
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-2.5 text-stone-500 italic font-mono uppercase tracking-wider text-[10px]">No cities found</div>';
+        } else {
+            filtered.forEach(c => {
+                const fullName = (c.type ? c.type + " " : "") + c.city_name;
+                const div = document.createElement('div');
+                div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                div.textContent = fullName;
+                div.onmousedown = (e) => e.preventDefault();
+                div.onclick = () => selectAddrCity(fullName);
+                dropdown.appendChild(div);
+            });
+        }
+    }
+
+    function selectAddrCity(cityName) {
+        const input = document.getElementById('addr_select_city');
+        input.value = cityName;
+        document.getElementById('addr_city_list_dropdown').classList.add('hidden');
+        onAddrCityInput(cityName);
+    }
+
+    function onAddrCityInput(cityName) {
+        const matchingCity = addrAllCities.find(c => {
+            const fullName = (c.type ? c.type + " " : "") + c.city_name;
+            return fullName.toUpperCase() === cityName.toUpperCase();
+        });
+        
+        if (matchingCity) {
+            document.getElementById('addr_clear_city_btn').classList.remove('hidden');
+            document.getElementById('addr_city_arrow').classList.add('hidden');
+        } else {
+            document.getElementById('addr_clear_city_btn').classList.add('hidden');
+            document.getElementById('addr_city_arrow').classList.remove('hidden');
+        }
+    }
+
+    function clearAddrCity() {
+        const cityInput = document.getElementById('addr_select_city');
+        cityInput.value = "";
+        onAddrCityInput("");
+    }
+
+    // Populate edits
+    function populateEditForm(provVal, cityVal) {
+        setTimeout(() => {
+            const provinceInput = document.getElementById('addr_select_province');
+            if (provinceInput) {
+                provinceInput.value = provVal || "";
+            }
+            
+            if (addrAllProvinces.length === 0) {
+                fetch('/shipping/provinces')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            addrAllProvinces = [...data.data].sort((a, b) => 
+                                a.province.localeCompare(b.province)
+                            );
+                            onAddrProvinceInput(provVal || "", cityVal || "");
+                        }
+                    });
+            } else {
+                onAddrProvinceInput(provVal || "", cityVal || "");
+            }
+        }, 50);
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#addr_province_container')) {
+            const dropdown = document.getElementById('addr_province_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+        if (!e.target.closest('#addr_city_container')) {
+            const dropdown = document.getElementById('addr_city_list_dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAddrProvincesAsync();
+    });
 </script>
 
 <!-- Elegant Delete Account Modal -->

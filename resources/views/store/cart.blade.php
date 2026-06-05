@@ -134,6 +134,28 @@
                                 </button>
                             </div>
 
+                            @if(Auth::check() && Auth::user()->addresses->isNotEmpty())
+                                <div class="space-y-2 border-b border-stone-100 pb-6">
+                                    <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">Select Saved Address</label>
+                                    <div class="relative group">
+                                        <select id="select_saved_address" onchange="applySavedAddress(this.value)"
+                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-700 hover:text-stone-900 cursor-pointer appearance-none">
+                                            <option value="">-- USE A NEW / OTHER ADDRESS --</option>
+                                            @foreach(Auth::user()->addresses()->orderBy('is_default', 'desc')->latest()->get() as $addr)
+                                                <option value="{{ json_encode($addr) }}" {{ $addr->is_default ? 'selected' : '' }}>
+                                                    {{ $addr->label }} {{ $addr->is_default ? '(DEFAULT)' : '' }} - {{ $addr->city_name }}, {{ $addr->province_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-stone-400 group-hover:text-stone-900 transition-colors">
+                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {{-- Dropdown Provinsi --}}
                                 <div class="space-y-2" id="province_dropdown_container">
@@ -193,11 +215,17 @@
                                                class="w-full font-mono text-[10px] tracking-[0.1em] uppercase bg-transparent bg-none border-b border-stone-200 py-2.5 focus:border-stone-900 focus:outline-none transition-all duration-300 pr-10 text-stone-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                                         <input type="hidden" id="select_courier_code" value="">
                                         {{-- Custom Centered SVG Arrow on the Far Right --}}
-                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
+                                        <div id="courier_arrow" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-stone-400">
                                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </div>
+                                        {{-- Clear Button (x) --}}
+                                        <button type="button" id="clear_courier_btn" onclick="clearCourierSelection()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-black hidden cursor-pointer">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
                                         {{-- Custom Dropdown List Container --}}
                                         <div id="courier_list_dropdown" class="absolute z-[150] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white text-stone-800 border border-stone-200 shadow-lg py-1 text-[10px] uppercase font-mono tracking-wider hidden transition-all duration-100">
                                         </div>
@@ -232,6 +260,23 @@
                                 <textarea id="input_address" placeholder="ENTER YOUR FULL ADDRESS (STREET NAME, BUILDING, SUITE, ETC.)" rows="3"
                                           class="w-full border border-stone-200 px-4 py-3 text-[10px] tracking-widest uppercase focus:outline-none focus:border-black transition-all font-mono resize-none"></textarea>
                             </div>
+
+                            @if(Auth::check())
+                                <div class="pt-4 border-t border-stone-100 space-y-4">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="chk_save_address" onchange="toggleSaveAddressLabel(this.checked)"
+                                               class="w-4 h-4 text-black border-stone-300 focus:ring-black cursor-pointer rounded-sm">
+                                        <label for="chk_save_address" class="text-[10px] tracking-widest uppercase font-semibold text-stone-600 cursor-pointer select-none">
+                                            Save this address for future purchases
+                                        </label>
+                                    </div>
+                                    <div id="save_address_label_container" class="space-y-2 hidden">
+                                        <label class="text-[10px] tracking-widest uppercase text-stone-400 font-semibold">Address Label (e.g., Home, Office)</label>
+                                        <input type="text" id="input_save_address_label" placeholder="E.G. HOME, OFFICE"
+                                               class="w-full border border-stone-200 px-4 py-3 text-[10px] tracking-widest uppercase focus:outline-none focus:border-black transition-all font-mono">
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -333,6 +378,13 @@
                                 <input type="hidden" id="shipping_courier_hidden" name="shipping_courier" value="">
                                 <input type="hidden" id="shipping_service_hidden" name="shipping_service" value="">
                                 <input type="hidden" id="shipping_cost_hidden" name="shipping_cost" value="0">
+
+                                {{-- Hidden fields for saved addresses --}}
+                                <input type="hidden" id="save_address_hidden" name="save_address" value="0">
+                                <input type="hidden" id="save_address_label_hidden" name="save_address_label" value="">
+                                <input type="hidden" id="province_name_hidden" name="province_name" value="">
+                                <input type="hidden" id="city_name_hidden" name="city_name" value="">
+                                <input type="hidden" id="raw_address_hidden" name="raw_address" value="">
 
                                 <button type="button" id="checkout_main_btn" onclick="onMainBtnClick()" class="w-full bg-stone-955 text-white text-[11px] tracking-[0.3em] py-5 hover:bg-stone-800 transition-all uppercase shadow-lg shadow-stone-100 active:scale-[0.99] duration-200 font-bold text-center">
                                     Proceed
@@ -678,6 +730,122 @@
     // RAJAONGKIR STATE & INTERACTION JS
     // =========================================================================
 
+    function toggleSaveAddressLabel(checked) {
+        const container = document.getElementById('save_address_label_container');
+        if (container) {
+            if (checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+    }
+
+    function applySavedAddress(jsonStr) {
+        if (!jsonStr) {
+            return;
+        }
+        
+        const addr = JSON.parse(jsonStr);
+        
+        if (allProvinces.length === 0) {
+            fetch('/shipping/provinces')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        allProvinces = [...data.data].sort((a, b) => 
+                            a.province.localeCompare(b.province)
+                        );
+                        proceedWithApply(addr);
+                    } else {
+                        showVestaToast("Failed to load provinces for saved address.", "error");
+                    }
+                })
+                .catch(err => {
+                    showVestaToast("Error loading provinces for saved address.", "error");
+                });
+        } else {
+            proceedWithApply(addr);
+        }
+    }
+
+    function proceedWithApply(addr) {
+        const provinceInput = document.getElementById('select_province');
+        const cityInput = document.getElementById('select_city');
+        const addressTextarea = document.getElementById('input_address');
+        
+        const matchingProv = allProvinces.find(p => p.province.toUpperCase() === addr.province_name.toUpperCase());
+        if (!matchingProv) {
+            showVestaToast("Could not match saved address province with shipping system.", "error");
+            return;
+        }
+        
+        provinceInput.value = matchingProv.province;
+        document.getElementById('clear_province_btn').classList.remove('hidden');
+        document.getElementById('province_arrow').classList.add('hidden');
+        
+        cityInput.value = "";
+        cityInput.placeholder = "LOADING CITIES...";
+        cityInput.disabled = true;
+        
+        document.getElementById('select_courier').value = "";
+        document.getElementById('select_courier').disabled = true;
+        document.getElementById('select_courier_code').value = "";
+        document.getElementById('clear_courier_btn').classList.add('hidden');
+        document.getElementById('courier_arrow').classList.remove('hidden');
+        
+        document.getElementById('select_service').value = "";
+        document.getElementById('select_service').disabled = true;
+        document.getElementById('select_service_code').value = "";
+        document.getElementById('select_service_cost').value = "0";
+        
+        fetch(`/shipping/cities/${matchingProv.province_id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    allCities = [...data.data].sort((a, b) => {
+                        const aName = (a.type ? a.type + " " : "") + a.city_name;
+                        const bName = (b.type ? b.type + " " : "") + b.city_name;
+                        return aName.localeCompare(bName);
+                    });
+                    
+                    cityInput.placeholder = "TYPE OR SELECT CITY";
+                    cityInput.disabled = false;
+                    
+                    const matchingCity = allCities.find(c => {
+                        const fullName = ((c.type ? c.type + " " : "") + c.city_name).toUpperCase();
+                        const savedCity = addr.city_name.toUpperCase();
+                        return fullName === savedCity || fullName.includes(savedCity) || savedCity.includes(fullName);
+                    });
+                    
+                    if (matchingCity) {
+                        const fullName = (matchingCity.type ? matchingCity.type + " " : "") + matchingCity.city_name;
+                        cityInput.value = fullName;
+                        document.getElementById('clear_city_btn').classList.remove('hidden');
+                        document.getElementById('city_arrow').classList.add('hidden');
+                        
+                        const courierInput = document.getElementById('select_courier');
+                        courierInput.value = "";
+                        courierInput.placeholder = "SELECT COURIER";
+                        courierInput.disabled = false;
+                        
+                        addressTextarea.value = addr.full_address;
+                    } else {
+                        showVestaToast("Could not match saved address city with shipping system. Please select city manually.", "warning");
+                        cityInput.value = "";
+                        addressTextarea.value = addr.full_address;
+                    }
+                } else {
+                    cityInput.placeholder = "FAILED TO LOAD CITIES";
+                    showVestaToast("Failed to load cities for saved address.", "error");
+                }
+            })
+            .catch(err => {
+                cityInput.placeholder = "ERROR LOADING CITIES";
+                showVestaToast("Error loading cities for saved address.", "error");
+            });
+    }
+
     function toggleCheckoutStep(step) {
         const step1Div = document.getElementById('checkout_step_1');
         const step2Div = document.getElementById('checkout_step_2');
@@ -695,6 +863,12 @@
                 shippingRow.classList.remove('hidden');
             }
             loadProvinces();
+
+            // Auto-apply default address if exists and not yet set
+            const savedAddressSelect = document.getElementById('select_saved_address');
+            if (savedAddressSelect && savedAddressSelect.value && !document.getElementById('select_province').value) {
+                applySavedAddress(savedAddressSelect.value);
+            }
         } else {
             step2Div.classList.add('hidden');
             step1Div.classList.remove('hidden');
@@ -719,8 +893,24 @@
             const service = document.getElementById('select_service_code').value;
             const address = document.getElementById('input_address').value.trim();
             
-            if (!provinceName || !cityName || !courier || !service || !address) {
-                alert("Please fill in your complete shipping address and select a courier service.");
+            if (!provinceName) {
+                showVestaToast("Please select a shipping province.", "error");
+                return;
+            }
+            if (!cityName) {
+                showVestaToast("Please select a shipping city / kabupaten.", "error");
+                return;
+            }
+            if (!courier) {
+                showVestaToast("Please select a shipping courier.", "error");
+                return;
+            }
+            if (!service) {
+                showVestaToast("Please select a delivery service.", "error");
+                return;
+            }
+            if (!address) {
+                showVestaToast("Please enter your full street address.", "error");
                 return;
             }
             
@@ -729,6 +919,20 @@
             document.getElementById('shipping_courier_hidden').value = courier.toUpperCase();
             document.getElementById('shipping_service_hidden').value = service;
             document.getElementById('shipping_cost_hidden').value = selectedShippingCost;
+
+            // Set the save address flag and label if authenticated and checked
+            const chkSaveAddress = document.getElementById('chk_save_address');
+            if (chkSaveAddress && chkSaveAddress.checked) {
+                document.getElementById('save_address_hidden').value = "1";
+                document.getElementById('save_address_label_hidden').value = (document.getElementById('input_save_address_label').value || "").trim();
+            } else {
+                document.getElementById('save_address_hidden').value = "0";
+                document.getElementById('save_address_label_hidden').value = "";
+            }
+            
+            document.getElementById('province_name_hidden').value = provinceName;
+            document.getElementById('city_name_hidden').value = cityName;
+            document.getElementById('raw_address_hidden').value = address;
             
             // Trigger actual form submission!
             isLeavingConfirmed = true;
@@ -838,6 +1042,9 @@
             
             document.getElementById('clear_province_btn').classList.remove('hidden');
             document.getElementById('province_arrow').classList.add('hidden');
+            
+            document.getElementById('clear_courier_btn').classList.add('hidden');
+            document.getElementById('courier_arrow').classList.remove('hidden');
         } else {
             isManualShipping = false;
             cityInput.value = "";
@@ -863,6 +1070,9 @@
             
             document.getElementById('clear_province_btn').classList.add('hidden');
             document.getElementById('province_arrow').classList.remove('hidden');
+            
+            document.getElementById('clear_courier_btn').classList.add('hidden');
+            document.getElementById('courier_arrow').classList.remove('hidden');
         }
     }
 
@@ -965,6 +1175,9 @@
             
             document.getElementById('clear_city_btn').classList.remove('hidden');
             document.getElementById('city_arrow').classList.add('hidden');
+            
+            document.getElementById('clear_courier_btn').classList.add('hidden');
+            document.getElementById('courier_arrow').classList.remove('hidden');
         } else {
             courierInput.value = "";
             courierInput.placeholder = "SELECT CITY FIRST";
@@ -986,6 +1199,9 @@
             
             document.getElementById('clear_city_btn').classList.add('hidden');
             document.getElementById('city_arrow').classList.remove('hidden');
+            
+            document.getElementById('clear_courier_btn').classList.add('hidden');
+            document.getElementById('courier_arrow').classList.remove('hidden');
         }
     }
 
@@ -995,9 +1211,48 @@
         onCityInput("");
     }
 
+    function clearCourierSelection() {
+        const courierInput = document.getElementById('select_courier');
+        courierInput.value = "";
+        onCourierInput("");
+    }
+
+    function onCourierInput(courierName) {
+        const courierInput = document.getElementById('select_courier');
+        const courierCodeHidden = document.getElementById('select_courier_code');
+        const serviceInput = document.getElementById('select_service');
+        const serviceCodeHidden = document.getElementById('select_service_code');
+        const serviceCostHidden = document.getElementById('select_service_cost');
+        
+        if (courierName) {
+            document.getElementById('clear_courier_btn').classList.remove('hidden');
+            document.getElementById('courier_arrow').classList.add('hidden');
+        } else {
+            courierInput.value = "";
+            courierCodeHidden.value = "";
+            serviceInput.value = "";
+            serviceInput.placeholder = "SELECT COURIER FIRST";
+            serviceInput.disabled = true;
+            serviceCodeHidden.value = "";
+            serviceCostHidden.value = "0";
+            
+            selectedShippingCost = 0;
+            const shippingVal = document.getElementById('summary_shipping_val');
+            if (shippingVal) {
+                shippingVal.textContent = 'TBD';
+                shippingVal.className = 'uppercase tracking-widest text-[9px] font-bold text-stone-400';
+            }
+            calculateTotal();
+            
+            document.getElementById('clear_courier_btn').classList.add('hidden');
+            document.getElementById('courier_arrow').classList.remove('hidden');
+        }
+    }
+
     function checkInitialSelection() {
         const provinceVal = document.getElementById('select_province').value;
         const cityVal = document.getElementById('select_city').value;
+        const courierVal = document.getElementById('select_courier').value;
         
         if (provinceVal) {
             document.getElementById('clear_province_btn').classList.remove('hidden');
@@ -1006,6 +1261,10 @@
         if (cityVal) {
             document.getElementById('clear_city_btn').classList.remove('hidden');
             document.getElementById('city_arrow').classList.add('hidden');
+        }
+        if (courierVal) {
+            document.getElementById('clear_courier_btn').classList.remove('hidden');
+            document.getElementById('courier_arrow').classList.add('hidden');
         }
     }
 
@@ -1048,6 +1307,9 @@
         input.value = name;
         document.getElementById('select_courier_code').value = code;
         document.getElementById('courier_list_dropdown').classList.add('hidden');
+        
+        document.getElementById('clear_courier_btn').classList.remove('hidden');
+        document.getElementById('courier_arrow').classList.add('hidden');
         
         fetchShippingCost();
     }
@@ -1122,13 +1384,14 @@
                 
                 processedServices.forEach(s => {
                     const div = document.createElement('div');
-                    div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 font-mono uppercase tracking-wider text-[10px]";
+                    div.className = "px-4 py-2.5 hover:bg-stone-100 hover:text-stone-900 cursor-pointer transition-colors border-b border-stone-100 last:border-0 flex flex-col gap-0.5 font-mono uppercase tracking-wider text-[10px]";
                     
-                    const paddingLength = (maxLeftLength + 2) - s.leftPart.length;
-                    const paddedLeft = s.leftPart + "\u00A0".repeat(paddingLength);
-                    const displayText = paddedLeft + "- IDR " + s.cost.toLocaleString('id-ID') + s.etdStr;
+                    const displayText = s.leftPart + " - IDR " + s.cost.toLocaleString('id-ID') + s.etdStr;
                     
-                    div.textContent = displayText;
+                    div.innerHTML = `
+                        <div class="font-semibold text-stone-800">${s.leftPart}</div>
+                        <div class="text-[9px] text-stone-500">IDR ${s.cost.toLocaleString('id-ID')}${s.etdStr}</div>
+                    `;
                     div.onmousedown = (e) => e.preventDefault();
                     div.onclick = () => selectService(s.service, s.cost, displayText);
                     dropdown.appendChild(div);
@@ -1137,13 +1400,13 @@
             } else {
                 const errMsg = data.message || "No shipping services available for the selected destination.";
                 console.warn("Biteship rates calculation failed: " + errMsg);
-                alert("Biteship Rate Calculation: " + errMsg);
+                showVestaToast("Biteship Rate Calculation: " + errMsg, "error");
             }
         })
         .catch(err => {
             loading.classList.add('hidden');
             console.error(err);
-            alert("An error occurred while calculating shipping cost. Please try again.");
+            showVestaToast("An error occurred while calculating shipping cost. Please try again.", "error");
         });
     }
 

@@ -472,15 +472,17 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        @if (request('search'))
-                            <a href="{{ route('catalog') }}"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </a>
-                        @endif
+                        <div id="search-clear-container">
+                            @if (request('search'))
+                                <a href="{{ route('catalog') }}"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </a>
+                            @endif
+                        </div>
                     </div>
 
                     {{-- Hidden inputs for all filters --}}
@@ -494,7 +496,7 @@
 
             <div class="flex-1 max-w-[1400px] mx-auto w-full">
                 {{-- Horizontal Sticky Filter Bar --}}
-                <div class="sticky top-20 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
+                <div id="filter-container" class="sticky top-0 z-40 bg-stone-50 border-y border-gray-200 py-3 mb-8 shadow-sm">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="flex items-center gap-2 flex-wrap pb-1 md:pb-0">
                             <div class="flex items-center gap-2 mr-2">
@@ -582,7 +584,7 @@
                         </div>
 
                         <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
-                            <span class="text-xs text-gray-500 whitespace-nowrap"><span
+                            <span id="result-count" class="text-xs text-gray-500 whitespace-nowrap"><span
                                     class="text-black font-medium">{{ $products->total() }}</span> Results</span>
 
                             {{-- Sort Dropdown --}}
@@ -865,15 +867,15 @@
     <script type="application/json" id="productsData">{!! json_encode($allPageProducts) !!}</script>
 
     <script>
-        const productsData = JSON.parse(document.getElementById('productsData').textContent);
-        const products = Array.isArray(productsData) ? productsData : (productsData.data || []);
+        let productsData = JSON.parse(document.getElementById('productsData').textContent);
+        let products = Array.isArray(productsData) ? productsData : (productsData.data || []);
         let currentModalProductId = null;
         let selectedSize = null;
 
         // Filter system
         function setFilter(name, value) {
             document.getElementById('filter' + name.charAt(0).toUpperCase() + name.slice(1)).value = value;
-            document.getElementById('mainFilterForm').submit();
+            updateCatalog();
         }
 
         // Debounced search
@@ -881,8 +883,152 @@
         document.getElementById('searchInput').addEventListener('input', function() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
-                document.getElementById('mainFilterForm').submit();
-            }, 600);
+                updateCatalog();
+            }, 500);
+        });
+
+        // AJAX update catalog function
+        function updateCatalog(url = null, pushState = true) {
+            const form = document.getElementById('mainFilterForm');
+            let fetchUrl = url;
+            
+            if (!fetchUrl) {
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+                for (const [key, val] of formData.entries()) {
+                    if (val) {
+                        params.append(key, val);
+                    }
+                }
+                fetchUrl = form.action + '?' + params.toString();
+            }
+
+            const grid = document.getElementById('product-grid');
+            if (grid) {
+                grid.style.opacity = '0.5';
+                grid.style.transition = 'opacity 0.2s';
+            }
+
+            fetch(fetchUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Update product-grid
+                const newGrid = doc.getElementById('product-grid');
+                if (newGrid && grid) {
+                    grid.innerHTML = newGrid.innerHTML;
+                }
+                
+                // Update result count
+                const newCount = doc.getElementById('result-count');
+                const currentCount = document.getElementById('result-count');
+                if (newCount && currentCount) {
+                    currentCount.innerHTML = newCount.innerHTML;
+                }
+                
+                // Update filter-container
+                const newFilterContainer = doc.getElementById('filter-container');
+                const currentFilterContainer = document.getElementById('filter-container');
+                if (newFilterContainer && currentFilterContainer) {
+                    currentFilterContainer.innerHTML = newFilterContainer.innerHTML;
+                }
+                
+                // Update search clear container
+                const newClear = doc.getElementById('search-clear-container');
+                const currentClear = document.getElementById('search-clear-container');
+                if (newClear && currentClear) {
+                    currentClear.innerHTML = newClear.innerHTML;
+                }
+                
+                // Update products array for Quick View
+                const newDataEl = doc.getElementById('productsData');
+                if (newDataEl) {
+                    const newProductsData = JSON.parse(newDataEl.textContent);
+                    products = Array.isArray(newProductsData) ? newProductsData : (newProductsData.data || []);
+                }
+                
+                // Update URL
+                if (pushState) {
+                    window.history.pushState(null, '', fetchUrl);
+                }
+                
+                // Sync wishlist hearts
+                syncCardHearts();
+                
+                if (grid) grid.style.opacity = '1';
+            })
+            .catch(err => {
+                console.error('Failed to load products:', err);
+                if (grid) grid.style.opacity = '1';
+            });
+        }
+
+        // Intercept form submission
+        document.getElementById('mainFilterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateCatalog();
+        });
+
+        // Intercept pagination clicks
+        document.getElementById('product-grid').addEventListener('click', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.closest('nav[role="navigation"]')) {
+                e.preventDefault();
+                const url = anchor.getAttribute('href');
+                if (url && url !== '#') {
+                    updateCatalog(url);
+                    const scrollTarget = document.getElementById('all-products-section');
+                    if (scrollTarget) {
+                        scrollTarget.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            }
+        });
+
+        // Intercept clear and clear filters clicks
+        document.addEventListener('click', function(e) {
+            const clearBtn = e.target.closest('#search-clear-container a');
+            if (clearBtn) {
+                e.preventDefault();
+                document.getElementById('searchInput').value = '';
+                document.getElementById('filterCategory').value = '';
+                document.getElementById('filterGender').value = '';
+                document.getElementById('filterSize').value = '';
+                document.getElementById('filterSort').value = 'newest';
+                document.getElementById('filterEvent').value = '';
+                updateCatalog();
+            }
+
+            const clearFiltersBtn = e.target.closest('#filter-container a');
+            if (clearFiltersBtn && clearFiltersBtn.textContent.trim().toLowerCase() === 'clear filters') {
+                e.preventDefault();
+                document.getElementById('searchInput').value = '';
+                document.getElementById('filterCategory').value = '';
+                document.getElementById('filterGender').value = '';
+                document.getElementById('filterSize').value = '';
+                document.getElementById('filterSort').value = 'newest';
+                document.getElementById('filterEvent').value = '';
+                updateCatalog();
+            }
+        });
+
+        // Listen for history back/forward navigation
+        window.addEventListener('popstate', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            document.getElementById('searchInput').value = urlParams.get('search') || '';
+            document.getElementById('filterCategory').value = urlParams.get('category') || '';
+            document.getElementById('filterGender').value = urlParams.get('gender') || '';
+            document.getElementById('filterSize').value = urlParams.get('size') || '';
+            document.getElementById('filterSort').value = urlParams.get('sort') || 'newest';
+            document.getElementById('filterEvent').value = urlParams.get('filter_event') || '';
+            
+            updateCatalog(window.location.href, false);
         });
 
         // Quantity sync with max stock enforcement

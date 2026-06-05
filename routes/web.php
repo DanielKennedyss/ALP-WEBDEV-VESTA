@@ -144,7 +144,8 @@ Route::middleware('auth')->group(function () {
         }
         $transactions = \App\Models\Transaction::where('user_id', $user->id)
             ->with(['product', 'reviews'])->orderBy('created_at', 'desc')->get();
-        return view('profile', compact('transactions'));
+        $addresses = $user->addresses()->orderBy('is_default', 'desc')->latest()->get();
+        return view('profile', compact('transactions', 'addresses'));
     })->name('profile');
 
     Route::get('/profile/edit', function () {
@@ -153,6 +154,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'changePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.destroy');
+
+    Route::post('/profile/addresses', [ProfileController::class, 'storeAddress'])->name('profile.addresses.store');
+    Route::put('/profile/addresses/{address}', [ProfileController::class, 'updateAddress'])->name('profile.addresses.update');
+    Route::delete('/profile/addresses/{address}', [ProfileController::class, 'destroyAddress'])->name('profile.addresses.destroy');
 
     Route::post('/profile/orders/{order}/cancel', [StoreController::class, 'cancelOrder'])->name('profile.orders.cancel');
     Route::get('/profile/orders/{order}/track', [StoreController::class, 'trackOrder'])->name('profile.orders.track');

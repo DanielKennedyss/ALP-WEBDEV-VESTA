@@ -37,6 +37,7 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
+            overscroll-behavior: contain;
         }
 
         .sidebar-brand {
@@ -145,6 +146,30 @@
             border-color: #dc3545;
         }
 
+        /* Sidebar Navigation Scrollbar Styling */
+        .sidebar-nav {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+            padding-right: 4px; /* avoid scrollbar overlapping content */
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
         /* Responsive Mobile */
         @media (max-width: 992px) {
             .sidebar { width: 85px; padding: 40px 12px; }
@@ -159,54 +184,52 @@
 <body>
 
 <aside class="sidebar">
-    <div class="flex-grow-1">
-        <div class="d-flex align-items-center justify-content-between mb-5 sidebar-header-wrapper">
-            <a href="{{ route('admin.dashboard') }}" class="sidebar-brand mb-0">VESTA</a>
-            <a href="/" class="btn btn-outline-dark btn-sm rounded-circle d-flex align-items-center justify-content-center home-btn" style="width: 32px; height: 32px;" title="Back to Home">
-                <i class="bi bi-house"></i>
-            </a>
-        </div>
-        
-        <nav>
-            <span class="nav-label">General</span>
-            <a href="{{ route('admin.dashboard') }}" class="nav-link-admin {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
-            </a>
-
-            <span class="nav-label">Operations</span>
-            <a href="{{ route('admin.inventory') }}" class="nav-link-admin {{ request()->routeIs('admin.inventory*') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i> <span>Inventory</span>
-            </a>
-
-            <a href="{{ route('admin.events.index') }}" class="nav-link-admin {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-event"></i> <span>Collections</span>
-            </a>
-            
-            <a href="{{ route('admin.transactions.index') }}" class="nav-link-admin {{ request()->routeIs('admin.transactions*') ? 'active' : '' }}">
-                <i class="bi bi-receipt"></i> <span>Transactions</span>
-            </a>
-
-            {{-- MENU VOUCHERS BARU BERSTANDAR LUXURY OPERATIONS --}}
-            <a href="{{ route('admin.vouchers.index') }}" class="nav-link-admin {{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
-                <i class="bi bi-ticket-perforated"></i> <span>Vouchers</span>
-            </a>
-
-            {{-- Logic Role: Manager & Owner can manage staff --}}
-            @if(in_array(auth()->user()->role, ['owner', 'manager']))
-                <span class="nav-label">Administration</span>
-                <a href="{{ route('admin.staff.index') }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
-                    <i class="bi bi-people"></i> <span>Staff Management</span>
-                </a>
-            @elseif(auth()->user()->role === 'staff')
-                <span class="nav-label">Administration</span>
-                <a href="{{ route('admin.staff.edit', auth()->id()) }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
-                    <i class="bi bi-person-gear"></i> <span>My Account</span>
-                </a>
-            @endif
-        </nav>
+    <div class="d-flex align-items-center justify-content-between mb-5 sidebar-header-wrapper flex-shrink-0">
+        <a href="{{ route('admin.dashboard') }}" class="sidebar-brand mb-0">VESTA</a>
+        <a href="/" class="btn btn-outline-dark btn-sm rounded-circle d-flex align-items-center justify-content-center home-btn" style="width: 32px; height: 32px;" title="Back to Home">
+            <i class="bi bi-house"></i>
+        </a>
     </div>
+    
+    <nav class="sidebar-nav flex-grow-1 overflow-y-auto">
+        <span class="nav-label">General</span>
+        <a href="{{ route('admin.dashboard') }}" class="nav-link-admin {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
+        </a>
 
-    <div class="mt-auto border-top pt-4">
+        <span class="nav-label">Operations</span>
+        <a href="{{ route('admin.inventory') }}" class="nav-link-admin {{ request()->routeIs('admin.inventory*') ? 'active' : '' }}">
+            <i class="bi bi-box-seam"></i> <span>Inventory</span>
+        </a>
+
+        <a href="{{ route('admin.events.index') }}" class="nav-link-admin {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+            <i class="bi bi-calendar-event"></i> <span>Collections</span>
+        </a>
+        
+        <a href="{{ route('admin.transactions.index') }}" class="nav-link-admin {{ request()->routeIs('admin.transactions*') ? 'active' : '' }}">
+            <i class="bi bi-receipt"></i> <span>Transactions</span>
+        </a>
+
+        {{-- MENU VOUCHERS BARU BERSTANDAR LUXURY OPERATIONS --}}
+        <a href="{{ route('admin.vouchers.index') }}" class="nav-link-admin {{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
+            <i class="bi bi-ticket-perforated"></i> <span>Vouchers</span>
+        </a>
+
+        {{-- Logic Role: Manager & Owner can manage staff --}}
+        @if(in_array(auth()->user()->role, ['owner', 'manager']))
+            <span class="nav-label">Administration</span>
+            <a href="{{ route('admin.staff.index') }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
+                <i class="bi bi-people"></i> <span>Staff Management</span>
+            </a>
+        @elseif(auth()->user()->role === 'staff')
+            <span class="nav-label">Administration</span>
+            <a href="{{ route('admin.staff.edit', auth()->id()) }}" class="nav-link-admin {{ request()->routeIs('admin.staff*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i> <span>My Account</span>
+            </a>
+        @endif
+    </nav>
+
+    <div class="mt-auto border-top pt-4 flex-shrink-0">
         <div class="profile-card d-flex align-items-center">
             <div class="avatar-box me-3 shadow-sm">
                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}

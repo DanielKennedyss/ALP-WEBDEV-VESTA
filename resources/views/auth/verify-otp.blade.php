@@ -5,6 +5,8 @@
     html, body { overflow: hidden; height: 100vh; width: 100vw; margin: 0; padding: 0; }
     body { padding-top: 0 !important; }
     nav, footer { display: none !important; }
+    .app-scroll-container { padding-top: 0 !important; overflow: hidden !important; }
+    .custom-scroll-track { display: none !important; }
 
     .verify-wrapper {
         display: flex;

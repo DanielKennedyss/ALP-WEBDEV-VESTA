@@ -165,7 +165,12 @@ class User extends Authenticatable
         return $this->role === 'customer'; 
     }
     public function loyaltyHistories()
-{
-    return $this->hasMany(LoyaltyPointHistory::class)->latest();
-}
+    {
+        return $this->hasMany(LoyaltyPointHistory::class)->latest();
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
 }
