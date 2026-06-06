@@ -197,57 +197,85 @@
             scrollbar-width: none;
         }
 
-        /* ===== Review Overlay Widget ===== */
+        /* ===== Review Overlay Widget (Redesigned) ===== */
+        .review-badge {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+            padding: 8px 12px;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #1c1917; /* stone-900 */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 20;
+        }
+
+        .review-badge:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
         .review-overlay {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            max-width: 340px;
-            background: rgba(15, 15, 15, 0.55);
-            backdrop-filter: blur(20px) saturate(1.4);
-            -webkit-backdrop-filter: blur(20px) saturate(1.4);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 16px 18px;
-            z-index: 10;
-            overflow: hidden;
+            bottom: 16px;
+            left: 16px;
+            width: 280px;
+            max-width: calc(100% - 32px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+            padding: 16px;
+            z-index: 20;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
             opacity: 0;
-            transform: translateY(12px);
-            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(8px);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
         }
 
         .review-overlay.visible {
             opacity: 1;
             transform: translateY(0);
+            pointer-events: auto;
         }
 
-        .review-overlay-header {
+        .review-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #78716c; /* stone-500 */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+            transition: color 0.2s;
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            justify-content: center;
         }
 
-        .review-overlay-header svg {
-            width: 14px;
-            height: 14px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .review-overlay-header span {
-            font-size: 9px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.45);
-            font-weight: 500;
+        .review-close-btn:hover {
+            color: #000;
         }
 
         .review-slide-container {
             position: relative;
-            min-height: 72px;
+            min-height: 64px;
             overflow: hidden;
         }
 
@@ -258,7 +286,7 @@
             right: 0;
             opacity: 0;
             transform: translateY(100%);
-            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             will-change: transform, opacity;
         }
 
@@ -275,30 +303,26 @@
         .review-user-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
+            gap: 8px;
+            margin-bottom: 6px;
         }
 
         .review-avatar {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
-            color: #fff;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1c1917; /* stone-900 */
+            background: #f5f5f4; /* stone-100 */
+            border: 1px solid #e7e5e4; /* stone-200 */
             text-transform: uppercase;
             letter-spacing: 0.02em;
+            flex-shrink: 0;
         }
-
-        .review-avatar.av-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .review-avatar.av-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .review-avatar.av-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .review-avatar.av-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
 
         .review-user-info {
             flex: 1;
@@ -308,7 +332,7 @@
         .review-user-name {
             font-size: 11px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.92);
+            color: #1c1917; /* stone-900 */
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
@@ -317,73 +341,57 @@
 
         .review-stars {
             display: flex;
-            gap: 2px;
-            margin-top: 2px;
+            gap: 1.5px;
+            margin-top: 1px;
         }
 
         .review-stars svg {
-            width: 11px;
-            height: 11px;
+            width: 9.5px;
+            height: 9.5px;
         }
 
         .review-stars .star-filled {
-            color: #fbbf24;
-            fill: #fbbf24;
+            color: #d97706; /* amber-600 */
+            fill: #d97706;
         }
 
         .review-stars .star-empty {
-            color: rgba(255, 255, 255, 0.15);
-            fill: rgba(255, 255, 255, 0.15);
+            color: #e7e5e4; /* stone-200 */
+            fill: #e7e5e4;
         }
 
         .review-comment {
-            font-size: 12px;
-            line-height: 1.5;
-            color: rgba(255, 255, 255, 0.72);
-            font-style: italic;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #44403c; /* stone-700 */
+            font-style: normal;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             letter-spacing: 0.01em;
+            margin-top: 4px;
         }
 
-        .review-comment::before {
-            content: '"';
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 16px;
-            font-weight: 700;
-            margin-right: 2px;
+        .review-view-all-btn {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #78716c; /* stone-500 */
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: inline-block;
+            margin-top: 8px;
         }
 
-        .review-comment::after {
-            content: '"';
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 16px;
-            font-weight: 700;
-            margin-left: 2px;
-        }
-
-        .review-progress {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            margin-top: 12px;
-            padding-top: 8px;
-        }
-
-        .review-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transition: all 0.4s ease;
-        }
-
-        .review-dot.active {
-            background: rgba(255, 255, 255, 0.7);
-            width: 14px;
-            border-radius: 2px;
+        .review-view-all-btn:hover {
+            color: #000;
+            text-decoration: underline;
+            text-underline-offset: 3px;
         }
 
         .review-no-reviews {
@@ -898,25 +906,34 @@
             </button>
 
             <div class="w-full h-full grid grid-cols-1 md:grid-cols-2">
-                <div class="bg-gray-100 overflow-hidden relative">
+                <div class="bg-gray-100 overflow-hidden relative flex items-center justify-center">
                     <img id="modalImage" src="" alt="" class="w-full h-full object-cover">
 
-                    {{-- Review Overlay Widget --}}
+                    {{-- Review Badge (Minimized Mode) --}}
+                    <div id="reviewBadge" class="review-badge" onclick="expandReview()">
+                        <span class="text-amber-500">★</span>
+                        <span id="reviewBadgeText">Reviews (0)</span>
+                    </div>
+
+                    {{-- Review Overlay Widget (Expanded Mode) --}}
                     <div id="reviewOverlay" class="review-overlay">
-                        <div class="review-overlay-header">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        <button type="button" onclick="minimizeReview()" class="review-close-btn" aria-label="Minimize Reviews">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
-                            <span id="reviewOverlayTitle">Customer Reviews</span>
-                        </div>
+                        </button>
                         <div class="review-slide-container" id="reviewSlideContainer">
                             {{-- Reviews will be injected here by JS --}}
                         </div>
-                        <div class="review-progress" id="reviewProgressDots"></div>
+                        <div class="border-t border-stone-100 pt-2 flex justify-between items-center">
+                            <button type="button" onclick="scrollToFullReviews()" class="review-view-all-btn">
+                                View All Reviews
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="p-8 md:p-12 lg:p-14 flex flex-col justify-center overflow-y-auto">
+                <div id="modalRightPane" class="p-8 md:p-12 lg:p-14 flex flex-col justify-start overflow-y-auto">
                     <span id="modalCategory" class="text-xs tracking-[0.3em] text-gray-400 uppercase mb-3"></span>
                     <h2 id="modalName" class="text-3xl md:text-4xl font-serif tracking-[0.1em] mb-4"></h2>
 
@@ -962,6 +979,37 @@
                             </button>
                         </div>
                     </form>
+
+                    <!-- Full Reviews Section -->
+                    <div id="fullReviewsSection" class="mt-12 border-t border-stone-200 pt-8" style="display: none;">
+                        <h3 class="text-sm tracking-[0.2em] font-serif uppercase mb-6">Customer Reviews</h3>
+                        
+                        <!-- Top rating summary & breakdown grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-6 mb-6 pb-6 border-b border-stone-100">
+                            <div class="sm:col-span-5 flex flex-col items-center justify-center text-center p-5 bg-stone-50 border border-stone-100 rounded-sm">
+                                <span id="fullReviewsAvgRating" class="text-4xl font-serif text-stone-900 mb-1">0.0</span>
+                                <div id="fullReviewsStars" class="flex gap-0.5 mb-1.5 text-stone-900">
+                                    <!-- stars will be populated here -->
+                                </div>
+                                <span id="fullReviewsCountText" class="text-[10px] tracking-wider text-stone-500 uppercase font-mono">0 Reviews</span>
+                            </div>
+                            <div class="sm:col-span-7 flex flex-col justify-center">
+                                <div id="ratingBreakdownContainer" class="space-y-2">
+                                    <!-- Progress bars for 5, 4, 3, 2, 1 stars -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- List of reviews -->
+                        <div id="fullReviewsList" class="divide-y divide-stone-100">
+                            <!-- populated dynamically -->
+                        </div>
+                        
+                        <!-- Pagination controls -->
+                        <div id="fullReviewsPagination" class="mt-6 pt-4 border-t border-stone-100 flex justify-center items-center gap-3">
+                            <!-- populated dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -977,6 +1025,8 @@
         let products = Array.isArray(productsData) ? productsData : (productsData.data || []);
         let currentModalProductId = null;
         let selectedSize = null;
+        let currentReviewsArray = [];
+        let currentReviewPage = 1;
 
         // Filter system
         function setFilter(name, value) {
@@ -1344,31 +1394,44 @@
         function initReviewSlider(product) {
             destroyReviewSlider();
 
+            const badge = document.getElementById('reviewBadge');
             const overlay = document.getElementById('reviewOverlay');
             const container = document.getElementById('reviewSlideContainer');
-            const dotsContainer = document.getElementById('reviewProgressDots');
-            const titleEl = document.getElementById('reviewOverlayTitle');
+            const fullReviewsSection = document.getElementById('fullReviewsSection');
 
             container.innerHTML = '';
-            dotsContainer.innerHTML = '';
+            
+            // Set initial visibility states
+            badge.style.display = 'none';
+            badge.style.opacity = '0';
+            overlay.style.display = 'none';
             overlay.classList.remove('visible');
+            fullReviewsSection.style.display = 'none';
 
             const reviews = (product.reviews || []).filter(r => r.comment && r.comment.trim() !== '');
 
             if (reviews.length === 0) {
-                overlay.style.display = 'none';
                 return;
             }
 
-            overlay.style.display = '';
-            titleEl.textContent = `Customer Reviews (${reviews.length})`;
+            // Calculate average rating
+            const avgRating = parseFloat(product.reviews_avg_rating) || 0;
+            const countReviews = reviews.length;
 
-            const avatarClasses = ['', 'av-1', 'av-2', 'av-3', 'av-4'];
+            // Set badge content
+            const badgeTextEl = document.getElementById('reviewBadgeText');
+            badgeTextEl.textContent = `${countReviews} Reviews (${avgRating.toFixed(1)} ★)`;
+            
+            // Show minimized badge by default
+            badge.style.display = 'flex';
+            // Trigger reflow & fade-in
+            badge.offsetHeight;
+            badge.style.opacity = '1';
 
+            // Populate the slides
             reviews.forEach((review, index) => {
                 const userName = review.user ? review.user.name : 'Anonymous';
                 const initials = userName.split(' ').map(w => w[0]).join('').substring(0, 2);
-                const avatarClass = avatarClasses[index % avatarClasses.length];
                 const rating = parseInt(review.rating) || 5;
 
                 let starsHtml = '<div class="review-stars">';
@@ -1381,7 +1444,7 @@
                 slide.className = 'review-slide-item';
                 slide.innerHTML = `
                     <div class="review-user-row">
-                        <div class="review-avatar ${avatarClass}">${initials}</div>
+                        <div class="review-avatar">${initials}</div>
                         <div class="review-user-info">
                             <div class="review-user-name">${userName}</div>
                             ${starsHtml}
@@ -1392,27 +1455,13 @@
                 container.appendChild(slide);
             });
 
-            // Create progress dots
-            reviews.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.className = 'review-dot' + (index === 0 ? ' active' : '');
-                dotsContainer.appendChild(dot);
-            });
-
             reviewItems = container.querySelectorAll('.review-slide-item');
             reviewCurrentIndex = 0;
 
-            // Stagger reveal: delay the overlay appearance
-            setTimeout(() => {
-                overlay.classList.add('visible');
-            }, 400);
-
-            // Show first review with a slight delay for the "pop-up" feel
-            setTimeout(() => {
-                if (reviewItems[0]) {
-                    reviewItems[0].classList.add('active');
-                }
-            }, 700);
+            // Show first review slide instantly inside container
+            if (reviewItems[0]) {
+                reviewItems[0].classList.add('active');
+            }
 
             // Auto-cycle if more than 1 review
             if (reviews.length > 1) {
@@ -1420,13 +1469,15 @@
                     advanceReviewSlide();
                 }, 4000);
             }
+
+            // Setup Full Reviews Section
+            renderFullReviewsSection(product, reviews);
         }
 
         function advanceReviewSlide() {
             if (reviewItems.length === 0) return;
 
             const currentSlide = reviewItems[reviewCurrentIndex];
-            const dots = document.querySelectorAll('#reviewProgressDots .review-dot');
 
             // Exit current slide upward
             currentSlide.classList.remove('active');
@@ -1440,13 +1491,9 @@
                 currentSlide.classList.remove('exit-up');
 
                 // Activate next slide (slides in from bottom)
-                reviewItems[nextIndex].classList.add('active');
-
-                // Update dots
-                dots.forEach((d, i) => {
-                    d.classList.toggle('active', i === nextIndex);
-                });
-
+                if (reviewItems[nextIndex]) {
+                    reviewItems[nextIndex].classList.add('active');
+                }
                 reviewCurrentIndex = nextIndex;
             }, 350);
         }
@@ -1458,6 +1505,228 @@
             }
             reviewCurrentIndex = 0;
             reviewItems = [];
+        }
+
+        // Mode toggling functions
+        function expandReview() {
+            const badge = document.getElementById('reviewBadge');
+            const overlay = document.getElementById('reviewOverlay');
+            
+            badge.style.opacity = '0';
+            setTimeout(() => {
+                badge.style.display = 'none';
+                overlay.style.display = 'block';
+                // Force reflow
+                overlay.offsetHeight;
+                overlay.classList.add('visible');
+            }, 200);
+        }
+
+        function minimizeReview() {
+            const badge = document.getElementById('reviewBadge');
+            const overlay = document.getElementById('reviewOverlay');
+            
+            overlay.classList.remove('visible');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                badge.style.display = 'flex';
+                // Force reflow
+                badge.offsetHeight;
+                badge.style.opacity = '1';
+            }, 300);
+        }
+
+        // Helper: Date formatter
+        function formatReviewDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Full reviews scroll helper
+        function scrollToFullReviews() {
+            const rightPane = document.getElementById('modalRightPane');
+            const target = document.getElementById('fullReviewsSection');
+            if (target && rightPane) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Render full reviews section breakdown and pagination
+        function renderFullReviewsSection(product, reviews) {
+            currentReviewsArray = reviews;
+            currentReviewPage = 1;
+
+            const fullReviewsSection = document.getElementById('fullReviewsSection');
+            fullReviewsSection.style.display = 'block';
+
+            // Overall score
+            const avgRating = parseFloat(product.reviews_avg_rating) || 0;
+            const total = reviews.length;
+            document.getElementById('fullReviewsAvgRating').textContent = avgRating.toFixed(1);
+            document.getElementById('fullReviewsCountText').textContent = `${total} ${total === 1 ? 'Review' : 'Reviews'}`;
+
+            // Overall stars representation
+            let overallStarsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                const isFilled = i <= Math.round(avgRating);
+                overallStarsHtml += `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${isFilled ? 'fill-current text-stone-900' : 'text-stone-200'}" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                `;
+            }
+            document.getElementById('fullReviewsStars').innerHTML = overallStarsHtml;
+
+            // Breakdown counts
+            const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+            reviews.forEach(r => {
+                const rating = Math.round(r.rating);
+                if (counts[rating] !== undefined) {
+                    counts[rating]++;
+                }
+            });
+
+            // Populate Breakdown Bars
+            let breakdownHtml = '';
+            for (let star = 5; star >= 1; star--) {
+                const count = counts[star];
+                const pct = total > 0 ? (count / total * 100) : 0;
+                breakdownHtml += `
+                    <div class="flex items-center gap-4 text-xs">
+                        <span class="w-12 text-stone-500 font-mono">${star} Star</span>
+                        <div class="flex-1 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-stone-900 transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                        <span class="w-6 text-right text-stone-400 font-mono">${count}</span>
+                    </div>
+                `;
+            }
+            document.getElementById('ratingBreakdownContainer').innerHTML = breakdownHtml;
+
+            // Render first page of review list
+            renderReviewPage();
+        }
+
+        // Render paginated reviews
+        function renderReviewPage() {
+            const listContainer = document.getElementById('fullReviewsList');
+            const reviewsPerPage = 6;
+            const total = currentReviewsArray.length;
+            const totalPages = Math.ceil(total / reviewsPerPage);
+
+            const startIndex = (currentReviewPage - 1) * reviewsPerPage;
+            const pageReviews = currentReviewsArray.slice(startIndex, startIndex + reviewsPerPage);
+
+            let listHtml = '';
+            pageReviews.forEach(review => {
+                const userName = review.user ? review.user.name : 'Anonymous';
+                const initials = userName.split(' ').map(w => w[0]).join('').substring(0, 2);
+                const rating = parseInt(review.rating) || 5;
+                const formattedDate = formatReviewDate(review.created_at);
+
+                let stars = '<div class="flex gap-0.5">';
+                for (let i = 1; i <= 5; i++) {
+                    stars += `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ${i <= rating ? 'fill-current text-stone-900' : 'text-stone-200'}" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                    `;
+                }
+                stars += '</div>';
+
+                listHtml += `
+                    <div class="py-6 border-b border-stone-100 last:border-0">
+                        <div class="flex items-start justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold flex items-center justify-center uppercase">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-semibold text-stone-900">${userName}</span>
+                                        ${review.transaction_id ? `
+                                        <span class="inline-flex items-center gap-0.5 text-[9px] tracking-wider text-emerald-700 uppercase bg-emerald-50 px-1.5 py-0.5 border border-emerald-100 font-medium">
+                                            <svg class="h-2.5 w-2.5 fill-current" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                            Verified Purchase
+                                        </span>` : ''}
+                                    </div>
+                                    <div class="mt-0.5">
+                                        ${stars}
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-stone-400 font-mono">${formattedDate}</span>
+                        </div>
+                        <p class="text-xs text-stone-700 font-light leading-relaxed mt-3 pl-11">
+                            ${review.comment}
+                        </p>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = listHtml || '<p class="text-xs text-stone-400 py-4">No reviews available.</p>';
+
+            // Pagination UI
+            const pagContainer = document.getElementById('fullReviewsPagination');
+            let paginationHtml = '';
+
+            if (totalPages > 1) {
+                // Prev button
+                paginationHtml += `
+                    <button type="button" onclick="changeReviewPage(-1)" ${currentReviewPage === 1 ? 'disabled' : ''} 
+                        class="px-3 py-1.5 text-[10px] tracking-widest border border-stone-200 text-stone-700 hover:text-black hover:border-black disabled:text-stone-300 disabled:border-stone-100 disabled:cursor-not-allowed uppercase transition-colors">
+                        Prev
+                    </button>
+                `;
+
+                // Page numbers
+                paginationHtml += '<div class="flex items-center gap-1">';
+                for (let p = 1; p <= totalPages; p++) {
+                    if (p === currentReviewPage) {
+                        paginationHtml += `
+                            <span class="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-stone-900 text-white border border-stone-900">${p}</span>
+                        `;
+                    } else {
+                        paginationHtml += `
+                            <button type="button" onclick="setReviewPage(${p})" 
+                                class="w-8 h-8 flex items-center justify-center text-xs text-stone-600 hover:text-black border border-stone-200 hover:border-stone-400 transition-colors">
+                                ${p}
+                            </button>
+                        `;
+                    }
+                }
+                paginationHtml += '</div>';
+
+                // Next button
+                paginationHtml += `
+                    <button type="button" onclick="changeReviewPage(1)" ${currentReviewPage === totalPages ? 'disabled' : ''} 
+                        class="px-3 py-1.5 text-[10px] tracking-widest border border-stone-200 text-stone-700 hover:text-black hover:border-black disabled:text-stone-300 disabled:border-stone-100 disabled:cursor-not-allowed uppercase transition-colors">
+                        Next
+                    </button>
+                `;
+            }
+            pagContainer.innerHTML = paginationHtml;
+        }
+
+        function changeReviewPage(direction) {
+            const newPage = currentReviewPage + direction;
+            const totalPages = Math.ceil(currentReviewsArray.length / 6);
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentReviewPage = newPage;
+                renderReviewPage();
+                scrollToFullReviews();
+            }
+        }
+
+        function setReviewPage(page) {
+            currentReviewPage = page;
+            renderReviewPage();
+            scrollToFullReviews();
         }
 
         // Sync card heart icons with the global wishlistItems array
