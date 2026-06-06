@@ -10,6 +10,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class EventController extends Controller
 {
@@ -51,36 +52,57 @@ class EventController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name'         => 'required|string|max:255',
-            'short_name'   => 'required|string|max:100',
-            'start_date'   => 'required|date',
-            'end_date'     => 'required|date|after_or_equal:start_date',
-            'theme_color'  => 'required|string|max:7',
-            'text_color'   => 'required|string|max:7',
-            'banner_image' => 'nullable|url|max:2048',
-            'background_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'main_image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'display_title'    => 'nullable|string|max:255',
+        $rules = [
+            'name'                => 'required|string|max:255',
+            'short_name'          => 'required|string|max:100',
+            'start_date'          => 'required|date',
+            'end_date'            => 'required|date|after_or_equal:start_date',
+            'theme_color'         => 'required|string|max:7',
+            'text_color'          => 'required|string|max:7',
+            'background_image_source' => 'required|string|in:file,url',
+            'main_image_source'       => 'required|string|in:file,url',
+            'background_image_url' => 'nullable|url',
+            'main_image_url' => 'nullable|url',
+            'background_image_file' => ['nullable', Rule::when($request->hasFile('background_image_file'), ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'])],
+            'main_image_file' => ['nullable', Rule::when($request->hasFile('main_image_file'), ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'])],
+            'display_title'       => 'nullable|string|max:255',
             'display_description' => 'nullable|string',
-        ], [
+        ];
+
+        $validated = $request->validate($rules, [
             'end_date.after_or_equal' => 'The end date must be on or after the start date.',
         ]);
 
         DB::beginTransaction();
         try {
-            $eventData = collect($validated)->except(['background_image', 'main_image'])->toArray();
-            $event = Event::create($eventData);
+            $eventData = collect($validated)->except([
+                'background_image_source', 'background_image_url', 'background_image_file',
+                'main_image_source', 'main_image_url', 'main_image_file'
+            ])->toArray();
+            
+            if ($request->input('background_image_source') === 'file') {
+                if ($request->hasFile('background_image_file')) {
+                    $path = $request->file('background_image_file')->store('events/banners', 'public');
+                    $eventData['background_image'] = $path;
+                } else {
+                    $eventData['background_image'] = null;
+                }
+            } else {
+                $eventData['background_image'] = $request->input('background_image_url');
+            }
 
-            if ($request->hasFile('background_image')) {
-                $path = $request->file('background_image')->store('events/backgrounds', 'public');
-                $event->background_image = $path;
+            if ($request->input('main_image_source') === 'file') {
+                if ($request->hasFile('main_image_file')) {
+                    $path = $request->file('main_image_file')->store('events/banners', 'public');
+                    $eventData['main_image'] = $path;
+                } else {
+                    $eventData['main_image'] = null;
+                }
+            } else {
+                $eventData['main_image'] = $request->input('main_image_url');
             }
-            if ($request->hasFile('main_image')) {
-                $path = $request->file('main_image')->store('events/mains', 'public');
-                $event->main_image = $path;
-            }
-            $event->save();
+
+            $event = Event::create($eventData);
 
             // Sync product assignments (sync with empty array if none selected)
             $productIds = $request->input('product_ids', []);
@@ -137,36 +159,55 @@ class EventController extends Controller
                 ->with('error', 'Ended events cannot be modified.');
         }
 
-        $validated = $request->validate([
-            'name'         => 'required|string|max:255',
-            'short_name'   => 'required|string|max:100',
-            'start_date'   => 'required|date',
-            'end_date'     => 'required|date|after_or_equal:start_date',
-            'theme_color'  => 'required|string|max:7',
-            'text_color'   => 'required|string|max:7',
-            'banner_image' => 'nullable|url|max:2048',
-            'background_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'main_image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'display_title'    => 'nullable|string|max:255',
+        $rules = [
+            'name'                => 'required|string|max:255',
+            'short_name'          => 'required|string|max:100',
+            'start_date'          => 'required|date',
+            'end_date'            => 'required|date|after_or_equal:start_date',
+            'theme_color'         => 'required|string|max:7',
+            'text_color'          => 'required|string|max:7',
+            'background_image_source' => 'required|string|in:file,url',
+            'main_image_source'       => 'required|string|in:file,url',
+            'background_image_url' => 'nullable|url',
+            'main_image_url' => 'nullable|url',
+            'background_image_file' => ['nullable', Rule::when($request->hasFile('background_image_file'), ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'])],
+            'main_image_file' => ['nullable', Rule::when($request->hasFile('main_image_file'), ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'])],
+            'display_title'       => 'nullable|string|max:255',
             'display_description' => 'nullable|string',
-        ], [
+        ];
+
+        $validated = $request->validate($rules, [
             'end_date.after_or_equal' => 'The end date must be on or after the start date.',
         ]);
 
         DB::beginTransaction();
         try {
-            $eventData = collect($validated)->except(['background_image', 'main_image'])->toArray();
-            $event->update($eventData);
+            $eventData = collect($validated)->except([
+                'background_image_source', 'background_image_url', 'background_image_file',
+                'main_image_source', 'main_image_url', 'main_image_file'
+            ])->toArray();
+            
+            if ($request->input('background_image_source') === 'file') {
+                if ($request->hasFile('background_image_file')) {
+                    $path = $request->file('background_image_file')->store('events/banners', 'public');
+                    $eventData['background_image'] = $path;
+                }
+                // Keep the current background_image path if background_image_source is file but no file uploaded
+            } else {
+                $eventData['background_image'] = $request->input('background_image_url');
+            }
 
-            if ($request->hasFile('background_image')) {
-                $path = $request->file('background_image')->store('events/backgrounds', 'public');
-                $event->background_image = $path;
+            if ($request->input('main_image_source') === 'file') {
+                if ($request->hasFile('main_image_file')) {
+                    $path = $request->file('main_image_file')->store('events/banners', 'public');
+                    $eventData['main_image'] = $path;
+                }
+                // Keep the current main_image path if main_image_source is file but no file uploaded
+            } else {
+                $eventData['main_image'] = $request->input('main_image_url');
             }
-            if ($request->hasFile('main_image')) {
-                $path = $request->file('main_image')->store('events/mains', 'public');
-                $event->main_image = $path;
-            }
-            $event->save();
+
+            $event->update($eventData);
 
             // Re-sync product assignments
             $productIds = $request->input('product_ids', []);

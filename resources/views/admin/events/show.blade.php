@@ -182,15 +182,28 @@
                 </div>
             </div>
 
-            {{-- Banner URL --}}
-            @if($event->banner_image)
-            <div class="col-12">
-                <span class="detail-label">Banner Image</span>
+            {{-- Background Image --}}
+            @if($event->background_image)
+            <div class="col-md-6">
+                <span class="detail-label">Background / Banner Image</span>
                 <div class="detail-value" style="font-size: 12px; word-break: break-all; color: #5f6368;">
-                    {{ $event->banner_image }}
+                    {{ $event->background_image }}
                 </div>
-                <img src="{{ $event->banner_image }}" alt="{{ $event->name }}"
-                     class="mt-3 rounded-3" style="max-height: 180px; object-fit: cover; width: 100%;"
+                <img src="{{ \Illuminate\Support\Str::startsWith($event->background_image, ['http://', 'https://']) ? $event->background_image : asset('storage/' . $event->background_image) }}" alt="Background"
+                     class="mt-3 rounded-3" style="max-height: 180px; object-fit: cover; width: 100%; border: 1px solid rgba(0,0,0,0.06);"
+                     onerror="this.style.display='none'">
+            </div>
+            @endif
+
+            {{-- Main Image --}}
+            @if($event->main_image)
+            <div class="col-md-6">
+                <span class="detail-label">Main / Foreground Image</span>
+                <div class="detail-value" style="font-size: 12px; word-break: break-all; color: #5f6368;">
+                    {{ $event->main_image }}
+                </div>
+                <img src="{{ \Illuminate\Support\Str::startsWith($event->main_image, ['http://', 'https://']) ? $event->main_image : asset('storage/' . $event->main_image) }}" alt="Main Image"
+                     class="mt-3 rounded-3" style="max-height: 180px; object-fit: cover; width: 100%; border: 1px solid rgba(0,0,0,0.06);"
                      onerror="this.style.display='none'">
             </div>
             @endif

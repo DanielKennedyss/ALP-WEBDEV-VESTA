@@ -245,19 +245,10 @@
             @if($activeEvents->isNotEmpty())
                 @foreach($activeEvents as $event)
                     <section class="swiper-slide hero-slide">
-                        @if($event->background_image)
-                            <div class="slide-bg-media absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('{{ asset('storage/' . $event->background_image) }}');" data-swiper-parallax="50%"></div>
-                        @else
-                            <img src="{{ $event->banner_image ?? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80' }}"
-                                alt="{{ $event->display_title ?? $event->name }} Banner" class="slide-bg-media absolute inset-0 w-full h-full object-cover"
-                                loading="lazy">
-                        @endif
+                        <div class="slide-bg-media absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('{{ ($event->background_image ?: $event->banner_image) ? (\Illuminate\Support\Str::startsWith($event->background_image ?: $event->banner_image, ['http://', 'https://']) ? ($event->background_image ?: $event->banner_image) : asset('storage/' . ($event->background_image ?: $event->banner_image))) : 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80' }}');" data-swiper-parallax="50%"></div>
                         <div class="slide-overlay"></div>
 
                         <div class="slide-content flex flex-col items-center justify-center">
-                            @if($event->main_image)
-                                <img src="{{ asset('storage/' . $event->main_image) }}" alt="{{ $event->display_title ?? $event->name }}" class="w-32 h-32 md:w-48 md:h-48 object-cover mb-6 rounded shadow-2xl border border-white/10">
-                            @endif
                             <span class="text-white/60 text-[10px] tracking-[0.3em] uppercase mb-4 font-light">Limited Event</span>
                             <h2 class="text-white text-4xl md:text-6xl lg:text-7xl font-serif tracking-[0.2em] mb-6 leading-tight text-center">
                                 {{ strtoupper($event->display_title ?? $event->name) }}</h2>

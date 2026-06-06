@@ -26,8 +26,10 @@ test('admin can create event with custom banner files and display content', func
             'end_date' => now()->addDays(10)->format('Y-m-d\TH:i'),
             'theme_color' => '#000000',
             'text_color' => '#ffffff',
-            'background_image' => $bgFile,
-            'main_image' => $mainFile,
+            'background_image_source' => 'file',
+            'background_image_file' => $bgFile,
+            'main_image_source' => 'file',
+            'main_image_file' => $mainFile,
             'display_title' => 'THE NEW COUTURE AGE',
             'display_description' => 'A wonderful selection of tailored suits.',
         ]);
@@ -42,7 +44,7 @@ test('admin can create event with custom banner files and display content', func
     expect($event->background_image)->not->toBeNull();
     expect($event->main_image)->not->toBeNull();
 
-    // Assert files stored in fake public storage
+    // Assert file stored in fake public storage
     Storage::disk('public')->assertExists($event->background_image);
     Storage::disk('public')->assertExists($event->main_image);
 });
@@ -72,8 +74,10 @@ test('admin can update event with custom banner files and display content', func
             'end_date' => now()->addDays(12)->format('Y-m-d\TH:i'),
             'theme_color' => '#222222',
             'text_color' => '#dddddd',
-            'background_image' => $bgFile,
-            'main_image' => $mainFile,
+            'background_image_source' => 'file',
+            'background_image_file' => $bgFile,
+            'main_image_source' => 'file',
+            'main_image_file' => $mainFile,
             'display_title' => 'UPDATED DISPLAY TITLE',
             'display_description' => 'New description details.',
         ]);
@@ -97,8 +101,8 @@ test('frontend views render customized banner details if active', function () {
         'end_date' => now()->addDays(2),
         'theme_color' => '#ff0000',
         'text_color' => '#ffff00',
-        'background_image' => 'events/backgrounds/fake_bg.png',
-        'main_image' => 'events/mains/fake_main.png',
+        'background_image' => 'events/banners/fake_bg.png',
+        'main_image' => 'events/banners/fake_main.png',
         'display_title' => 'SUPER SALE EVENT',
         'display_description' => 'This is a description content.',
     ]);
@@ -106,16 +110,15 @@ test('frontend views render customized banner details if active', function () {
     // Request Home page
     $homeResponse = $this->get('/');
     $homeResponse->assertStatus(200);
-    $homeResponse->assertSee('events/backgrounds/fake_bg.png');
-    $homeResponse->assertSee('events/mains/fake_main.png');
+    $homeResponse->assertSee('events/banners/fake_bg.png');
     $homeResponse->assertSee('SUPER SALE EVENT');
     $homeResponse->assertSee('This is a description content.');
 
     // Request Collections page
     $collectionsResponse = $this->get('/collections');
     $collectionsResponse->assertStatus(200);
-    $collectionsResponse->assertSee('events/backgrounds/fake_bg.png');
-    $collectionsResponse->assertSee('events/mains/fake_main.png');
+    $collectionsResponse->assertSee('events/banners/fake_bg.png');
+    $collectionsResponse->assertSee('events/banners/fake_main.png');
     $collectionsResponse->assertSee('SUPER SALE EVENT');
     $collectionsResponse->assertSee('This is a description content.');
 });

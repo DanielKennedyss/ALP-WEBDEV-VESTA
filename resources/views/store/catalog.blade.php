@@ -418,8 +418,8 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 0, 0, 0.08);
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -430,13 +430,15 @@
             z-index: 20;
             transition: all 0.3s;
             color: #000;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
         }
         .carousel-nav-btn:hover {
             background: #000;
             color: #fff;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
-        .carousel-nav-prev { left: 16px; }
-        .carousel-nav-next { right: 16px; }
+        .carousel-nav-prev { left: -22px; }
+        .carousel-nav-next { right: -22px; }
 
         /* Progress tracks at the bottom of the carousel */
         .carousel-progress-track {
@@ -474,16 +476,13 @@
                                 <div class="swiper-slide relative overflow-hidden border p-8 md:p-12 transition-all duration-500 shadow-sm"
                                      style="background-color: {{ $event->theme_color ?? '#000000' }}; color: {{ $event->text_color ?? '#ffffff' }}; border-color: {{ ($event->text_color ?? '#ffffff') }}44;">
                                     {{-- Decorative pattern / background image with overlay --}}
-                                    @if($event->background_image)
-                                        <div class="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-25 pointer-events-none" style="background-image: url('{{ asset('storage/' . $event->background_image) }}')"></div>
-                                    @elseif($event->banner_image)
-                                        <div class="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-25 pointer-events-none" style="background-image: url('{{ $event->banner_image }}')"></div>
+                                    @if($event->background_image || $event->banner_image)
+<div class="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-25 pointer-events-none" style="background-image: url('{{ \Illuminate\Support\Str::startsWith($event->background_image ?: $event->banner_image, ['http://', 'https://']) ? ($event->background_image ?: $event->banner_image) : asset('storage/' . ($event->background_image ?: $event->banner_image)) }}')"></div>
                                     @endif
                                     
                                     <div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                                         <div>
                                             <div class="inline-flex items-center gap-2 border px-3 py-1 mb-4 text-[9px] tracking-[0.25em] uppercase font-semibold" style="border-color: currentColor;">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                                                 Limited Time Event
                                             </div>
                                             <h2 class="text-3xl md:text-5xl font-serif tracking-[0.1em] mb-4 uppercase">
@@ -507,7 +506,7 @@
                                         
                                         @if($event->main_image || $event->banner_image)
                                             <div class="hidden lg:block relative aspect-[16/9] w-full overflow-hidden border" style="border-color: {{ ($event->text_color ?? '#ffffff') }}22;">
-                                                <img src="{{ $event->main_image ? asset('storage/' . $event->main_image) : $event->banner_image }}" alt="{{ $event->display_title ?? $event->name }}" class="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700">
+                                                <img src="{{ \Illuminate\Support\Str::startsWith($event->main_image ?: $event->banner_image, ['http://', 'https://']) ? ($event->main_image ?: $event->banner_image) : asset('storage/' . ($event->main_image ?: $event->banner_image)) }}" alt="{{ $event->display_title ?? $event->name }}" class="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                             </div>
                                         @endif
