@@ -761,8 +761,20 @@
                                         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
                                             data-src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
                                             alt="{{ $product->name }}"
-                                            class="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 lazy-img"
-                                            loading="lazy">
+                                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 lazy-img"
+                                            loading="lazy"
+                                            onerror="handleProductImageError(this)">
+
+                                        {{-- Error Placeholder --}}
+                                        <div class="image-error-placeholder absolute inset-0 bg-stone-100 flex flex-col items-center justify-center p-6 text-center hidden">
+                                            <div class="w-12 h-12 rounded-full bg-stone-200/50 flex items-center justify-center mb-3 text-stone-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-[10px] tracking-[0.2em] text-stone-500 uppercase font-semibold">Image Unavailable</span>
+                                            <span class="text-[8px] tracking-wider text-stone-400 uppercase mt-1">Check back later</span>
+                                        </div>
 
                                         {{-- Badges Wrapper (Gender & Event) --}}
                                         <div class="absolute top-[10px] left-[10px] z-10 flex flex-row gap-2 items-center">
@@ -879,7 +891,17 @@
 
             <div class="w-full h-full grid grid-cols-1 md:grid-cols-2">
                 <div class="bg-gray-100 overflow-hidden relative flex items-center justify-center">
-                    <img id="modalImage" src="" alt="" class="w-full h-full object-contain p-4 mix-blend-multiply">
+                    <img id="modalImage" src="" alt="" class="w-full h-full object-contain p-4 mix-blend-multiply" onerror="handleModalImageError(this)">
+
+                    {{-- Modal Image Error Placeholder --}}
+                    <div id="modalImageErrorPlaceholder" class="absolute inset-0 bg-stone-100 flex flex-col items-center justify-center p-6 text-center hidden">
+                        <div class="w-16 h-16 rounded-full bg-stone-200/50 flex items-center justify-center mb-4 text-stone-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs tracking-[0.2em] text-stone-500 uppercase font-semibold">Image Unavailable</span>
+                    </div>
 
                     {{-- Review Badge (Minimized Mode) --}}
                     <div id="reviewBadge" class="review-badge" onclick="expandReview()">
@@ -1004,6 +1026,23 @@
         let selectedSize = null;
         let currentReviewsArray = [];
         let currentReviewPage = 1;
+
+        // Image loading error handlers
+        function handleProductImageError(img) {
+            img.style.display = 'none';
+            const placeholder = img.parentElement.querySelector('.image-error-placeholder');
+            if (placeholder) {
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        function handleModalImageError(img) {
+            img.style.display = 'none';
+            const placeholder = document.getElementById('modalImageErrorPlaceholder');
+            if (placeholder) {
+                placeholder.classList.remove('hidden');
+            }
+        }
 
         // Filter system
         function setFilter(name, value) {
@@ -1267,6 +1306,13 @@
             selectedSize = null;
 
             document.getElementById('modalAddToCartForm').action = '/cart/add/' + productId;
+
+            // Reset modal image visibility and hide error fallback
+            const modalImg = document.getElementById('modalImage');
+            const modalFallback = document.getElementById('modalImageErrorPlaceholder');
+            if (modalImg) modalImg.style.display = 'block';
+            if (modalFallback) modalFallback.classList.add('hidden');
+
             document.getElementById('modalImage').src = product.image_path;
             document.getElementById('modalImage').alt = product.name;
             document.getElementById('modalCategory').textContent = product.category ? product.category.name : '';
