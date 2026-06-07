@@ -173,6 +173,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware([AdminMiddleware::class])->prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('admin.dashboard.export');
         
         // Product Management
         Route::resource('products', ProductController::class)->except(['show'])->names('admin.products');
@@ -182,6 +183,7 @@ Route::middleware('auth')->group(function () {
         Route::controller(TransactionController::class)->group(function () {
             Route::get('/transactions', 'index')->name('admin.transactions.index');
             Route::patch('/transactions/{transaction}/status', 'updateStatus')->name('admin.transactions.updateStatus');
+            Route::post('/transactions/export-email', 'sendReportToEmail')->name('admin.transactions.export_email');
         });
 
         // Voucher Management
