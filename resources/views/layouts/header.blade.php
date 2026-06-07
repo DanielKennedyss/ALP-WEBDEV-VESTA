@@ -14,8 +14,15 @@
     class="fixed top-0 left-0 w-screen z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
-            <!-- Brand -->
-            <a href="/" class="text-xl font-serif tracking-[0.3em]">VESTA</a>
+            <!-- Brand & Hamburger Menu -->
+            <div class="flex items-center gap-4">
+                <button onclick="openMobileMenu()" class="md:hidden hover:text-gray-600 transition-colors animate-fade-in" aria-label="Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <a href="/" class="text-xl font-serif tracking-[0.3em]">VESTA</a>
+            </div>
             <!-- Navigation Links (desktop) -->
             <div class="hidden md:flex items-center gap-10">
                 <a href="/" class="text-xs tracking-[0.2em] hover:text-gray-600 transition-colors">HOME</a>
@@ -77,6 +84,51 @@
         </div>
     </div>
 </nav>
+
+<!-- Mobile Menu Drawer -->
+<div id="mobileMenuDrawer" class="fixed inset-0 z-[150] hidden" aria-hidden="true">
+    <!-- Backdrop -->
+    <div id="mobileMenuBackdrop"
+        class="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300"
+        onclick="closeMobileMenu()"></div>
+
+    <!-- Drawer Content -->
+    <div id="mobileMenuContent"
+        class="absolute inset-y-0 left-0 w-full max-w-xs bg-white shadow-2xl flex flex-col transform -translate-x-full transition-transform duration-300">
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+            <span class="text-lg font-serif tracking-[0.3em]">VESTA</span>
+            <button onclick="closeMobileMenu()" class="hover:text-gray-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Drawer Body -->
+        <div class="flex-1 flex flex-col p-8 gap-8 justify-center items-center">
+            <a href="/" onclick="closeMobileMenu()" class="text-sm tracking-[0.25em] font-serif uppercase hover:text-gray-600 transition-colors">HOME</a>
+            <a href="{{ route('collections.index') }}" onclick="closeMobileMenu()" class="text-sm tracking-[0.25em] font-serif uppercase hover:text-gray-600 transition-colors">COLLECTION</a>
+            <a href="{{ route('about') }}" onclick="closeMobileMenu()" class="text-sm tracking-[0.25em] font-serif uppercase hover:text-gray-600 transition-colors">ABOUT</a>
+            <a href="{{ route('contact') }}" onclick="closeMobileMenu()" class="text-sm tracking-[0.25em] font-serif uppercase hover:text-gray-600 transition-colors">CONTACT</a>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
+            @auth
+                <a href="{{ route('profile') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 hover:bg-gray-800 transition-colors uppercase">
+                    MY ACCOUNT
+                </a>
+            @else
+                <a href="{{ route('login') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 hover:bg-gray-800 transition-colors uppercase">
+                    LOGIN
+                </a>
+            @endauth
+        </div>
+    </div>
+</div>
+
 <!-- Wishlist Drawer -->
 <div id="wishlistDrawer" class="fixed inset-0 z-[150] hidden" aria-hidden="true">
     <!-- Backdrop -->
@@ -124,6 +176,41 @@
     }
 </style>
 <script>
+    // Mobile menu drawer JS
+    window.openMobileMenu = function() {
+        const drawer = document.getElementById('mobileMenuDrawer');
+        const backdrop = document.getElementById('mobileMenuBackdrop');
+        const content = document.getElementById('mobileMenuContent');
+
+        drawer.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        void drawer.offsetHeight; // Reflow
+
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+
+        content.classList.remove('-translate-x-full');
+        content.classList.add('translate-x-0');
+    }
+
+    window.closeMobileMenu = function() {
+        const drawer = document.getElementById('mobileMenuDrawer');
+        const backdrop = document.getElementById('mobileMenuBackdrop');
+        const content = document.getElementById('mobileMenuContent');
+
+        backdrop.classList.remove('opacity-100');
+        backdrop.classList.add('opacity-0');
+
+        content.classList.remove('translate-x-0');
+        content.classList.add('-translate-x-full');
+
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 300);
+    }
+
     // Wishlist global JS
     const IS_AUTHENTICATED = @json(auth()->check());
     let wishlistItems = @json($serverWishlistItems);

@@ -45,7 +45,7 @@
             
             <!-- ================= KOLOM KIRI (VISUAL KOTAK, BERSIH TANPA WIDGET) ================= -->
             <div class="lg:col-span-6">
-                <div class="w-full lg:sticky lg:top-28">
+                <div class="w-full">
                     <img src="{{ \Illuminate\Support\Str::startsWith($product->image_path, ['http://', 'https://']) ? $product->image_path : asset('product_image/' . $product->image_path) }}" alt="{{ $product->name }}" class="w-full h-auto object-contain">
                 </div>
             </div>
@@ -94,7 +94,7 @@
                         <div class="flex flex-row w-full gap-3 overflow-x-auto custom-scrollbar pb-2">
                             @forelse($product->variants as $variant)
                                 <div class="flex-1 min-w-[60px]">
-                                    <input type="radio" name="size" id="size_{{ $variant->size_label }}" value="{{ $variant->size_label }}" class="peer hidden" required {{ $variant->stock <= 0 ? 'disabled' : '' }}>
+                                    <input type="radio" name="size" id="size_{{ $variant->size_label }}" value="{{ $variant->size_label }}" data-stock="{{ $variant->stock }}" class="peer hidden" required {{ $variant->stock <= 0 ? 'disabled' : '' }}>
                                     <label for="size_{{ $variant->size_label }}" 
                                            class="flex items-center justify-center w-full py-3.5 border-[1px] border-gray-200 font-sans text-sm cursor-pointer transition-all duration-200 
                                                   peer-checked:border-black peer-checked:bg-black peer-checked:text-white 
@@ -108,15 +108,17 @@
                                 <input type="hidden" name="size" value="All Size">
                             @endforelse
                         </div>
+                        <p id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-400 mt-2 font-sans" style="display: none;"></p>
                     </div>
 
                     <!-- Kuantitas & Tombol CTA -->
                     <div class="flex flex-col gap-3">
                         <div class="flex items-center border border-gray-200 w-max mb-1">
-                            <button type="button" class="px-4 py-2 text-gray-500 hover:text-black hover:bg-gray-50 transition" onclick="document.getElementById('qty').value = Math.max(1, parseInt(document.getElementById('qty').value) - 1)">-</button>
+                            <button type="button" class="px-4 py-2 text-gray-500 hover:text-black hover:bg-gray-50 transition" onclick="adjustQuantity(-1)">-</button>
                             <input type="number" name="quantity" id="qty" value="1" min="1" class="w-10 text-center font-sans focus:outline-none border-none p-0 text-black text-sm">
-                            <button type="button" class="px-4 py-2 text-gray-500 hover:text-black hover:bg-gray-50 transition" onclick="document.getElementById('qty').value = parseInt(document.getElementById('qty').value) + 1">+</button>
+                            <button type="button" class="px-4 py-2 text-gray-500 hover:text-black hover:bg-gray-50 transition" onclick="adjustQuantity(1)">+</button>
                         </div>
+                        <p id="qtyWarning" class="text-xs text-red-500" style="display: none;">Purchase has reached the maximum limit!</p>
 
                         <div class="flex gap-3">
                             <button type="submit" class="flex-1 bg-black text-white py-3.5 font-sans font-medium uppercase tracking-[0.15em] text-xs hover:bg-gray-800 transition duration-300">
@@ -344,7 +346,7 @@
         const pageItems = filteredReviews.slice(startIndex, endIndex);
 
         pageItems.forEach((review, index) => {
-            const initials = review.user_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const initials = (review.user_name || 'Anonymous').trim().charAt(0).toUpperCase();
             
             // Build stars html
             let starsHtml = '';
@@ -368,7 +370,7 @@
                 <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.08)] transition-shadow duration-300 flex flex-col h-full animate-fade-in" style="animation-delay: ${index * 0.05}s">
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold flex items-center justify-center tracking-widest border border-gray-200 flex-shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-black text-white text-xs font-semibold flex items-center justify-center flex-shrink-0 uppercase">
                                 ${initials}
                             </div>
                             <div>
@@ -442,6 +444,97 @@
             // Scroll back to top of review list slightly above to see the controls
             document.getElementById('review-list-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+    }
+
+    // Stock selection & Quantity management script
+    document.addEventListener('DOMContentLoaded', () => {
+        const sizeRadios = document.querySelectorAll('input[name="size"]');
+        const stockInfo = document.getElementById('sizeStockInfo');
+        const qtyInput = document.getElementById('qty');
+        const qtyWarning = document.getElementById('qtyWarning');
+
+        // If it's One Size (no variants), we can set the max stock directly
+        const hasVariants = sizeRadios.length > 0;
+        if (!hasVariants && qtyInput) {
+            qtyInput.max = "{{ $product->total_stock }}";
+        }
+
+        sizeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    const stock = parseInt(radio.getAttribute('data-stock')) || 0;
+                    const size = radio.value;
+                    
+                    if (stockInfo) {
+                        stockInfo.textContent = `${stock} available in size ${size}`;
+                        stockInfo.style.display = 'block';
+                    }
+
+                    if (qtyInput) {
+                        qtyInput.max = stock;
+                        qtyInput.disabled = stock <= 0;
+                        if (parseInt(qtyInput.value) > stock) {
+                            qtyInput.value = stock;
+                        }
+                        if (stock <= 0) {
+                            qtyInput.value = 0;
+                        } else if (parseInt(qtyInput.value) <= 0) {
+                            qtyInput.value = 1;
+                        }
+                    }
+                    if (qtyWarning) {
+                        qtyWarning.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        if (qtyInput) {
+            qtyInput.addEventListener('input', () => {
+                const max = parseInt(qtyInput.max) || Infinity;
+                let val = parseInt(qtyInput.value) || 1;
+                if (val > max) {
+                    qtyInput.value = max;
+                    if (qtyWarning) qtyWarning.style.display = 'block';
+                } else {
+                    if (qtyWarning) qtyWarning.style.display = 'none';
+                }
+                if (val < 1) {
+                    qtyInput.value = 1;
+                }
+            });
+        }
+    });
+
+    window.adjustQuantity = function(amount) {
+        const qtyInput = document.getElementById('qty');
+        const qtyWarning = document.getElementById('qtyWarning');
+        if (!qtyInput) return;
+
+        // Check if size is selected if there are variants
+        const hasVariants = document.querySelectorAll('input[name="size"]').length > 0;
+        const selectedSize = document.querySelector('input[name="size"]:checked');
+        
+        if (hasVariants && !selectedSize) {
+            alert('Please select a size first.');
+            return;
+        }
+
+        const max = parseInt(qtyInput.max) || Infinity;
+        let newVal = (parseInt(qtyInput.value) || 1) + amount;
+        
+        if (newVal > max) {
+            newVal = max;
+            if (qtyWarning) qtyWarning.style.display = 'block';
+        } else {
+            if (qtyWarning) qtyWarning.style.display = 'none';
+        }
+        
+        if (newVal < 1) {
+            newVal = 1;
+        }
+        
+        qtyInput.value = newVal;
     }
 </script>
 

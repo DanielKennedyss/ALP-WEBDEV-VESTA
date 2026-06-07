@@ -262,7 +262,7 @@
                             </div>
 
                             @if(Auth::check())
-                                <div class="pt-4 border-t border-stone-100 space-y-4">
+                                <div id="save_this_address_container" class="pt-4 border-t border-stone-100 space-y-4">
                                     <div class="flex items-center gap-3">
                                         <input type="checkbox" id="chk_save_address" onchange="toggleSaveAddressLabel(this.checked)"
                                                class="w-4 h-4 text-black border-stone-300 focus:ring-black cursor-pointer rounded-sm">
@@ -649,6 +649,7 @@
         const btnText = document.getElementById('btn_text');
         const btnSpinner = document.getElementById('btn_spinner');
         const msgBox = document.getElementById('voucher_message');
+        const applyBtn = document.getElementById('apply_voucher_btn');
         
         const voucherRow = document.getElementById('voucher_discount_row');
         const voucherVal = document.getElementById('voucher_discount_val');
@@ -667,6 +668,10 @@
         btnText.classList.add('hidden');
         btnSpinner.classList.remove('hidden');
         msgBox.classList.add('hidden');
+        if (applyBtn) {
+            applyBtn.disabled = true;
+            applyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         // Dynamic extraction of origin to guarantee compatibility across local port/domain forwards (Laravel Herd)
         const applyVoucherUrl = window.location.origin + '/checkout/apply-voucher';
@@ -689,6 +694,10 @@
         .then(data => {
             btnText.classList.remove('hidden');
             btnSpinner.classList.add('hidden');
+            if (applyBtn) {
+                applyBtn.disabled = false;
+                applyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
             
             if (data.success) {
                 activeVoucherType = data.type || 'fixed';
@@ -719,6 +728,10 @@
         .catch(error => {
             btnText.classList.remove('hidden');
             btnSpinner.classList.add('hidden');
+            if (applyBtn) {
+                applyBtn.disabled = false;
+                applyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
             msgBox.className = "text-[10px] tracking-wide mt-2 text-red-600 message-pop";
             msgBox.textContent = "An error occurred while validating the voucher. Please try again.";
             msgBox.classList.remove('hidden');
@@ -741,9 +754,33 @@
         }
     }
 
+    function resetSavedAddressSelect() {
+        const select = document.getElementById('select_saved_address');
+        if (select) {
+            select.value = "";
+        }
+        const container = document.getElementById('save_this_address_container');
+        if (container) {
+            container.classList.remove('hidden');
+        }
+    }
+
     function applySavedAddress(jsonStr) {
+        const saveAddressContainer = document.getElementById('save_this_address_container');
         if (!jsonStr) {
+            if (saveAddressContainer) {
+                saveAddressContainer.classList.remove('hidden');
+            }
             return;
+        }
+        
+        if (saveAddressContainer) {
+            saveAddressContainer.classList.add('hidden');
+            const chkSaveAddress = document.getElementById('chk_save_address');
+            if (chkSaveAddress) {
+                chkSaveAddress.checked = false;
+                toggleSaveAddressLabel(false);
+            }
         }
         
         const addr = JSON.parse(jsonStr);
@@ -914,6 +951,14 @@
                 return;
             }
             
+            // Disable button and show processing to prevent double submission
+            const mainBtn = document.getElementById('checkout_main_btn');
+            if (mainBtn) {
+                mainBtn.disabled = true;
+                mainBtn.textContent = "PROCESSING...";
+                mainBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
             // Populating the hidden checkout form values
             document.getElementById('shipping_address_hidden').value = address + ", " + cityName + ", " + provinceName;
             document.getElementById('shipping_courier_hidden').value = courier.toUpperCase();
@@ -1011,6 +1056,7 @@
         const input = document.getElementById('select_province');
         input.value = provinceName;
         document.getElementById('province_list_dropdown').classList.add('hidden');
+        resetSavedAddressSelect();
         onProvinceInput(provinceName);
     }
 
@@ -1079,6 +1125,7 @@
     function clearProvinceSelection() {
         const provinceInput = document.getElementById('select_province');
         provinceInput.value = "";
+        resetSavedAddressSelect();
         onProvinceInput("");
     }
 
@@ -1147,6 +1194,7 @@
         const input = document.getElementById('select_city');
         input.value = cityName;
         document.getElementById('city_list_dropdown').classList.add('hidden');
+        resetSavedAddressSelect();
         onCityInput(cityName);
     }
 
@@ -1208,6 +1256,7 @@
     function clearCitySelection() {
         const cityInput = document.getElementById('select_city');
         cityInput.value = "";
+        resetSavedAddressSelect();
         onCityInput("");
     }
 
@@ -1526,5 +1575,11 @@
         }
     });
     @endif
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('input_address')?.addEventListener('input', () => {
+            resetSavedAddressSelect();
+        });
+    });
 </script>
 @endsection

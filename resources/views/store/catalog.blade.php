@@ -316,9 +316,8 @@
             justify-content: center;
             font-size: 9px;
             font-weight: 600;
-            color: #1c1917; /* stone-900 */
-            background: #f5f5f4; /* stone-100 */
-            border: 1px solid #e7e5e4; /* stone-200 */
+            color: #ffffff; /* white text */
+            background: #000000; /* black background */
             text-transform: uppercase;
             letter-spacing: 0.02em;
             flex-shrink: 0;
@@ -396,6 +395,31 @@
 
         .review-no-reviews {
             display: none;
+        }
+
+        /* ===== Image Placeholder Fallback ===== */
+        .img-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #f5f5f4, #e7e5e4);
+            z-index: 1;
+        }
+        .img-placeholder svg {
+            width: 48px;
+            height: 48px;
+            color: #a8a29e;
+            margin-bottom: 12px;
+        }
+        .img-placeholder span {
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #a8a29e;
+            font-weight: 500;
         }
 
         .carousel-container {
@@ -755,14 +779,15 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                             @foreach ($products as $index => $product)
                                 <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
-                                    <div class="relative overflow-hidden bg-white aspect-[3/4] mb-5 cursor-pointer"
+                                    <div class="relative overflow-hidden bg-stone-100 aspect-[3/4] mb-5 cursor-pointer"
                                         onclick="window.location.href='{{ route('product.detail', $product->id) }}'">
                                         {{-- Lazy Loading with Intersection Observer --}}
                                         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
                                             data-src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
                                             alt="{{ $product->name }}"
-                                            class="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 lazy-img"
-                                            loading="lazy">
+                                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 lazy-img"
+                                            loading="lazy"
+                                            onerror="handleImgError(this)">
 
                                         {{-- Badges Wrapper (Gender & Event) --}}
                                         <div class="absolute top-[10px] left-[10px] z-10 flex flex-row gap-2 items-center">
@@ -1105,6 +1130,26 @@
             });
         }
 
+        // Handle broken images — show a graceful placeholder
+        function handleImgError(img) {
+            // Prevent infinite loop if the fallback itself errors
+            img.onerror = null;
+            img.style.display = 'none';
+
+            // Avoid adding the placeholder twice
+            if (img.parentElement.querySelector('.img-placeholder')) return;
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'img-placeholder';
+            placeholder.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.068 2.068M18 14.25l-4.5-6.75L9 14.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>Image Unavailable</span>
+            `;
+            img.parentElement.appendChild(placeholder);
+        }
+
         // Intersection Observer Lazy Loading Logic
         function initLazyLoading() {
             const lazyImages = document.querySelectorAll('.lazy-img');
@@ -1438,7 +1483,7 @@
             // Populate the slides
             reviews.forEach((review, index) => {
                 const userName = review.user ? review.user.name : 'Anonymous';
-                const initials = userName.split(' ').map(w => w[0]).join('').substring(0, 2);
+                const initials = (userName || 'Anonymous').trim().charAt(0).toUpperCase();
                 const rating = parseInt(review.rating) || 5;
 
                 let starsHtml = '<div class="review-stars">';
@@ -1633,7 +1678,7 @@
             let listHtml = '';
             pageReviews.forEach(review => {
                 const userName = review.user ? review.user.name : 'Anonymous';
-                const initials = userName.split(' ').map(w => w[0]).join('').substring(0, 2);
+                const initials = (userName || 'Anonymous').trim().charAt(0).toUpperCase();
                 const rating = parseInt(review.rating) || 5;
                 const formattedDate = formatReviewDate(review.created_at);
 
@@ -1651,7 +1696,7 @@
                     <div class="py-6 border-b border-stone-100 last:border-0">
                         <div class="flex items-start justify-between flex-wrap gap-2">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold flex items-center justify-center uppercase">
+                                <div class="w-8 h-8 rounded-full bg-black text-white text-xs font-semibold flex items-center justify-center uppercase">
                                     ${initials}
                                 </div>
                                 <div>
