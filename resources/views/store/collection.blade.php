@@ -62,9 +62,23 @@
             bottom: 0;
             width: 0;
         }
+        .page-fade-up {
+            animation: pageFadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+        @keyframes pageFadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 
-    <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-[80vh] flex items-center justify-center">
+    <div class="pt-28 pb-24 px-4 lg:px-8 bg-stone-50 min-h-[80vh] flex items-center justify-center page-fade-up">
         <div class="max-w-[1400px] mx-auto w-full">
             
             {{-- Dynamic Event Banner / Fallback Section --}}

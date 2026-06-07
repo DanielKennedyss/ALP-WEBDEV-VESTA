@@ -36,13 +36,28 @@ class ProfileController extends Controller
             'phone_number' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $user->fill($request->only('name', 'email', 'phone_number'));
+        $emailChanged = $request->email !== $user->email;
 
-        // If email changed, invalidate verification to match Breeze/test expectations
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+        if ($emailChanged) {
+            $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $user->update([
+                'otp_code' => $otpCode,
+                'otp_expires_at' => now()->addMinutes(10),
+            ]);
+
+            session(['change_email_pending' => $request->email]);
+
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\ChangeEmailOtpMail($otpCode, $user->name));
+
+            // Save other profile details immediately
+            $user->fill($request->only('name', 'phone_number'));
+            $user->save();
+
+            return redirect()->route('profile.change-email.verify.form')->with('success', 'An OTP code has been sent to your current email address to verify this change.');
         }
 
+        // Save other profile details immediately
+        $user->fill($request->only('name', 'phone_number'));
         $user->save();
 
         return redirect()->route('profile')->with('success', 'Profile details updated successfully.');
@@ -119,6 +134,18 @@ class ProfileController extends Controller
             'full_address' => ['required', 'string'],
         ]);
 
+        // Case-insensitive duplicate check
+        $labelExists = $user->addresses()
+            ->whereRaw('LOWER(label) = ?', [strtolower(trim($request->label))])
+            ->exists();
+
+        if ($labelExists) {
+            return back()->withInput()->with([
+                'error' => 'An address with this label already exists.',
+                'open-addresses-tab' => true,
+            ]);
+        }
+
         $isDefault = $request->has('is_default');
 
         // If this is the first address or marked as default, unset other defaults
@@ -156,6 +183,19 @@ class ProfileController extends Controller
             'city_name' => ['required', 'string', 'max:255'],
             'full_address' => ['required', 'string'],
         ]);
+
+        // Case-insensitive duplicate check excluding current address ID
+        $labelExists = Auth::user()->addresses()
+            ->where('id', '!=', $address->id)
+            ->whereRaw('LOWER(label) = ?', [strtolower(trim($request->label))])
+            ->exists();
+
+        if ($labelExists) {
+            return back()->withInput()->with([
+                'error' => 'An address with this label already exists.',
+                'open-addresses-tab' => true,
+            ]);
+        }
 
         $isDefault = $request->has('is_default');
 
@@ -201,5 +241,79 @@ class ProfileController extends Controller
             'success' => 'Address deleted successfully.',
             'open-addresses-tab' => true,
         ]);
+    }
+
+    /**
+     * Show the Change Email OTP verification form.
+     */
+    public function showChangeEmailVerifyForm()
+    {
+        if (!session('change_email_pending')) {
+            return redirect()->route('profile');
+        }
+        return view('profile.change-email-verify');
+    }
+
+    /**
+     * Verify the Change Email OTP.
+     */
+    public function verifyChangeEmailOtp(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+
+        $pendingEmail = session('change_email_pending');
+        if (!$pendingEmail) {
+            return redirect()->route('profile')->with('error', 'Session expired. Please try updating your email again.');
+        }
+
+        $user = Auth::user();
+
+        // Check OTP validity
+        if ($user->otp_code !== $request->otp) {
+            return back()->with('error', 'The OTP code you entered is incorrect.');
+        }
+
+        // Check OTP expiration
+        if (!$user->otp_expires_at || now()->isAfter($user->otp_expires_at)) {
+            $user->update(['otp_code' => null, 'otp_expires_at' => null]);
+            return back()->with('error', 'This OTP has expired. Please request a new one.');
+        }
+
+        // OTP is correct and valid. Update the email.
+        $user->update([
+            'email' => $pendingEmail,
+            'email_verified_at' => null,
+            'otp_code' => null,
+            'otp_expires_at' => null,
+        ]);
+
+        session()->forget('change_email_pending');
+
+        return redirect()->route('profile')->with('success', 'Your email address has been updated successfully.');
+    }
+
+    /**
+     * Resend the Change Email OTP.
+     */
+    public function resendChangeEmailOtp(\Illuminate\Http\Request $request)
+    {
+        $pendingEmail = session('change_email_pending');
+        if (!$pendingEmail) {
+            return redirect()->route('profile')->with('error', 'Session expired. Please try updating your email again.');
+        }
+
+        $user = Auth::user();
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $user->update([
+            'otp_code' => $otpCode,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\ChangeEmailOtpMail($otpCode, $user->name));
+
+        return back()->with('success', 'A new OTP has been sent to your current email address.');
     }
 }

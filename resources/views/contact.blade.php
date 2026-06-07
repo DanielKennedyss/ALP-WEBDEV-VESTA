@@ -5,7 +5,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<div class="w-full bg-stone-50 text-black py-24 min-h-[85vh] flex flex-col justify-center items-center font-sans">
+<style>
+    .page-fade-up {
+        animation: pageFadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+    }
+    @keyframes pageFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="w-full bg-stone-50 text-black py-24 min-h-[85vh] flex flex-col justify-center items-center font-sans page-fade-up">
     <div class="w-full max-w-6xl px-6 lg:px-8 mx-auto">
         
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start mt-8">

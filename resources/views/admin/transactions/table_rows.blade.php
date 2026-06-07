@@ -21,14 +21,59 @@
     {{-- 2. Product Information --}}
     <td>
         <div class="d-flex align-items-center">
-            <div class="bg-light rounded-3" style="width: 44px; height: 55px; margin-right: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
-                <img src="{{ ($trx->product->image_path ?? null) && Str::startsWith($trx->product->image_path, 'http') ? $trx->product->image_path : asset('product_image/' . ($trx->product->image_path ?? 'default.jpg')) }}" 
-                     class="w-100 h-100 object-fit-cover" 
-                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
-            </div>
+            @php
+                $images = [];
+                if ($trx->cart_items && is_array($trx->cart_items) && count($trx->cart_items) > 0) {
+                    foreach ($trx->cart_items as $item) {
+                        $img = $item['image_path'] ?? null;
+                        if ($img) {
+                            $images[] = Str::startsWith($img, 'http') ? $img : asset('product_image/' . $img);
+                        } else {
+                            $images[] = asset('product_image/default.jpg');
+                        }
+                    }
+                } else {
+                    $img = $trx->product->image_path ?? null;
+                    $images[] = $img && Str::startsWith($img, 'http') ? $img : asset('product_image/' . ($img ?? 'default.jpg'));
+                }
+                $stackImages = array_slice($images, 0, 3);
+                $hasMultiple = count($stackImages) > 1;
+            @endphp
+
+            @if($hasMultiple)
+                <div class="position-relative" style="width: 56px; height: 67px; margin-right: 14px; flex-shrink: 0;">
+                    @foreach(array_reverse($stackImages) as $index => $imgSrc)
+                        @php
+                            $reverseIndex = count($stackImages) - 1 - $index; // 0 for front, 1 for middle, 2 for back
+                            $offsetY = $reverseIndex * 6;
+                            $offsetX = $reverseIndex * 6;
+                            $zIndex = 3 - $reverseIndex;
+                            
+                            $style = "position: absolute; width: 44px; height: 55px; left: {$offsetX}px; bottom: {$offsetY}px; z-index: {$zIndex}; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.08); box-shadow: -1px 1px 3px rgba(0,0,0,0.08);";
+                            if ($reverseIndex > 0) {
+                                $opacity = $reverseIndex == 1 ? 0.85 : 0.65;
+                                $scale = 1 - ($reverseIndex * 0.04);
+                                $style .= " opacity: {$opacity}; filter: grayscale(30%) brightness(0.95); transform: scale({$scale}); transform-origin: bottom left; pointer-events: none;";
+                            }
+                        @endphp
+                        <div class="bg-light rounded-3 overflow-hidden shadow-sm" style="{{ $style }}">
+                            <img src="{{ $imgSrc }}" 
+                                 class="w-100 h-100 object-fit-cover" 
+                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(($trx->cart_items && count($trx->cart_items) > 0) ? $trx->cart_items[0]['name'] : ($trx->product->name ?? 'NA')) }}&background=1a1a1a&color=fff';">
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="bg-light rounded-3 overflow-hidden border" style="width: 44px; height: 55px; margin-right: 14px; border-color: rgba(0,0,0,0.03); flex-shrink: 0;">
+                    <img src="{{ $stackImages[0] }}" 
+                         class="w-100 h-100 object-fit-cover" 
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($trx->product->name ?? 'NA') }}&background=1a1a1a&color=fff';">
+                </div>
+            @endif
+
             <div class="overflow-hidden">
                 <p class="mb-0 fw-semibold text-dark text-truncate" style="font-size: 13px;">
-                    {{ $trx->product->name ?? 'Product Deleted' }}
+                    {{ ($trx->cart_items && count($trx->cart_items) > 0) ? $trx->cart_items[0]['name'] : ($trx->product->name ?? 'Product Deleted') }}
                 </p>
                 <p class="text-muted mb-0 uppercase tracking-wider" style="font-size: 10px; font-weight: 500;">
                     @if(isset($trx->product->category) && is_object($trx->product->category))

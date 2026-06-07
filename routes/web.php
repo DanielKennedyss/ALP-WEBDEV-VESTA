@@ -160,6 +160,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/password', [ProfileController::class, 'changePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.destroy');
 
+    Route::get('/profile/change-email/verify', [ProfileController::class, 'showChangeEmailVerifyForm'])->name('profile.change-email.verify.form');
+    Route::post('/profile/change-email/verify', [ProfileController::class, 'verifyChangeEmailOtp'])->name('profile.change-email.verify');
+    Route::post('/profile/change-email/resend', [ProfileController::class, 'resendChangeEmailOtp'])->name('profile.change-email.resend');
+
     Route::post('/profile/addresses', [ProfileController::class, 'storeAddress'])->name('profile.addresses.store');
     Route::put('/profile/addresses/{address}', [ProfileController::class, 'updateAddress'])->name('profile.addresses.update');
     Route::delete('/profile/addresses/{address}', [ProfileController::class, 'destroyAddress'])->name('profile.addresses.destroy');

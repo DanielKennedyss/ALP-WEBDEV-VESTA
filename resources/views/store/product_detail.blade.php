@@ -82,7 +82,7 @@
                 </div>
 
                 <!-- Formulir ATC / Buy Now -->
-                <form action="{{ route('cart.add', $product->id) }}" method="POST" class="w-full">
+                <form action="{{ route('cart.add', $product->id) }}" method="POST" class="w-full" onsubmit="return validateProductDetailForm(event)">
                     @csrf
                     
                     <!-- Pilihan Ukuran -->
@@ -94,7 +94,7 @@
                         <div class="flex flex-row w-full gap-3 overflow-x-auto custom-scrollbar pb-2">
                             @forelse($product->variants as $variant)
                                 <div class="flex-1 min-w-[60px]">
-                                    <input type="radio" name="size" id="size_{{ $variant->size_label }}" value="{{ $variant->size_label }}" data-stock="{{ $variant->stock }}" class="peer hidden" required {{ $variant->stock <= 0 ? 'disabled' : '' }}>
+                                    <input type="radio" name="size" id="size_{{ $variant->size_label }}" value="{{ $variant->size_label }}" data-stock="{{ $variant->stock }}" class="peer hidden" {{ $variant->stock <= 0 ? 'disabled' : '' }}>
                                     <label for="size_{{ $variant->size_label }}" 
                                            class="flex items-center justify-center w-full py-3.5 border-[1px] border-gray-200 font-sans text-sm cursor-pointer transition-all duration-200 
                                                   peer-checked:border-black peer-checked:bg-black peer-checked:text-white 
@@ -506,6 +506,19 @@
         }
     });
 
+    window.validateProductDetailForm = function(event) {
+        const sizeRadios = document.querySelectorAll('input[name="size"][type="radio"]');
+        if (sizeRadios.length === 0) return true; // One Size or no variants (e.g. input type="hidden")
+
+        const selectedSize = document.querySelector('input[name="size"]:checked');
+        if (!selectedSize) {
+            event.preventDefault();
+            showVestaToast("Please select a size first.", "error");
+            return false;
+        }
+        return true;
+    };
+
     window.adjustQuantity = function(amount) {
         const qtyInput = document.getElementById('qty');
         const qtyWarning = document.getElementById('qtyWarning');
@@ -516,7 +529,7 @@
         const selectedSize = document.querySelector('input[name="size"]:checked');
         
         if (hasVariants && !selectedSize) {
-            alert('Please select a size first.');
+            showVestaToast("Please select a size first.", "error");
             return;
         }
 

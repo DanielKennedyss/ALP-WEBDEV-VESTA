@@ -463,6 +463,7 @@
 
 <script>
     let isBuyNowFlowActive = {{ $isBuyNow ? 'true' : 'false' }};
+    const existingLabels = @json(Auth::check() ? Auth::user()->addresses->pluck('label')->map(fn($l) => strtolower(trim($l))) : []);
     let isLeavingConfirmed = false;
 
     function updateQty(key, newQty) {
@@ -950,6 +951,19 @@
                 showVestaToast("Please enter your full street address.", "error");
                 return;
             }
+
+            const chkSaveAddress = document.getElementById('chk_save_address');
+            if (chkSaveAddress && chkSaveAddress.checked) {
+                const saveLabel = (document.getElementById('input_save_address_label').value || "").trim();
+                if (!saveLabel) {
+                    showVestaToast("Please enter an address label.", "error");
+                    return;
+                }
+                if (existingLabels.includes(saveLabel.toLowerCase())) {
+                    showVestaToast("An address with this label already exists. Please choose a different label.", "error");
+                    return;
+                }
+            }
             
             // Disable button and show processing to prevent double submission
             const mainBtn = document.getElementById('checkout_main_btn');
@@ -966,7 +980,6 @@
             document.getElementById('shipping_cost_hidden').value = selectedShippingCost;
 
             // Set the save address flag and label if authenticated and checked
-            const chkSaveAddress = document.getElementById('chk_save_address');
             if (chkSaveAddress && chkSaveAddress.checked) {
                 document.getElementById('save_address_hidden').value = "1";
                 document.getElementById('save_address_label_hidden').value = (document.getElementById('input_save_address_label').value || "").trim();

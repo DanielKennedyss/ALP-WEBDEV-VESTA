@@ -155,7 +155,7 @@
                                                 <span class="text-stone-400 ml-1">(x{{ $order->quantity }})</span>
                                             @endif
                                         </td>
-                                        <td class="py-6 pr-6 text-xs font-medium text-stone-900">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                                        <td class="py-6 pr-6 text-xs font-medium text-stone-900 whitespace-nowrap">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
                                         <td class="py-6 pr-6">
                                              @if($order->status == 'pending')
                                                  <span class="inline-block border border-amber-200 bg-amber-50 text-amber-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold w-28 text-center">Pending Payment</span>
@@ -317,7 +317,7 @@
                     <div class="border border-stone-200 p-8 bg-white">
                         <h4 class="text-xs tracking-[0.2em] uppercase font-bold mb-8 text-stone-900 border-b border-stone-100 pb-4">Security & Password</h4>
 
-                        <form action="{{ route('password.update') }}" method="POST" class="space-y-6">
+                        <form action="{{ route('password.update') }}" method="POST" class="space-y-6" onsubmit="return validateChangePasswordForm(event)">
                             @csrf
                             @method('PUT')
                             
@@ -387,7 +387,7 @@
 
                         <!-- Address Form -->
                         <div x-show="showForm" class="mb-8 p-6 bg-stone-50 border border-stone-100 space-y-6" style="display: none;">
-                            <form :action="editMode ? '/profile/addresses/' + addressId : '{{ route('profile.addresses.store') }}'" method="POST" id="addressForm" class="space-y-6">
+                            <form :action="editMode ? '/profile/addresses/' + addressId : '{{ route('profile.addresses.store') }}'" method="POST" id="addressForm" class="space-y-6" @submit="if(!validateProfileAddress($event, editMode, addressId)) { $event.preventDefault(); }">
                                 @csrf
                                 <template x-if="editMode">
                                     <input type="hidden" name="_method" value="PUT">
@@ -873,6 +873,51 @@
             if (dropdown) dropdown.classList.add('hidden');
         }
     });
+
+    const userAddresses = @json(Auth::check() ? Auth::user()->addresses : []);
+
+    function validateProfileAddress(event, editMode, addressId) {
+        const labelInput = document.querySelector('#addressForm input[name="label"]');
+        if (!labelInput) return true;
+        const labelValue = labelInput.value.trim().toLowerCase();
+        
+        const isDuplicate = userAddresses.some(addr => {
+            if (editMode && String(addr.id) === String(addressId)) {
+                return false;
+            }
+            return addr.label.trim().toLowerCase() === labelValue;
+        });
+
+        if (isDuplicate) {
+            showVestaToast("An address with this label already exists. Please choose a unique label.", "error");
+            return false;
+        }
+        return true;
+    }
+
+    function validateChangePasswordForm(event) {
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('password_confirmation');
+        
+        if (!passwordInput || !confirmInput) return true;
+        
+        const password = passwordInput.value;
+        const confirm = confirmInput.value;
+        
+        if (password.length < 8) {
+            event.preventDefault();
+            showVestaToast("New password must be at least 8 characters.", "error");
+            return false;
+        }
+        
+        if (password !== confirm) {
+            event.preventDefault();
+            showVestaToast("New password and confirmation do not match.", "error");
+            return false;
+        }
+        
+        return true;
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         loadAddrProvincesAsync();

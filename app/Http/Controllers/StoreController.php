@@ -434,7 +434,7 @@ class StoreController extends Controller
 
             // Save address if checked and user is logged in
             if ($request->boolean('save_address') && $user) {
-                $label = $request->input('save_address_label') ?: 'Home';
+                $label = trim($request->input('save_address_label') ?: 'Home');
                 $provinceName = $request->input('province_name');
                 $cityName = $request->input('city_name');
                 $rawAddress = $request->input('raw_address');
@@ -446,7 +446,11 @@ class StoreController extends Controller
                         ->where('full_address', $rawAddress)
                         ->exists();
                         
-                    if (!$exists) {
+                    $labelExists = $user->addresses()
+                        ->whereRaw('LOWER(label) = ?', [strtolower($label)])
+                        ->exists();
+                        
+                    if (!$exists && !$labelExists) {
                         $isFirst = $user->addresses()->count() === 0;
                         $user->addresses()->create([
                             'label' => $label,

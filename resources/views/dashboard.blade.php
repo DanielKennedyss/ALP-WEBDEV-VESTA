@@ -100,7 +100,7 @@
                                 <td class="py-6 pr-6 text-sm font-medium">{{ $order->invoice_number }}</td>
                                 <td class="py-6 pr-6 text-sm text-gray-600">{{ $order->created_at->format('M d, Y H:i') }}</td>
                                 <td class="py-6 pr-6 text-sm">{{ $order->product ? $order->product->name : 'Unknown Product' }} <span class="text-gray-400 ml-1">(x{{ $order->quantity }})</span></td>
-                                <td class="py-6 pr-6 text-sm">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                                <td class="py-6 pr-6 text-sm whitespace-nowrap">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
                                 <td class="py-6">
                                     @if($order->status == 'completed' || $order->status == 'success')
                                         <span class="inline-block border border-green-200 bg-green-50 text-green-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase">Success</span>

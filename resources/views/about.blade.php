@@ -1,7 +1,24 @@
 @extends('base.base')
 
 @section('content')
-<div class="pt-20 min-h-screen bg-stone-50 text-black flex flex-col items-center justify-start overflow-hidden">
+<style>
+    .page-fade-up {
+        animation: pageFadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+    }
+    @keyframes pageFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="pt-20 min-h-screen bg-stone-50 text-black flex flex-col items-center justify-start overflow-hidden page-fade-up">
     
     <!-- Alpine JS Component -->
     <div x-data="vestaPhilosophy()" class="w-full max-w-6xl px-4 md:px-8 py-20 flex flex-col items-center flex-1 justify-center min-h-[70vh]">
