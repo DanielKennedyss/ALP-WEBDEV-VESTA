@@ -366,7 +366,7 @@
                     <div class="product-grid-card h-100 d-flex flex-column justify-content-between">
                         <div>
                             <div class="product-img-box" style="height: 120px;">
-                                <img src="{{ asset('product_image/' . ($item->product->image_path ?? 'default.jpg')) }}" 
+                                <img src="{{ ($item->product->image_path ?? null) && Str::startsWith($item->product->image_path, 'http') ? $item->product->image_path : asset('product_image/' . ($item->product->image_path ?? 'default.jpg')) }}" 
                                      class="img-fluid" style="max-height: 100%; object-fit: contain;" 
                                      onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=V&background=f1f5f9&color=121212';">
                             </div>
