@@ -363,7 +363,7 @@
                             </svg>
                         </button>
                         <button onclick="handleWishlistItemClick(${item.id})" class="text-[9px] tracking-[0.15em] border border-black px-2 py-1 hover:bg-black hover:text-white transition-colors uppercase whitespace-nowrap">
-                            QUICK VIEW
+                            VIEW DETAILS
                         </button>
                     </div>
                 </div>
@@ -376,12 +376,7 @@
     // Redirect or open quickview logic
     function handleWishlistItemClick(productId) {
         closeWishlistModal();
-        const isCatalogPage = window.location.pathname.includes('/collections') || window.location.pathname.includes('/catalog');
-        if (isCatalogPage) {
-            openQuickView(productId);
-        } else {
-            window.location.href = "{{ route('collections.index') }}?quickview=" + productId;
-        }
+        window.location.href = "/product/" + productId;
     }
 
     // Micro-interaction: Fly animation

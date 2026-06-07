@@ -755,13 +755,13 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                             @foreach ($products as $index => $product)
                                 <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
-                                    <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer"
-                                        onclick="openQuickView({{ $product->id }})">
+                                    <div class="relative overflow-hidden bg-white aspect-[3/4] mb-5 cursor-pointer"
+                                        onclick="window.location.href='{{ route('product.detail', $product->id) }}'">
                                         {{-- Lazy Loading with Intersection Observer --}}
                                         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
                                             data-src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
                                             alt="{{ $product->name }}"
-                                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 lazy-img"
+                                            class="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 lazy-img"
                                             loading="lazy">
 
                                         {{-- Badges Wrapper (Gender & Event) --}}
@@ -809,9 +809,9 @@
 
                                         <div
                                             class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                                            <button onclick="openQuickView({{ $product->id }})"
+                                            <button onclick="window.location.href='{{ route('product.detail', $product->id) }}'"
                                                 class="w-full bg-white/95 backdrop-blur-sm text-black text-xs tracking-[0.2em] py-4 hover:bg-black hover:text-white transition-colors duration-300">
-                                                QUICK VIEW
+                                                VIEW DETAILS
                                             </button>
                                         </div>
                                     </div>
@@ -879,7 +879,7 @@
 
             <div class="w-full h-full grid grid-cols-1 md:grid-cols-2">
                 <div class="bg-gray-100 overflow-hidden relative flex items-center justify-center">
-                    <img id="modalImage" src="" alt="" class="w-full h-full object-cover">
+                    <img id="modalImage" src="" alt="" class="w-full h-full object-contain p-4 mix-blend-multiply">
 
                     {{-- Review Badge (Minimized Mode) --}}
                     <div id="reviewBadge" class="review-badge" onclick="expandReview()">
@@ -922,7 +922,7 @@
                     {{-- Size Selector --}}
                     <div id="modalSizeSection" class="mb-6">
                         <span class="text-xs tracking-[0.2em] block mb-3">SELECT SIZE</span>
-                        <div id="modalSizes" class="flex flex-wrap gap-2"></div>
+                        <div id="modalSizes" class="flex flex-row overflow-x-auto custom-scrollbar pb-2 gap-2"></div>
                         <p id="sizeStockInfo" class="text-[10px] tracking-wider text-gray-400 mt-2"></p>
                     </div>
 

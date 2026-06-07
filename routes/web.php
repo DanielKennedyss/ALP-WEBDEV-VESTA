@@ -65,6 +65,7 @@ Route::middleware(['web'])->group(function () {
         Route::get('/collection', 'collection')->name('collection');
         Route::get('/catalog', 'catalog')->name('catalog');
         Route::get('/collections', 'catalog')->name('collections.index');
+        Route::get('/product/{id}', 'product_detail')->name('product.detail');
         Route::get('/cart', 'view_cart')->name('cart.view');
         Route::post('/cart/add/{product_id}', 'add_to_cart')->name('cart.add');
         Route::post('/cart/remove/{cart_key}', 'remove_from_cart')->name('cart.remove');

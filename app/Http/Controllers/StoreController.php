@@ -171,6 +171,20 @@ class StoreController extends Controller
     }
 
     /**
+     * Halaman Dedicated Product Detail (Vesta x Nike Style)
+     */
+    public function product_detail($id)
+    {
+        // Mengambil data produk beserta relasinya
+        $product = \App\Models\Product::with(['category', 'variants', 'reviews.user'])
+                    ->withAvg('reviews', 'rating')
+                    ->withCount('reviews')
+                    ->findOrFail($id);
+
+        return view('store.product_detail', compact('product'));
+    }
+
+    /**
      * Tambah ke Keranjang (Session Based)
      */
     public function add_to_cart(Request $request, $product_id)
