@@ -687,7 +687,7 @@
 
                         <div class="flex items-center justify-between md:justify-end gap-6 shrink-0">
                             <span id="result-count" class="text-xs text-gray-500 whitespace-nowrap"><span
-                                    class="text-black font-medium">{{ $products->total() }}</span> Results</span>
+                                    class="text-black font-medium">{{ $products->count() }}</span> Results</span>
 
                             {{-- Sort Dropdown --}}
                             <div x-data="{ open: false }" class="relative">
@@ -757,8 +757,11 @@
                                 <article class="product-card group" style="animation-delay: {{ $index * 0.08 }}s">
                                     <div class="relative overflow-hidden bg-gray-200 aspect-[3/4] mb-5 cursor-pointer"
                                         onclick="openQuickView({{ $product->id }})">
-                                        <img src="{{ $product->image_path }}" alt="{{ $product->name }}"
-                                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        {{-- Lazy Loading with Intersection Observer --}}
+                                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
+                                            data-src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
+                                            alt="{{ $product->name }}"
+                                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 lazy-img"
                                             loading="lazy">
 
                                         {{-- Badges Wrapper (Gender & Event) --}}
@@ -841,7 +844,7 @@
                                                 'id' => $product->id,
                                                 'name' => $product->name,
                                                 'price' => $product->price,
-                                                'image_path' => $product->image_path,
+                                                'image_path' => $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path),
                                                 'category' => $product->category->name ?? '',
                                             ]) }})"
                                             class="absolute right-2 bottom-1.5 p-2 text-gray-400 hover:text-red-500 transition-colors z-20 origin-center"
@@ -857,36 +860,6 @@
                                 </article>
                             @endforeach
                         </div>
-
-                        {{-- Pagination Links --}}
-                        @if ($products->hasPages())
-                            <nav class="mt-16 flex justify-center items-center gap-4" role="navigation" aria-label="Pagination Navigation">
-                                {{-- Previous Page Link --}}
-                                @if ($products->onFirstPage())
-                                    <span class="px-5 py-3 text-[10px] tracking-widest text-gray-300 border border-gray-100 cursor-not-allowed uppercase font-medium">PREV</span>
-                                @else
-                                    <a href="{{ $products->previousPageUrl() }}" class="px-5 py-3 text-[10px] tracking-widest text-stone-700 hover:text-black border border-gray-200 hover:border-black transition-colors uppercase font-medium">PREV</a>
-                                @endif
-
-                                {{-- Page Numbers --}}
-                                <div class="flex items-center gap-1.5">
-                                    @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                                        @if ($page == $products->currentPage())
-                                            <span class="w-10 h-10 flex items-center justify-center text-xs font-semibold bg-stone-900 text-white border border-stone-900">{{ $page }}</span>
-                                        @else
-                                            <a href="{{ $url }}" class="w-10 h-10 flex items-center justify-center text-xs text-stone-600 hover:text-black border border-gray-200 hover:border-stone-400 transition-colors">{{ $page }}</a>
-                                        @endif
-                                    @endforeach
-                                </div>
-
-                                {{-- Next Page Link --}}
-                                @if ($products->hasMorePages())
-                                    <a href="{{ $products->nextPageUrl() }}" class="px-5 py-3 text-[10px] tracking-widest text-stone-700 hover:text-black border border-gray-200 hover:border-black transition-colors uppercase font-medium">NEXT</a>
-                                @else
-                                    <span class="px-5 py-3 text-[10px] tracking-widest text-gray-300 border border-gray-100 cursor-not-allowed uppercase font-medium">NEXT</span>
-                                @endif
-                            </nav>
-                        @endif
                     @endif
                 </div>
             </div>
@@ -1015,7 +988,12 @@
     </div>
 
     @php
-        $allPageProducts = collect($products->items())->unique('id')->values();
+        $allPageProducts = $products->unique('id')->values()->map(function($product) {
+            $product->image_path = $product->image_path && \Illuminate\Support\Str::startsWith($product->image_path, 'http')
+                ? $product->image_path
+                : asset('product_image/' . $product->image_path);
+            return $product;
+        });
     @endphp
     <script type="application/json" id="productsData">{!! json_encode($allPageProducts) !!}</script>
 
@@ -1116,6 +1094,9 @@
                 // Sync wishlist hearts
                 syncCardHearts();
                 
+                // Re-initialize lazy loading for newly inserted DOM items
+                initLazyLoading();
+                
                 if (grid) grid.style.opacity = '1';
             })
             .catch(err => {
@@ -1123,6 +1104,33 @@
                 if (grid) grid.style.opacity = '1';
             });
         }
+
+        // Intersection Observer Lazy Loading Logic
+        function initLazyLoading() {
+            const lazyImages = document.querySelectorAll('.lazy-img');
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const image = entry.target;
+                            image.src = image.dataset.src;
+                            image.classList.remove('lazy-img');
+                            imageObserver.unobserve(image);
+                        }
+                    });
+                });
+                lazyImages.forEach(image => {
+                    imageObserver.observe(image);
+                });
+            } else {
+                // Fallback for older browsers
+                lazyImages.forEach(image => {
+                    image.src = image.dataset.src;
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initLazyLoading);
 
         // Intercept form submission
         document.getElementById('mainFilterForm').addEventListener('submit', function(e) {

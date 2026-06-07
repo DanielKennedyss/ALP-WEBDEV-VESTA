@@ -60,7 +60,7 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="text-muted" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;">
                 <tr>
-                    <th class="border-0 ps-0">Product Detail</th>
+                    <th class="border-0 ps-3">Product Detail</th>
                     <th class="border-0">SKU</th>
                     <th class="border-0">Category</th>
                     <th class="border-0">Gender</th>
@@ -68,7 +68,7 @@
                     <th class="border-0">Price</th>
                     <th class="border-0">Total Stock</th>
                     <th class="border-0">Status</th>
-                    <th class="border-0 text-end pe-0">Action</th>
+                    <th class="border-0 text-end pe-3">Action</th>
                 </tr>
             </thead>
             <tbody id="products-table-body" style="font-size: 13px;">
@@ -113,6 +113,26 @@
         background-position: right 1rem center !important;
         background-size: 10px 10px !important;
         padding-right: 2.25rem !important;
+    }
+
+    /* Premium Table Row Hover Style */
+    .table tbody tr {
+        transition: all 0.2s ease-in-out;
+    }
+    .table-hover > tbody > tr:hover > * {
+        --bs-table-hover-bg: transparent;
+    }
+    .table tbody tr:hover td {
+        background-color: rgba(0, 0, 0, 0.04) !important; /* Soft luxury hover background */
+        border-bottom-color: transparent;
+    }
+    .table tbody tr:hover td:first-child {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+    .table tbody tr:hover td:last-child {
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
     }
 </style>
 

@@ -1,6 +1,6 @@
 @forelse($products as $product)
 <tr>
-    <td class="ps-0">
+    <td class="ps-3">
         <div class="d-flex align-items-center">
             <img src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
                  class="rounded bg-light shadow-sm" 
@@ -35,7 +35,7 @@
         @endif
     </td>
     
-    <td class="text-end pe-0">
+    <td class="text-end pe-3">
         <div class="dropdown">
             {{-- FIX 2: Tambahkan data-bs-boundary="window" --}}
             <button class="btn btn-link text-dark p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-boundary="window">

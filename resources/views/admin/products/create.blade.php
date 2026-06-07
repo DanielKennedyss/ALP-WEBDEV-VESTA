@@ -156,8 +156,34 @@
                 {{-- Product Image --}}
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Image</label>
-                    <input type="file" name="image" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" accept=".jpg,.jpeg,.png">
-                    <p class="text-muted" style="font-size: 9px;">Format: JPG, JPEG, PNG. Max 2MB.</p>
+                    
+                    {{-- Preview Container --}}
+                    <div class="mb-3">
+                        <img id="imagePreview" src="" 
+                             class="img-thumbnail rounded-3 border-0 bg-light shadow-sm" style="max-height: 200px; display: none;">
+                        <p id="previewLabel" class="text-muted mt-2 mb-0" style="font-size: 9px;"></p>
+                    </div>
+
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <input type="radio" class="btn-check" name="image_source" id="sourceUpload" value="upload" checked autocomplete="off">
+                        <label class="btn btn-outline-dark btn-sm rounded-start-pill py-2" for="sourceUpload" style="font-size: 11px; font-weight: 600; cursor: pointer;">Choose File</label>
+
+                        <input type="radio" class="btn-check" name="image_source" id="sourceUrl" value="url" autocomplete="off">
+                        <label class="btn btn-outline-dark btn-sm rounded-end-pill py-2" for="sourceUrl" style="font-size: 11px; font-weight: 600; cursor: pointer;">Input URL</label>
+                    </div>
+
+                    {{-- Upload File Field --}}
+                    <div id="imageUploadGroup" class="mb-2">
+                        <input type="file" name="image" id="imageFileInput" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" accept=".jpg,.jpeg,.png">
+                        <p class="text-muted" style="font-size: 9px;">Format: JPG, JPEG, PNG. Max 2MB.</p>
+                    </div>
+
+                    {{-- Image URL Field --}}
+                    <div id="imageUrlGroup" class="mb-2" style="display: none;">
+                        <input type="text" name="image_url" id="imageUrlInput" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
+                               placeholder="https://example.com/image.jpg">
+                        <p class="text-muted" style="font-size: 9px;">Enter the absolute URL of the image.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -264,6 +290,73 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleSizeInputs(cb);
         }
     });
+
+    // Image source toggle & preview logic
+    const sourceUpload = document.getElementById('sourceUpload');
+    const sourceUrl = document.getElementById('sourceUrl');
+    const imageUploadGroup = document.getElementById('imageUploadGroup');
+    const imageUrlGroup = document.getElementById('imageUrlGroup');
+    
+    const imageFileInput = document.getElementById('imageFileInput');
+    const imageUrlInput = document.getElementById('imageUrlInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewLabel = document.getElementById('previewLabel');
+
+    function updatePreview() {
+        if (sourceUpload.checked) {
+            if (imageFileInput.files && imageFileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    previewLabel.textContent = 'Uploaded Image Preview';
+                };
+                reader.readAsDataURL(imageFileInput.files[0]);
+            } else {
+                imagePreview.style.display = 'none';
+                previewLabel.textContent = '';
+            }
+        } else if (sourceUrl.checked) {
+            const url = imageUrlInput.value.trim();
+            if (url) {
+                imagePreview.src = url;
+                imagePreview.style.display = 'block';
+                previewLabel.textContent = 'URL Image Preview';
+            } else {
+                imagePreview.style.display = 'none';
+                previewLabel.textContent = '';
+            }
+        }
+    }
+
+    function toggleImageSourceFields() {
+        if (sourceUpload.checked) {
+            imageUploadGroup.style.display = 'block';
+            imageUrlGroup.style.display = 'none';
+        } else {
+            imageUploadGroup.style.display = 'none';
+            imageUrlGroup.style.display = 'block';
+        }
+        updatePreview();
+    }
+
+    if (imagePreview) {
+        imagePreview.onerror = function() {
+            if (sourceUrl.checked && imageUrlInput.value.trim() !== "") {
+                imagePreview.style.display = 'none';
+                previewLabel.textContent = 'Invalid image URL or unable to load.';
+            }
+        };
+    }
+
+    sourceUpload.addEventListener('change', toggleImageSourceFields);
+    sourceUrl.addEventListener('change', toggleImageSourceFields);
+    
+    imageFileInput.addEventListener('change', updatePreview);
+    imageUrlInput.addEventListener('input', updatePreview);
+
+    // Run initial toggle
+    toggleImageSourceFields();
 });
 </script>
 @endsection

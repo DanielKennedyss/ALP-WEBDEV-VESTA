@@ -146,7 +146,7 @@ class StoreController extends Controller
             default: $query->orderBy('created_at', 'desc'); break;
         }
 
-        $products = $query->paginate(12)->withQueryString();
+        $products = $query->get();
         $categories = Category::orderBy('name')->pluck('name');
         $genders = Product::select('gender')->distinct()->orderBy('gender')->pluck('gender');
         $sizes = ProductVariant::select('size_label')->distinct()->orderBy('size_label')->pluck('size_label');

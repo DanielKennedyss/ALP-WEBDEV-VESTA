@@ -84,13 +84,19 @@ class ProductController extends Controller
 
         $this->validateProduct($request);
 
-        // Handle Image Upload
+        // Handle Image Upload / URL
         $imagePath = null;
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('product_image'), $filename);
-            $imagePath = $filename;
+        if ($request->input('image_source') === 'url') {
+            if ($request->filled('image_url')) {
+                $imagePath = $request->image_url;
+            }
+        } else {
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('product_image'), $filename);
+                $imagePath = $filename;
+            }
         }
 
         // Generate SKU Otomatis
@@ -137,17 +143,27 @@ class ProductController extends Controller
         // atau jika bisnis mengizinkan staff update stok.
         $this->validateProduct($request);
 
-        // Handle Image Update
-        if ($request->hasFile('image')) {
-            // Hapus gambar lama
-            if ($product->image_path && File::exists(public_path('product_image/' . $product->image_path))) {
-                File::delete(public_path('product_image/' . $product->image_path));
+        // Handle Image Update / URL
+        if ($request->input('image_source') === 'url') {
+            if ($request->filled('image_url')) {
+                // Hapus gambar lama jika file lokal
+                if ($product->image_path && !\Illuminate\Support\Str::startsWith($product->image_path, 'http') && File::exists(public_path('product_image/' . $product->image_path))) {
+                    File::delete(public_path('product_image/' . $product->image_path));
+                }
+                $product->image_path = $request->image_url;
             }
+        } else {
+            if ($request->hasFile('image')) {
+                // Hapus gambar lama jika file lokal
+                if ($product->image_path && !\Illuminate\Support\Str::startsWith($product->image_path, 'http') && File::exists(public_path('product_image/' . $product->image_path))) {
+                    File::delete(public_path('product_image/' . $product->image_path));
+                }
 
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('product_image'), $filename);
-            $product->image_path = $filename;
+                $file = $request->file('image');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('product_image'), $filename);
+                $product->image_path = $filename;
+            }
         }
 
         $product->update([
@@ -200,7 +216,9 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'gender' => 'required|string|in:Male,Female,Unisex',
             'size_type' => 'required|string|in:one_size,custom',
+            'image_source' => 'required|string|in:upload,url',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image_url' => 'nullable|url|max:2048',
         ];
 
         if ($request->size_type === 'custom') {

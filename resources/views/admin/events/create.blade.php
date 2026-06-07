@@ -1,6 +1,9 @@
 @extends('layouts.admin')
 
 @section('admin_content')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <style>
     .form-luxury-card {
         background: #ffffff;
@@ -248,6 +251,421 @@
         flex-shrink: 0;
         transition: background 0.2s;
     }
+
+    /* ─── Adaptive Multi-Device Banner Previews (Container Queries) ─── */
+    .preview-device-selector-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+    .preview-device-btn {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #7a7a7a;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .preview-device-btn:hover {
+        background: #f4f4f2;
+        color: #1a1a1a;
+        border-color: #1a1a1a;
+    }
+    .preview-device-btn.active {
+        background: #1a1a1a;
+        color: #fff;
+        border-color: #1a1a1a;
+    }
+
+    #preview-device-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .collection-preview-wrapper,
+    .home-preview-wrapper {
+        container-type: inline-size;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Previews Base styling */
+    .preview-bg-image {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+        z-index: 1;
+        transition: background-image 0.3s;
+    }
+
+    /* ─── COLLECTION PREVIEW ─── */
+    #collection_preview {
+        position: relative;
+        width: 100%;
+        border: 1px solid;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        font-family: 'Montserrat', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    #collection_preview .preview-grid {
+        position: relative;
+        z-index: 10;
+        display: grid;
+        align-items: center;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    #collection_preview .preview-text-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    #collection_preview .badge-limited {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid currentColor;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    #collection_preview .preview-title {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-weight: 400;
+        text-transform: uppercase;
+        line-height: 1.1;
+        word-break: break-word;
+    }
+
+    #collection_preview .preview-desc {
+        font-weight: 300;
+        opacity: 0.9;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    #collection_preview .preview-btn {
+        display: inline-block;
+        font-weight: 500;
+        border: 1px solid;
+        text-transform: uppercase;
+        text-decoration: none;
+        pointer-events: none;
+    }
+
+    #collection_preview .preview-image-col {
+        width: 100%;
+    }
+
+    #collection_preview .preview-img-aspect {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #collection_preview .preview-main-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    #collection_preview .preview-img-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    /* ─── HOME PREVIEW ─── */
+    #home_preview {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-family: 'Montserrat', sans-serif;
+        color: #fff;
+        text-align: center;
+        background-color: #000;
+        transition: all 0.3s ease;
+    }
+
+    #home_preview .preview-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.6) 100%);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    #home_preview .preview-bg-image {
+        mix-blend-mode: normal;
+    }
+
+    #home_preview .preview-content {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    #home_preview .badge-limited {
+        text-transform: uppercase;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    #home_preview .preview-title {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-weight: 400;
+        text-transform: uppercase;
+        line-height: 1.1;
+        color: #fff;
+        word-break: break-word;
+    }
+
+    #home_preview .preview-desc {
+        text-transform: uppercase;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.8);
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    #home_preview .preview-btn {
+        display: inline-block;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #fff;
+        background: transparent;
+        pointer-events: none;
+    }
+
+    /* ─── DEVICE SPECIFIC ADAPTATIONS (Desktop / Tablet / Mobile) ─── */
+    
+    /* 1. Desktop Mode */
+    .preview-device-desktop #collection_preview {
+        aspect-ratio: 2.8 / 1;
+        padding: 3cqw 4cqw;
+    }
+    .preview-device-desktop #collection_preview .preview-grid {
+        grid-template-columns: 1.2fr 1fr;
+        gap: 4cqw;
+    }
+    .preview-device-desktop #collection_preview.no-main-image .preview-grid {
+        grid-template-columns: 1fr;
+    }
+    .preview-device-desktop #collection_preview .badge-limited {
+        font-size: 0.75cqw;
+        padding: 0.3cqw 0.8cqw;
+        margin-bottom: 1cqw;
+    }
+    .preview-device-desktop #collection_preview .preview-title {
+        font-size: 3.2cqw;
+        margin-bottom: 1cqw;
+    }
+    .preview-device-desktop #collection_preview .preview-desc {
+        font-size: 0.95cqw;
+        line-height: 1.4;
+        margin-bottom: 1.5cqw;
+        -webkit-line-clamp: 2;
+    }
+    .preview-device-desktop #collection_preview .preview-btn {
+        font-size: 0.75cqw;
+        padding: 0.8cqw 1.8cqw;
+        letter-spacing: 0.2em;
+    }
+
+    .preview-device-desktop #home_preview {
+        aspect-ratio: 16 / 9;
+    }
+    .preview-device-desktop #home_preview .preview-content {
+        padding: 0 6cqw;
+    }
+    .preview-device-desktop #home_preview .badge-limited {
+        font-size: 0.8cqw;
+        letter-spacing: 0.3em;
+        margin-bottom: 1.2cqw;
+    }
+    .preview-device-desktop #home_preview .preview-title {
+        font-size: 4cqw;
+        letter-spacing: 0.2em;
+        margin-bottom: 1.5cqw;
+    }
+    .preview-device-desktop #home_preview .preview-desc {
+        font-size: 0.85cqw;
+        letter-spacing: 0.3em;
+        line-height: 1.5;
+        margin-bottom: 2cqw;
+        -webkit-line-clamp: 2;
+        max-width: 90%;
+    }
+    .preview-device-desktop #home_preview .preview-btn {
+        font-size: 0.75cqw;
+        letter-spacing: 0.25em;
+        padding: 0.8cqw 2.2cqw;
+    }
+
+    /* 2. Tablet Mode */
+    .preview-device-tablet #collection_preview {
+        aspect-ratio: 2.2 / 1;
+        padding: 4cqw 5cqw;
+    }
+    .preview-device-tablet #collection_preview .preview-grid {
+        grid-template-columns: 1.1fr 1fr;
+        gap: 3.5cqw;
+    }
+    .preview-device-tablet #collection_preview.no-main-image .preview-grid {
+        grid-template-columns: 1fr;
+    }
+    .preview-device-tablet #collection_preview .badge-limited {
+        font-size: 0.8cqw;
+        padding: 0.4cqw 1cqw;
+        margin-bottom: 1.2cqw;
+    }
+    .preview-device-tablet #collection_preview .preview-title {
+        font-size: 3.5cqw;
+        margin-bottom: 1.2cqw;
+    }
+    .preview-device-tablet #collection_preview .preview-desc {
+        font-size: 1.05cqw;
+        line-height: 1.4;
+        margin-bottom: 1.8cqw;
+        -webkit-line-clamp: 2;
+    }
+    .preview-device-tablet #collection_preview .preview-btn {
+        font-size: 0.8cqw;
+        padding: 0.9cqw 2cqw;
+        letter-spacing: 0.18em;
+    }
+
+    .preview-device-tablet #home_preview {
+        aspect-ratio: 4 / 3;
+    }
+    .preview-device-tablet #home_preview .preview-content {
+        padding: 0 8cqw;
+    }
+    .preview-device-tablet #home_preview .badge-limited {
+        font-size: 1cqw;
+        letter-spacing: 0.28em;
+        margin-bottom: 1.5cqw;
+    }
+    .preview-device-tablet #home_preview .preview-title {
+        font-size: 4.8cqw;
+        letter-spacing: 0.18em;
+        margin-bottom: 1.8cqw;
+    }
+    .preview-device-tablet #home_preview .preview-desc {
+        font-size: 1cqw;
+        letter-spacing: 0.28em;
+        line-height: 1.5;
+        margin-bottom: 2.2cqw;
+        -webkit-line-clamp: 3;
+        max-width: 95%;
+    }
+    .preview-device-tablet #home_preview .preview-btn {
+        font-size: 0.9cqw;
+        letter-spacing: 0.22em;
+        padding: 1cqw 2.4cqw;
+    }
+
+    /* 3. Mobile Mode */
+    .preview-device-mobile #collection_preview {
+        aspect-ratio: 1.1 / 1;
+        padding: 7cqw 8cqw;
+    }
+    .preview-device-mobile #collection_preview .preview-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .preview-device-mobile #collection_preview .preview-image-col {
+        display: none !important;
+    }
+    .preview-device-mobile #collection_preview .badge-limited {
+        font-size: 2cqw;
+        padding: 0.8cqw 1.8cqw;
+        margin-bottom: 2cqw;
+    }
+    .preview-device-mobile #collection_preview .preview-title {
+        font-size: 6.5cqw;
+        margin-bottom: 2cqw;
+    }
+    .preview-device-mobile #collection_preview .preview-desc {
+        font-size: 2.6cqw;
+        line-height: 1.4;
+        margin-bottom: 3cqw;
+        -webkit-line-clamp: 4;
+    }
+    .preview-device-mobile #collection_preview .preview-btn {
+        font-size: 2cqw;
+        padding: 1.8cqw 3cqw;
+        letter-spacing: 0.15em;
+    }
+
+    .preview-device-mobile #home_preview {
+        aspect-ratio: 2 / 3;
+        width: 100%;
+        margin: 0 auto;
+    }
+    .preview-device-mobile #home_preview .preview-content {
+        padding: 0 10cqw;
+    }
+    .preview-device-mobile #home_preview .badge-limited {
+        font-size: 2.7cqw;
+        letter-spacing: 0.25em;
+        margin-bottom: 2cqw;
+    }
+    .preview-device-mobile #home_preview .preview-title {
+        font-size: 9.5cqw;
+        letter-spacing: 0.15em;
+        margin-bottom: 2.5cqw;
+    }
+    .preview-device-mobile #home_preview .preview-desc {
+        font-size: 3.2cqw;
+        letter-spacing: 0.25em;
+        line-height: 1.5;
+        margin-bottom: 3cqw;
+        -webkit-line-clamp: 4;
+        max-width: 100%;
+    }
+    .preview-device-mobile #home_preview .preview-btn {
+        font-size: 2.7cqw;
+        letter-spacing: 0.2em;
+        padding: 1.5cqw 3cqw;
+    }
 </style>
 
 <div class="container-fluid p-0">
@@ -285,7 +703,8 @@
                             <input type="text" name="name" id="name"
                                    value="{{ old('name') }}"
                                    placeholder="e.g. MID-YEAR SUMMER CARNIVAL"
-                                   class="form-control-luxury @error('name') is-invalid @enderror" required>
+                                   class="form-control-luxury @error('name') is-invalid @enderror"
+                                   oninput="updatePreviewText()" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
@@ -438,9 +857,89 @@
                             @error('display_description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <p class="text-muted mt-2 mb-0" style="font-size: 11px;">Custom banner sub-heading/paragraph displayed on frontend hero section.</p>
                         </div>
+                   </div>
+            </div>
+
+            {{-- Right Column: Live Preview --}}
+            <div class="col-lg-5">
+                <div class="form-luxury-card shadow-sm mb-4" style="height: calc(100% - 24px); display: flex; flex-direction: column;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="fw-bold mb-0">Live Banner Preview</h5>
+                        <span class="badge bg-dark text-uppercase font-monospace" style="font-size: 9px; letter-spacing: 0.1em; padding: 5px 8px;">Real-time</span>
+                    </div>
+                    <p class="text-muted small mb-3">See how this event banner looks under both main layout formats.</p>
+
+                    <!-- Device Toggle Toolbar -->
+                    <div class="preview-device-selector-row">
+                        <button type="button" class="preview-device-btn active" id="btn-device-desktop" onclick="setPreviewDevice('desktop')">
+                            <i class="bi bi-laptop"></i> Desktop
+                        </button>
+                        <button type="button" class="preview-device-btn" id="btn-device-tablet" onclick="setPreviewDevice('tablet')">
+                            <i class="bi bi-tablet"></i> Tablet
+                        </button>
+                        <button type="button" class="preview-device-btn" id="btn-device-mobile" onclick="setPreviewDevice('mobile')">
+                            <i class="bi bi-phone"></i> Mobile
+                        </button>
+                    </div>
+
+                    <div id="preview-device-container" class="preview-device-desktop">
+                        <!-- COLLECTION PAGE PREVIEW -->
+                        <div class="text-uppercase font-semibold text-muted mb-2" style="font-size: 10px; letter-spacing: 0.1em;">COLLECTION PAGE PREVIEW</div>
+                        <div class="collection-preview-wrapper mb-4">
+                            <div id="collection_preview" class="border rounded-3 shadow-sm relative transition-all duration-300 no-main-image" 
+                                 style="background-color: #0d9488; color: #fef08a; border-color: rgba(254, 240, 138, 0.25);">
+                                
+                                <!-- Background Overlay Image -->
+                                <div id="collection_preview_bg" class="preview-bg-image" style="background-image: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80');"></div>
+                                
+                                <div class="preview-grid">
+                                    <!-- Left Side (Text) -->
+                                    <div class="preview-text-col">
+                                        <div class="badge-limited">
+                                            Limited Time Event
+                                        </div>
+                                        <h2 class="preview-title" id="prev-col-title">MID-YEAR SUMMER CARNIVAL</h2>
+                                        <p class="preview-desc" id="prev-col-desc">EXCLUSIVE OFFERS FOR A LIMITED TIME ONLY.</p>
+                                        <a href="javascript:void(0)" class="preview-btn" id="prev-col-btn" style="background-color: #fef08a; color: #0d9488; border-color: #fef08a;">EXPLORE COLLECTION</a>
+                                    </div>
+
+                                    <!-- Right Side (Main Image) -->
+                                    <div class="preview-image-col" id="preview_main_image_col" style="display: none;">
+                                        <div class="preview-img-aspect">
+                                            <img id="preview_main_image" class="preview-main-img" src="" alt="">
+                                            <div class="preview-img-overlay"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HOME PAGE PREVIEW -->
+                        <div class="text-uppercase font-semibold text-muted mb-2" style="font-size: 10px; letter-spacing: 0.1em;">HOME PAGE PREVIEW</div>
+                        <div class="home-preview-wrapper">
+                            <div id="home_preview" class="border rounded-3 shadow-sm relative transition-all duration-300">
+                                <!-- Background Overlay Image -->
+                                <div id="home_preview_bg" class="preview-bg-image" style="background-image: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80');"></div>
+                                
+                                <div class="preview-overlay"></div>
+                                
+                                <div class="preview-content">
+                                    <span class="badge-limited">Limited Event</span>
+                                    <h2 class="preview-title" id="prev-home-title">MID-YEAR SUMMER CARNIVAL</h2>
+                                    <p class="preview-desc" id="prev-home-desc">EXCLUSIVE OFFERS FOR A LIMITED TIME ONLY.</p>
+                                    <a href="javascript:void(0)" class="preview-btn" id="prev-home-btn">Explore Collection</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
+            </div>
+        </div>
 
+        {{-- Row 2: Product Assignment (Full width) --}}
+        <div class="row mt-4">
+            <div class="col-12">
                 {{-- ── SECTION 2: Product Assignment ── --}}
                 <div class="form-luxury-card shadow-sm mb-4">
                     <h5 class="fw-bold mb-1" style="letter-spacing: -0.01em;">Product Assignment</h5>
@@ -535,60 +1034,15 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Form Actions --}}
-                <div class="d-flex justify-content-end gap-3 mb-4">
-                    <a href="{{ route('admin.events.index') }}" class="btn-luxury-secondary">Cancel</a>
-                    <button type="submit" class="btn-luxury-black" id="submitBtn">
-                        <i class="bi bi-check-lg"></i> Publish Collection
-                    </button>
-                </div>
             </div>
+        </div>
 
-            {{-- Right Column: Live Preview --}}
-            <div class="col-lg-5">
-                <div class="form-luxury-card shadow-sm mb-4" style="position: sticky; top: 30px;">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h5 class="fw-bold mb-0">Live Banner Preview</h5>
-                            <span class="badge bg-dark text-uppercase font-monospace" style="font-size: 9px; letter-spacing: 0.1em; padding: 5px 8px;">Real-time</span>
-                        </div>
-                        <p class="text-muted small mb-4">See how this event banner looks under both main layout formats.</p>
-
-                        <!-- COLLECTION PAGE PREVIEW -->
-                        <div class="text-uppercase font-semibold text-muted mb-2" style="font-size: 10px; letter-spacing: 0.1em;">COLLECTION PAGE PREVIEW</div>
-                        <div id="collection_preview" class="border overflow-hidden rounded-3 shadow-sm relative mb-4 transition-all duration-300" 
-                             style="background-color: #0d9488; color: #fef08a; border-color: rgba(254, 240, 138, 0.25); width: 100%; aspect-ratio: 21/9; max-height: 400px; display: flex; align-items: center; justify-content: space-between; padding: 2rem; background-size: cover; background-position: center; border-radius: 8px; overflow: hidden; font-family: 'Montserrat', sans-serif; background-image: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80');">
-                            
-                            <!-- Left Side (Text) -->
-                            <div class="d-flex flex-column justify-content-center align-items-start text-start" style="max-width: 50%; z-index: 10;">
-                                <div class="inline-flex align-items-center gap-1 border px-2 py-0.5 mb-2 text-uppercase font-semibold text-start" style="font-size: 7px; border-color: currentColor; letter-spacing: 0.15em;">
-                                    Limited Time Event
-                                </div>
-                                <h2 class="h6 font-serif text-uppercase mb-2 tracking-wide text-start" id="prev-col-title" style="font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 16px; word-break: break-word; color: inherit; margin-bottom: 8px;">MID-YEAR SUMMER CARNIVAL</h2>
-                                <p class="opacity-90 mb-3 text-start" id="prev-col-desc" style="font-size: 9px; line-height: 1.4; letter-spacing: 0.05em; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: inherit; margin-bottom: 16px;">EXCLUSIVE OFFERS FOR A LIMITED TIME ONLY.</p>
-                                <a href="javascript:void(0)" class="btn btn-sm text-uppercase font-semibold" id="prev-col-btn" style="font-size: 7px; border: 1px solid currentColor; background-color: #fef08a; color: #0d9488; letter-spacing: 0.1em; padding: 5px 10px; pointer-events: none;">EXPLORE COLLECTION</a>
-                            </div>
-
-                            <!-- Right Side (Main Image) -->
-                            <img id="preview_main_image" src="" alt="" style="max-width: 50%; max-height: 100%; object-fit: contain; z-index: 10; border-radius: 4px;">
-                        </div>
-
-                        <!-- HOME PAGE PREVIEW -->
-                        <div class="text-uppercase font-semibold text-muted mb-2" style="font-size: 10px; letter-spacing: 0.1em;">HOME PAGE PREVIEW</div>
-                        <div id="home_preview" class="border overflow-hidden rounded-3 shadow-sm relative transition-all duration-300" 
-                             style="background-color: #000; color: #fff; min-height: 400px; width: 100%; font-family: 'Montserrat', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-size: cover; background-position: center; background-image: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80');">
-                            
-                            <div class="absolute inset-0 bg-black bg-opacity-40 pointer-events-none" style="z-index: 1;"></div>
-                            
-                            <div class="relative p-4 d-flex flex-column justify-content-center align-items-center text-center h-100" style="min-height: 400px; width: 100%; z-index: 10;">
-                                <span class="text-light opacity-75 text-uppercase mb-2 font-light" style="font-size: 8px; letter-spacing: 0.25em;">Limited Event</span>
-                                <h2 class="h5 font-serif text-uppercase mb-2 tracking-wide text-white" id="prev-home-title" style="font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px; word-break: break-word;">MID-YEAR SUMMER CARNIVAL</h2>
-                                <p class="text-light opacity-90 mb-3 max-w-sm" id="prev-home-desc" style="font-size: 9px; line-height: 1.4; letter-spacing: 0.05em; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 16px;">EXCLUSIVE OFFERS FOR A LIMITED TIME ONLY.</p>
-                                <a href="javascript:void(0)" class="btn btn-sm text-uppercase font-semibold text-white border-white" id="prev-home-btn" style="font-size: 7px; border: 1px solid #fff; letter-spacing: 0.15em; padding: 5px 10px; background: transparent; pointer-events: none;">Explore Collection</a>
-                            </div>
-                        </div>
-                    </div>
-            </div>
+        {{-- Form Actions --}}
+        <div class="d-flex justify-content-end gap-3 mb-4">
+            <a href="{{ route('admin.events.index') }}" class="btn-luxury-secondary">Cancel</a>
+            <button type="submit" class="btn-luxury-black" id="submitBtn">
+                <i class="bi bi-check-lg"></i> Publish Collection
+            </button>
         </div>
     </form>
 </div>
@@ -597,6 +1051,27 @@
 // ─── Live Preview Logic ──────────────────────────────────────────────────────
 let localBgObjectURL = null;
 let localMainObjectURL = null;
+
+function setPreviewDevice(device) {
+    const container = document.getElementById('preview-device-container');
+    if (!container) return;
+    
+    // Remove all device classes
+    container.classList.remove('preview-device-desktop', 'preview-device-tablet', 'preview-device-mobile');
+    
+    // Add target device class
+    container.classList.add(`preview-device-${device}`);
+    
+    // Update active button state
+    document.querySelectorAll('.preview-device-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const activeBtn = document.getElementById(`btn-device-${device}`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+}
 
 function toggleBackgroundImageSource() {
     const source = document.getElementById('background_image_source').value;
@@ -689,15 +1164,15 @@ function updatePreviewImages() {
     }
     
     // Update background layers
-    const prevCol = document.getElementById('collection_preview');
-    const prevHome = document.getElementById('home_preview');
+    const prevColBg = document.getElementById('collection_preview_bg');
+    const prevHomeBg = document.getElementById('home_preview_bg');
     
     if (bgUrl !== '') {
-        if (prevCol) { prevCol.style.backgroundImage = `url('${bgUrl}')`; }
-        if (prevHome) { prevHome.style.backgroundImage = `url('${bgUrl}')`; }
+        if (prevColBg) { prevColBg.style.backgroundImage = `url('${bgUrl}')`; }
+        if (prevHomeBg) { prevHomeBg.style.backgroundImage = `url('${bgUrl}')`; }
     } else {
-        if (prevCol) { prevCol.style.backgroundImage = 'none'; }
-        if (prevHome) { prevHome.style.backgroundImage = 'none'; }
+        if (prevColBg) { prevColBg.style.backgroundImage = 'none'; }
+        if (prevHomeBg) { prevHomeBg.style.backgroundImage = 'none'; }
     }
     
     const mainSource = document.getElementById('main_image_source').value;
@@ -711,13 +1186,17 @@ function updatePreviewImages() {
     }
     
     const previewMainImage = document.getElementById('preview_main_image');
+    const previewMainImageCol = document.getElementById('preview_main_image_col');
+    const collectionPreview = document.getElementById('collection_preview');
     if (previewMainImage) {
         if (mainUrl !== '') {
             previewMainImage.src = mainUrl;
-            previewMainImage.style.display = 'block';
+            if (previewMainImageCol) previewMainImageCol.style.display = 'block';
+            if (collectionPreview) collectionPreview.classList.remove('no-main-image');
         } else {
             previewMainImage.src = '';
-            previewMainImage.style.display = 'none';
+            if (previewMainImageCol) previewMainImageCol.style.display = 'none';
+            if (collectionPreview) collectionPreview.classList.add('no-main-image');
         }
     }
 }
@@ -755,8 +1234,6 @@ function updatePreviewColor() {
         colBtn.style.borderColor = themeText;
     }
 }
-
-// switchPreviewTab removed as split previews display simultaneously
 
 // ─── Dual Listbox Logic ───────────────────────────────────────────────────────
 
@@ -853,62 +1330,11 @@ document.getElementById('eventForm').addEventListener('submit', function() {
 
 // Setup event listeners for Live Preview
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('name').addEventListener('input', updatePreviewText);
-    
-    const displayTitle = document.getElementById('display_title');
-    if (displayTitle) displayTitle.addEventListener('input', updatePreviewText);
-    
-    const displayDesc = document.getElementById('display_description');
-    if (displayDesc) displayDesc.addEventListener('input', updatePreviewText);
-
-    const bgFileInput = document.getElementById('bg_file_input');
-    const bgUrlInput = document.getElementById('bg_url_input');
-    const collectionPreview = document.getElementById('collection_preview');
-    const homePreview = document.getElementById('home_preview');
-
-    // Helper function to update both preview containers
-    function updateBackgrounds(url) {
-        if (collectionPreview) collectionPreview.style.backgroundImage = `url('${url}')`;
-        if (homePreview) homePreview.style.backgroundImage = `url('${url}')`;
-    }
-
-    // Handle File Upload
-    if (bgFileInput) {
-        bgFileInput.addEventListener('change', function(e) {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    updateBackgrounds(event.target.result);
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    }
-
-    // Handle URL Input
-    if (bgUrlInput) {
-        bgUrlInput.addEventListener('input', function(e) {
-            if (this.value.trim() !== '') {
-                updateBackgrounds(this.value);
-            } else {
-                if (collectionPreview) collectionPreview.style.backgroundImage = 'none';
-                if (homePreview) homePreview.style.backgroundImage = 'none';
-            }
-        });
-    }
-
-    const mainUrlInput = document.getElementById('main_image_url');
-    if (mainUrlInput) mainUrlInput.addEventListener('input', updatePreviewImages);
-
-    const mainFileInput = document.getElementById('main_image_file');
-    if (mainFileInput) mainFileInput.addEventListener('change', function(e) {
-        handleMainFileChange(this);
-    });
-    
     toggleBackgroundImageSource();
     toggleMainImageSource();
     updatePreviewText();
     updatePreviewColor();
+    updatePreviewImages();
     
     updateCounts();
     showEmpty('availableList');

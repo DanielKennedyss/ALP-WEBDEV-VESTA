@@ -163,17 +163,33 @@
                 <div class="mb-4">
                     <label class="stat-label d-block mb-2">Product Image</label>
                     
-                    {{-- Preview Current Image --}}
-                    @if($product->image_path)
+                    {{-- Preview Container --}}
                     <div class="mb-3">
-                        <img src="{{ $product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path) }}" 
-                             class="img-thumbnail rounded-0 border-0 bg-light" style="max-height: 200px;">
-                        <p class="text-muted mt-2" style="font-size: 9px;">Current Image</p>
+                        <img id="imagePreview" src="{{ $product->image_path ? ($product->image_path && Str::startsWith($product->image_path, 'http') ? $product->image_path : asset('product_image/' . $product->image_path)) : asset('product_image/default.jpg') }}" 
+                             class="img-thumbnail rounded-3 border-0 bg-light shadow-sm" style="max-height: 200px; display: {{ $product->image_path ? 'block' : 'none' }};">
+                        <p id="previewLabel" class="text-muted mt-2 mb-0" style="font-size: 9px;">{{ $product->image_path ? 'Current Image' : '' }}</p>
                     </div>
-                    @endif
 
-                    <input type="file" name="image" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" accept=".jpg,.jpeg,.png">
-                    <p class="text-muted" style="font-size: 9px;">Leave empty to keep current image. Format: JPG, JPEG, PNG. Max 2MB.</p>
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <input type="radio" class="btn-check" name="image_source" id="sourceUpload" value="upload" {{ !Str::startsWith($product->image_path, 'http') ? 'checked' : '' }} autocomplete="off">
+                        <label class="btn btn-outline-dark btn-sm rounded-start-pill py-2" for="sourceUpload" style="font-size: 11px; font-weight: 600; cursor: pointer;">Choose File</label>
+
+                        <input type="radio" class="btn-check" name="image_source" id="sourceUrl" value="url" {{ Str::startsWith($product->image_path, 'http') ? 'checked' : '' }} autocomplete="off">
+                        <label class="btn btn-outline-dark btn-sm rounded-end-pill py-2" for="sourceUrl" style="font-size: 11px; font-weight: 600; cursor: pointer;">Input URL</label>
+                    </div>
+
+                    {{-- Upload File Field --}}
+                    <div id="imageUploadGroup" class="mb-2" style="display: {{ !Str::startsWith($product->image_path, 'http') ? 'block' : 'none' }};">
+                        <input type="file" name="image" id="imageFileInput" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" accept=".jpg,.jpeg,.png">
+                        <p class="text-muted" style="font-size: 9px;">Leave empty to keep current image. Format: JPG, JPEG, PNG. Max 2MB.</p>
+                    </div>
+
+                    {{-- Image URL Field --}}
+                    <div id="imageUrlGroup" class="mb-2" style="display: {{ Str::startsWith($product->image_path, 'http') ? 'block' : 'none' }};">
+                        <input type="text" name="image_url" id="imageUrlInput" class="form-control border-0 border-bottom rounded-0 px-0 mb-2 shadow-none" 
+                               placeholder="https://example.com/image.jpg" value="{{ Str::startsWith($product->image_path, 'http') ? $product->image_path : '' }}">
+                        <p class="text-muted" style="font-size: 9px;">Enter the absolute URL of the image.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,6 +296,88 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleSizeInputs(cb);
         }
     });
+
+    // Image source toggle & preview logic
+    const sourceUpload = document.getElementById('sourceUpload');
+    const sourceUrl = document.getElementById('sourceUrl');
+    const imageUploadGroup = document.getElementById('imageUploadGroup');
+    const imageUrlGroup = document.getElementById('imageUrlGroup');
+    
+    const imageFileInput = document.getElementById('imageFileInput');
+    const imageUrlInput = document.getElementById('imageUrlInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewLabel = document.getElementById('previewLabel');
+
+    const initialImagePath = imagePreview ? imagePreview.src : '';
+    const initialIsUrl = {{ Str::startsWith($product->image_path, 'http') ? 'true' : 'false' }};
+
+    function updatePreview() {
+        if (sourceUpload.checked) {
+            if (imageFileInput.files && imageFileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    previewLabel.textContent = 'New Uploaded Image Preview';
+                };
+                reader.readAsDataURL(imageFileInput.files[0]);
+            } else {
+                if (!initialIsUrl && initialImagePath) {
+                    imagePreview.src = initialImagePath;
+                    imagePreview.style.display = 'block';
+                    previewLabel.textContent = 'Current Image';
+                } else {
+                    imagePreview.style.display = 'none';
+                    previewLabel.textContent = '';
+                }
+            }
+        } else if (sourceUrl.checked) {
+            const url = imageUrlInput.value.trim();
+            if (url) {
+                imagePreview.src = url;
+                imagePreview.style.display = 'block';
+                previewLabel.textContent = 'URL Image Preview';
+            } else {
+                if (initialIsUrl && initialImagePath) {
+                    imagePreview.src = initialImagePath;
+                    imagePreview.style.display = 'block';
+                    previewLabel.textContent = 'Current Image (URL)';
+                } else {
+                    imagePreview.style.display = 'none';
+                    previewLabel.textContent = '';
+                }
+            }
+        }
+    }
+
+    function toggleImageSourceFields() {
+        if (sourceUpload.checked) {
+            imageUploadGroup.style.display = 'block';
+            imageUrlGroup.style.display = 'none';
+        } else {
+            imageUploadGroup.style.display = 'none';
+            imageUrlGroup.style.display = 'block';
+        }
+        updatePreview();
+    }
+
+    if (imagePreview) {
+        imagePreview.onerror = function() {
+            if (sourceUrl.checked && imageUrlInput.value.trim() !== "") {
+                imagePreview.style.display = 'none';
+                previewLabel.textContent = 'Invalid image URL or unable to load.';
+            }
+        };
+    }
+
+    sourceUpload.addEventListener('change', toggleImageSourceFields);
+    sourceUrl.addEventListener('change', toggleImageSourceFields);
+    
+    imageFileInput.addEventListener('change', updatePreview);
+    imageUrlInput.addEventListener('input', updatePreview);
+
+    // Run initial toggle/preview update
+    toggleImageSourceFields();
 });
 </script>
 @endsection

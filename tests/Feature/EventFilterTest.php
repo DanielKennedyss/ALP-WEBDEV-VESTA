@@ -67,7 +67,7 @@ test('catalog page filters products when filter_event is present', function () {
     $products = $response->viewData('products');
     
     // Get product IDs in the collection
-    $productIds = collect($products->items())->pluck('id')->all();
+    $productIds = $products->pluck('id')->all();
     
     expect($productIds)->toContain($product1->id);
     expect($productIds)->not->toContain($product2->id);
@@ -87,6 +87,8 @@ test('catalog page fuzzy searches products by name, description, or SKU', functi
         'gender' => 'Unisex',
         'image_path' => 'https://example.com/img1.jpg',
     ]);
+    $product1->created_at = now()->addDays(1);
+    $product1->save();
 
     // Create a product: Blue Suit
     $product2 = Product::create([
@@ -98,12 +100,14 @@ test('catalog page fuzzy searches products by name, description, or SKU', functi
         'gender' => 'Male',
         'image_path' => 'https://example.com/img2.jpg',
     ]);
+    $product2->created_at = now()->addDays(2);
+    $product2->save();
 
     // 1. Fuzzy search "tsirt" should match "Premium T-Shirt" (T-Shirt has t, s, i, r, t in that order)
     $response = $this->get(route('collections.index', ['search' => 'tsirt']));
     $response->assertStatus(200);
     $products = $response->viewData('products');
-    $productIds = collect($products->items())->pluck('id')->all();
+    $productIds = $products->pluck('id')->all();
     expect($productIds)->toContain($product1->id);
     expect($productIds)->not->toContain($product2->id);
 
@@ -111,7 +115,7 @@ test('catalog page fuzzy searches products by name, description, or SKU', functi
     $response = $this->get(route('collections.index', ['search' => 'blu suit']));
     $response->assertStatus(200);
     $products = $response->viewData('products');
-    $productIds = collect($products->items())->pluck('id')->all();
+    $productIds = $products->pluck('id')->all();
     expect($productIds)->toContain($product2->id);
     expect($productIds)->not->toContain($product1->id);
 });
