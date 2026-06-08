@@ -43,6 +43,7 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
+            'user_id'          => 'integer',
             'subtotal'         => 'decimal:2', 
             'discount_voucher' => 'decimal:2', 
             'discount_points'  => 'decimal:2',  

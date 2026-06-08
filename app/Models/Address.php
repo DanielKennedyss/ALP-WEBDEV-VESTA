@@ -19,6 +19,11 @@ class Address extends Model
         'is_default',
     ];
 
+    protected $casts = [
+        'user_id' => 'integer',
+        'is_default' => 'boolean',
+    ];
+
     /**
      * Relationship to the User model
      */
