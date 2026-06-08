@@ -111,10 +111,10 @@
             </div>
 
             <!-- Content Area -->
-            <div class="lg:col-span-3 profile-card delay-4">
+            <div class="lg:col-span-3 profile-card delay-4 min-w-0">
                 
                 <!-- Content Area: Order History -->
-                <div x-show="activeTab === 'order-history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="border border-stone-200 p-8 bg-white">
+                <div x-show="activeTab === 'order-history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="border border-stone-200 p-4 sm:p-8 bg-white">
                     <h4 class="text-xs tracking-[0.2em] uppercase font-bold mb-8 text-stone-900 border-b border-stone-100 pb-4">My Order History</h4>
 
                     @if($transactions->isEmpty())
@@ -126,20 +126,20 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-stone-200">
-                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-6">Order ID</th>
-                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-6">Date</th>
-                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-6">Product(s)</th>
-                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-6">Total</th>
-                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-6">Status</th>
+                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-3 sm:pr-6">Order ID</th>
+                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-3 sm:pr-6">Date</th>
+                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-3 sm:pr-6">Product(s)</th>
+                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-3 sm:pr-6">Total</th>
+                                        <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap pr-3 sm:pr-6">Status</th>
                                         <th class="pb-4 text-[9px] tracking-[0.2em] uppercase text-stone-400 font-bold whitespace-nowrap">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($transactions as $order)
                                     <tr class="border-b border-stone-100 hover:bg-stone-50/50 transition-colors">
-                                        <td class="py-6 pr-6 text-xs font-semibold text-stone-900">{{ $order->invoice_number }}</td>
-                                        <td class="py-6 pr-6 text-xs text-stone-500">{{ $order->created_at->format('M d, Y') }}</td>
-                                        <td class="py-6 pr-6 text-xs text-stone-800">
+                                        <td class="py-6 pr-3 sm:pr-6 text-xs font-semibold text-stone-900">{{ $order->invoice_number }}</td>
+                                        <td class="py-6 pr-3 sm:pr-6 text-xs text-stone-500">{{ $order->created_at->format('M d, Y') }}</td>
+                                        <td class="py-6 pr-3 sm:pr-6 text-xs text-stone-800">
                                             @if($order->cart_items && is_array($order->cart_items) && count($order->cart_items) > 0)
                                                 <span class="font-medium text-stone-900">{{ $order->cart_items[0]['name'] }}</span>
                                                 <span class="text-stone-400 ml-1">(x{{ $order->cart_items[0]['quantity'] }})</span>
@@ -155,8 +155,8 @@
                                                 <span class="text-stone-400 ml-1">(x{{ $order->quantity }})</span>
                                             @endif
                                         </td>
-                                        <td class="py-6 pr-6 text-xs font-medium text-stone-900 whitespace-nowrap">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                                        <td class="py-6 pr-6">
+                                        <td class="py-6 pr-3 sm:pr-6 text-xs font-medium text-stone-900 whitespace-nowrap">IDR {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                                        <td class="py-6 pr-3 sm:pr-6">
                                              @if($order->status == 'pending')
                                                  <span class="inline-block border border-amber-200 bg-amber-50 text-amber-700 px-3 py-1 text-[9px] tracking-[0.1em] uppercase font-bold w-28 text-center">Pending Payment</span>
                                              @elseif(in_array($order->status, ['success', 'processing', 'settlement', 'paid']))

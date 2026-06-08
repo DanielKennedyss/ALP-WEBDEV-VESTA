@@ -94,7 +94,7 @@
 
     <!-- Drawer Content -->
     <div id="mobileMenuContent"
-        class="absolute inset-y-0 left-0 w-full max-w-xs bg-white shadow-2xl flex flex-col transform -translate-x-full transition-transform duration-300">
+        class="absolute inset-y-0 left-0 w-full max-w-[270px] bg-white shadow-2xl flex flex-col transform -translate-x-full transition-transform duration-300">
         <!-- Drawer Header -->
         <div class="p-6 border-b border-gray-100 flex items-center justify-between">
             <span class="text-lg font-serif tracking-[0.3em]">VESTA</span>
@@ -117,12 +117,15 @@
         <!-- Drawer Footer -->
         <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
             @auth
-                <a href="{{ route('profile') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 hover:bg-gray-800 transition-colors uppercase">
+                <a href="{{ route('profile') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 rounded-full hover:bg-gray-800 transition-colors uppercase">
                     MY ACCOUNT
                 </a>
             @else
-                <a href="{{ route('login') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 hover:bg-gray-800 transition-colors uppercase">
+                <a href="{{ route('login') }}" onclick="closeMobileMenu()" class="w-full bg-black text-white text-center text-xs tracking-[0.2em] py-4 rounded-full hover:bg-gray-800 transition-colors uppercase">
                     LOGIN
+                </a>
+                <a href="{{ route('register') }}" onclick="closeMobileMenu()" class="w-full bg-white text-black border border-black text-center text-xs tracking-[0.2em] py-4 rounded-full hover:bg-black hover:text-white transition-colors uppercase">
+                    SIGN UP
                 </a>
             @endauth
         </div>
