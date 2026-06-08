@@ -74,7 +74,12 @@ class ProductReviewSeeder extends Seeder
                     ->where('product_id', $product->id)
                     ->first();
 
-                if (!$transaction) {
+                if ($transaction) {
+                    // Update status transaksi yang sudah ada menjadi 'delivered' agar sinkron dengan hak review
+                    if (!in_array($transaction->status, ['delivered', 'completed'])) {
+                        $transaction->update(['status' => 'delivered']);
+                    }
+                } else {
                     $qty = rand(1, 2);
                     $totalPrice = $product->price * $qty;
                     $randomDate = Carbon::now()->subDays(rand(1, 30));
@@ -87,7 +92,7 @@ class ProductReviewSeeder extends Seeder
                         'total_price'    => $totalPrice,
                         'customer_name'  => $customer->name,
                         'customer_email' => $customer->email,
-                        'status'         => 'success',
+                        'status'         => 'delivered', // Set 'delivered' agar sinkron dengan status yang diperbolehkan untuk direview
                         'paid_at'        => $randomDate,
                         'created_at'     => $randomDate,
                         'updated_at'     => $randomDate,
