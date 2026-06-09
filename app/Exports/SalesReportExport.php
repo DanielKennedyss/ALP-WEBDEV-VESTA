@@ -45,7 +45,7 @@ class SalesReportExport implements FromQuery, WithHeadings, WithMapping, ShouldA
 
         // Query Utama: Menggunakan rentang waktu Carbon yang presisi
         return Transaction::with(['product', 'user'])
-            ->whereIn('status', ['success', 'PAID', 'paid', 'settlement']) // Toleransi variasi penulisan status di database
+            ->paid()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->orderBy('created_at', 'desc');
     }

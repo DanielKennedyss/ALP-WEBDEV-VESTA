@@ -47,7 +47,7 @@ class EventSeeder extends Seeder
             'short_name' => 'New Year',
             'background_image' => 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1600&q=80',
-            'display_title' => 'NEW YEAR SOIREE',
+            'display_title' => null,
             'display_description' => 'Ring in the luxury. Elegant evening wear and accessories for the perfect countdown.',
         ]);
         $nySub1 = EventSubcategory::create(['event_id' => $nyEvent->id, 'name' => 'New Year Sparkles']);
@@ -66,7 +66,7 @@ class EventSeeder extends Seeder
             'short_name' => "Valentine's",
             'background_image' => 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=80',
-            'display_title' => "VALENTINE'S ROMANCE",
+            'display_title' => null,
             'display_description' => 'Celebrate love with curated collections, romantic silhouettes, and precious gifts.',
         ]);
         $valSub1 = EventSubcategory::create(['event_id' => $valEvent->id, 'name' => "Valentine's Gift Guide"]);
@@ -85,7 +85,7 @@ class EventSeeder extends Seeder
             'short_name' => 'Summer',
             'background_image' => 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=1600&q=80',
-            'display_title' => 'MID-YEAR SUMMER CARNIVAL',
+            'display_title' => null,
             'display_description' => 'Sun-kissed luxury. Embrace the warmth with linen shirts, lightweight fabrics, and seasonal accents.',
         ]);
         $sumSub1 = EventSubcategory::create(['event_id' => $summerEvent->id, 'name' => 'Summer Vibe Wear']);
@@ -104,7 +104,7 @@ class EventSeeder extends Seeder
             'short_name' => 'Halloween',
             'background_image' => 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1600&q=80',
-            'display_title' => 'HALLOWEEN SPOOKTACULAR',
+            'display_title' => null,
             'display_description' => 'Hauntingly elegant. Discover our dark theme collection and deep velvet statement pieces.',
         ]);
         $halSub1 = EventSubcategory::create(['event_id' => $halEvent->id, 'name' => 'Spooky Halloween Deals']);
@@ -123,7 +123,7 @@ class EventSeeder extends Seeder
             'short_name' => 'Black Friday',
             'background_image' => 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80',
-            'display_title' => 'BLACK FRIDAY SUPER SALE',
+            'display_title' => null,
             'display_description' => 'The pinnacle of the season. Exceptional offers on our most coveted luxury items.',
         ]);
         $bfSub1 = EventSubcategory::create(['event_id' => $bfEvent->id, 'name' => 'Black Friday Doorbusters']);
@@ -142,7 +142,7 @@ class EventSeeder extends Seeder
             'short_name' => 'Christmas',
             'background_image' => 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1600&q=80',
             'main_image' => 'https://images.unsplash.com/photo-1608096299210-db7e38487075?w=1600&q=80',
-            'display_title' => 'CHRISTMAS SPLENDOR',
+            'display_title' => null,
             'display_description' => 'Unwrap elegance. Premium winter outerwear, cashmere layers, and luxury holiday gifts.',
         ]);
         $xmasSub1 = EventSubcategory::create(['event_id' => $xmasEvent->id, 'name' => 'Christmas Gifts & Warmth']);

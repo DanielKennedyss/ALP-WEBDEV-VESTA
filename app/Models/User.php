@@ -91,7 +91,7 @@ class User extends Authenticatable
     public function getAnnualSpendingAttribute(): float
     {
         return (float) $this->transactions()
-            ->whereIn('status', ['success', 'settlement', 'paid'])
+            ->paid()
             ->where('created_at', '>=', now()->subYear()) // 365 hari terakhir dari detik ini
             ->sum('total_price');
     }

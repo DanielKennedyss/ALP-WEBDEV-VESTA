@@ -704,7 +704,7 @@
                                    value="{{ old('name') }}"
                                    placeholder="e.g. MID-YEAR SUMMER CARNIVAL"
                                    class="form-control-luxury @error('name') is-invalid @enderror"
-                                   oninput="updatePreviewText()" required>
+                                   oninput="onNameInput()" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
@@ -1051,6 +1051,16 @@
 // ─── Live Preview Logic ──────────────────────────────────────────────────────
 let localBgObjectURL = null;
 let localMainObjectURL = null;
+let isDisplayTitleManuallyEdited = false;
+
+function onNameInput() {
+    const nameVal = document.getElementById('name').value;
+    const displayTitleInput = document.getElementById('display_title');
+    if (!isDisplayTitleManuallyEdited) {
+        displayTitleInput.value = nameVal;
+    }
+    updatePreviewText();
+}
 
 function setPreviewDevice(device) {
     const container = document.getElementById('preview-device-container');
@@ -1330,6 +1340,13 @@ document.getElementById('eventForm').addEventListener('submit', function() {
 
 // Setup event listeners for Live Preview
 document.addEventListener('DOMContentLoaded', function() {
+    const displayTitleInput = document.getElementById('display_title');
+    if (displayTitleInput) {
+        displayTitleInput.addEventListener('input', function() {
+            isDisplayTitleManuallyEdited = true;
+        });
+    }
+
     toggleBackgroundImageSource();
     toggleMainImageSource();
     updatePreviewText();

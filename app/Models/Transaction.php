@@ -61,60 +61,109 @@ class Transaction extends Model
      * MODEL EVENTS (BOOTED)
      * --------------------------------------------------------------------------
      */
+    public const PAID_STATUSES = ['success', 'settlement', 'paid', 'processing', 'shipped', 'delivered', 'completed'];
+
+    /**
+     * --------------------------------------------------------------------------
+     * MODEL EVENTS (BOOTED)
+     * --------------------------------------------------------------------------
+     */
     protected static function booted(): void
     {
         static::updated(function (Transaction $transaction) {
-            // Logika: Hanya update jika status BERUBAH menjadi 'success'
-            if ($transaction->wasChanged('status') && $transaction->status === 'success') {
-                
+            $wasPaid = in_array($transaction->getOriginal('status'), self::PAID_STATUSES);
+            $isPaid = in_array($transaction->status, self::PAID_STATUSES);
+
+            if ($transaction->wasChanged('status')) {
                 $user = $transaction->user;
 
-                // --- 1. LOGIKA LOYALTY POINTS & TIERING VESTA ---
-                if ($user) {
-                    // Update total spending seumur hidup
-                    $lifetimeSpending = $user->transactions()->paid()->sum('total_price');
-                    $user->update(['total_spending' => $lifetimeSpending]);
+                if ($isPaid && !$wasPaid) {
+                    // --- 1. LOGIKA LOYALTY POINTS & TIERING VESTA ---
+                    if ($user) {
+                        // Update total spending seumur hidup
+                        $lifetimeSpending = $user->transactions()->paid()->sum('total_price');
+                        $user->update(['total_spending' => $lifetimeSpending]);
 
-                    // Update Tier Luxury berdasarkan pengeluaran 1 tahun terakhir
-                    $currentTier = $user->updateMembershipTier();
+                        // Update Tier Luxury berdasarkan pengeluaran 1 tahun terakhir
+                        $currentTier = $user->updateMembershipTier();
 
-                    // Tentukan Divisor berdasarkan tier
-                    $pointDivisor = match ($currentTier) {
-                        'platinum' => 25000, // VESTA PRIVÉ
-                        'gold'     => 30000, // HAUTE CIRCLE
-                        'silver'   => 40000, // LA MAISON
-                        default    => 50000, // THE ATELIER
-                    };
+                        // Tentukan Divisor berdasarkan tier
+                        $pointDivisor = match ($currentTier) {
+                            'platinum' => 25000, // VESTA PRIVÉ
+                            'gold'     => 30000, // HAUTE CIRCLE
+                            'silver'   => 40000, // LA MAISON
+                            default    => 50000, // THE ATELIER
+                        };
 
-                    // Berikan poin (1 Poin = Rp 1.000 Benefit)
-                    $earnedPoints = floor($transaction->total_price / $pointDivisor);
-                    $user->increment('loyalty_points', $earnedPoints);
-                }
+                        // Berikan poin (1 Poin = Rp 1.000 Benefit)
+                        $earnedPoints = floor($transaction->total_price / $pointDivisor);
+                        $user->increment('loyalty_points', $earnedPoints);
+                    }
 
-                // --- 2. LOGIKA PENGURANGAN STOK INVENTORY ---
-                $cartItems = $transaction->cart_items ?? [];
-                foreach ($cartItems as $item) {
-                    if (!empty($item['size'])) {
-                        // Jika ada spesifikasi ukuran
-                        $variant = ProductVariant::where('product_id', $item['product_id'])
-                            ->where('size_label', $item['size'])
-                            ->first();
-                            
-                        if ($variant) {
-                            $variant->decrement('stock', $item['quantity']);
+                    // --- 2. LOGIKA PENGURANGAN STOK INVENTORY ---
+                    $cartItems = $transaction->cart_items ?? [];
+                    foreach ($cartItems as $item) {
+                        if (!empty($item['size'])) {
+                            // Jika ada spesifikasi ukuran
+                            $variant = ProductVariant::where('product_id', $item['product_id'])
+                                ->where('size_label', $item['size'])
+                                ->first();
+                                
+                            if ($variant) {
+                                $variant->decrement('stock', $item['quantity']);
+                            }
+                        } else {
+                            // Jika tidak ada ukuran, kurangi dari varian mana saja yang masih ada stok
+                            $variants = ProductVariant::where('product_id', $item['product_id'])
+                                ->where('stock', '>', 0)
+                                ->get();
+                                
+                            $remaining = $item['quantity'];
+                            foreach ($variants as $v) {
+                                if ($remaining <= 0) break;
+                                $deduct = min($remaining, $v->stock);
+                                $v->decrement('stock', $deduct);
+                                $remaining -= $deduct;
+                            }
                         }
-                    } else {
-                        // Jika tidak ada ukuran, kurangi dari varian mana saja yang masih ada stok
-                        $variants = ProductVariant::where('product_id', $item['product_id'])
-                            ->where('stock', '>', 0)
-                            ->get();
-                            
-                        $remaining = $item['quantity'];
-                        foreach ($variants as $v) {
-                            if ($remaining <= 0) break;
-                            $deduct = min($remaining, $v->stock);
-                            $v->decrement('stock', $deduct);
-                            $remaining -= $deduct;
+                    }
+                } elseif (!$isPaid && $wasPaid) {
+                    // --- LOGIKA PEMBATALAN: CABUT SPENDING & POIN YANG DIPEROLEH ---
+                    if ($user) {
+                        // Hitung ulang total spending (karena transaksi ini statusnya sudah bukan paid lagi)
+                        $lifetimeSpending = $user->transactions()->paid()->sum('total_price');
+                        $user->update(['total_spending' => $lifetimeSpending]);
+
+                        // Update Tier Luxury
+                        $currentTier = $user->updateMembershipTier();
+
+                        $pointDivisor = match ($currentTier) {
+                            'platinum' => 25000,
+                            'gold'     => 30000,
+                            'silver'   => 40000,
+                            default    => 50000,
+                        };
+
+                        $lostPoints = floor($transaction->total_price / $pointDivisor);
+                        $user->decrement('loyalty_points', $lostPoints);
+                    }
+
+                    // --- LOGIKA PENGEMBALIAN STOK INVENTORY ---
+                    $cartItems = $transaction->cart_items ?? [];
+                    foreach ($cartItems as $item) {
+                        if (!empty($item['size'])) {
+                            $variant = ProductVariant::where('product_id', $item['product_id'])
+                                ->where('size_label', $item['size'])
+                                ->first();
+                            if ($variant) {
+                                $variant->increment('stock', $item['quantity']);
+                            }
+                        } else {
+                            // Jika tidak ada ukuran, kembalikan ke varian pertama (atau default)
+                            $variant = ProductVariant::where('product_id', $item['product_id'])->first();
+                            if ($variant) {
+                                $variant->increment('stock', $item['quantity']);
+                            }
                         }
                     }
                 }
@@ -122,8 +171,9 @@ class Transaction extends Model
         });
 
         static::deleted(function (Transaction $transaction) {
-            // Jika transaksi sukses dihapus, cabut poin dan spending-nya
-            if ($transaction->status === 'success') {
+            // Jika transaksi sukses/paid dihapus, cabut poin dan spending-nya
+            $isPaid = in_array($transaction->status, self::PAID_STATUSES);
+            if ($isPaid) {
                 $user = $transaction->user;
                 if ($user) {
                     $user->decrement('total_spending', $transaction->total_price);
@@ -140,6 +190,24 @@ class Transaction extends Model
                     
                     $lostPoints = floor($transaction->total_price / $pointDivisor);
                     $user->decrement('loyalty_points', $lostPoints);
+                }
+
+                // Kembalikan stok saat dihapus
+                $cartItems = $transaction->cart_items ?? [];
+                foreach ($cartItems as $item) {
+                    if (!empty($item['size'])) {
+                        $variant = ProductVariant::where('product_id', $item['product_id'])
+                            ->where('size_label', $item['size'])
+                            ->first();
+                        if ($variant) {
+                            $variant->increment('stock', $item['quantity']);
+                        }
+                    } else {
+                        $variant = ProductVariant::where('product_id', $item['product_id'])->first();
+                        if ($variant) {
+                            $variant->increment('stock', $item['quantity']);
+                        }
+                    }
                 }
             }
         });
@@ -171,6 +239,6 @@ class Transaction extends Model
      */
     public function scopePaid(Builder $query): Builder
     {
-        return $query->whereIn('status', ['success', 'settlement', 'paid']);
+        return $query->whereIn('status', self::PAID_STATUSES);
     }
 }

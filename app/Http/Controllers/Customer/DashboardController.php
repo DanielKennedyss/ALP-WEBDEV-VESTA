@@ -22,7 +22,7 @@ class DashboardController extends Controller
         // 2. Kalkulasi statistik belanja (Best practice: Ambil dari model Transaction)
         // Kita hanya menghitung 'success' atau 'settlement' untuk spending
         $totalSpending = Transaction::where('user_id', $user->id)
-            ->whereIn('status', ['success', 'settlement', 'paid']) 
+            ->paid() 
             ->sum('total_price');
 
         // 3. Hitung total semua order (termasuk pending/failed untuk riwayat)
