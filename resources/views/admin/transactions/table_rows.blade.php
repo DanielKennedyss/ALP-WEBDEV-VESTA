@@ -155,8 +155,8 @@
                         @endif
 
                         <option value="pending" {{ $trx->status === 'pending' ? 'selected' : '' }} disabled>Pending Payment</option>
-                        <option value="processing" {{ in_array(strtolower($trx->status), ['processing', 'success', 'settlement', 'paid']) ? 'selected' : '' }}>Processing</option>
-                        <option value="shipped" {{ $trx->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                        <option value="processing" {{ in_array(strtolower($trx->status), ['processing', 'success', 'settlement', 'paid']) ? 'selected' : '' }} {{ in_array(strtolower($trx->status), ['shipped', 'delivered', 'completed', 'cancelled', 'expired', 'failed', 'refunded']) ? 'disabled' : '' }}>Processing</option>
+                        <option value="shipped" {{ $trx->status === 'shipped' ? 'selected' : '' }} {{ in_array(strtolower($trx->status), ['delivered', 'completed', 'cancelled', 'expired', 'failed', 'refunded']) ? 'disabled' : '' }}>Shipped</option>
                         <option value="delivered" {{ $trx->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
                     </select>
                 </form>

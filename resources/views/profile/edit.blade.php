@@ -70,7 +70,7 @@
 
             <div class="profile-card delay-3 border border-gray-200 p-8 flex flex-col justify-between">
                 <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Active Orders</span>
-                <h2 class="text-4xl font-light">{{ \App\Models\Transaction::where('user_id', Auth::id())->where('status', 'pending')->count() }}</h2>
+                <h2 class="text-4xl font-light">{{ \App\Models\Transaction::where('user_id', Auth::id())->whereIn('status', ['pending', 'success', 'processing', 'settlement', 'paid', 'shipped'])->count() }}</h2>
             </div>
         </div>
 

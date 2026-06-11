@@ -43,4 +43,45 @@ class Event extends Model
     {
         return $this->belongsToMany(Product::class, 'event_product');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Local Environment Image Fallback Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    public function getBackgroundImageAttribute($value)
+    {
+        return $this->resolveImageUrl($value);
+    }
+
+    public function getMainImageAttribute($value)
+    {
+        return $this->resolveImageUrl($value);
+    }
+
+    public function getBannerImageAttribute($value)
+    {
+        return $this->resolveImageUrl($value);
+    }
+
+    private function resolveImageUrl($value)
+    {
+        if (!$value) {
+            return $value;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        if (app()->environment('local')) {
+            $localPath = public_path('storage/' . $value);
+            if (!file_exists($localPath)) {
+                return 'https://nicholasd.my.id/storage/' . $value;
+            }
+        }
+
+        return $value;
+    }
 }

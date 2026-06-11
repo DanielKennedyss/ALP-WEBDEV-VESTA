@@ -1019,6 +1019,8 @@ class StoreController extends Controller
      */
     public function markAsReceived(Transaction $order)
     {
+        \Illuminate\Support\Facades\Log::info('markAsReceived hit: order ID ' . $order->id . ', User ID: ' . Auth::id() . ', Order Status: ' . $order->status);
+
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }

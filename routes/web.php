@@ -200,3 +200,16 @@ Route::middleware('auth')->group(function () {
         Route::resource('staff', StaffController::class)->names('admin.staff');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Local Storage Fallback Redirect (Proxy missing uploads to live server)
+|--------------------------------------------------------------------------
+| This redirects requests for missing storage files locally to the live website.
+| It only runs when APP_ENV is set to local.
+*/
+if (app()->environment('local')) {
+    Route::get('storage/{path}', function ($path) {
+        return redirect('https://nicholasd.my.id/storage/' . $path);
+    })->where('path', '.*');
+}

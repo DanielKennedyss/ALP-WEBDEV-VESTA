@@ -56,7 +56,7 @@
             <!-- Active Orders -->
             <div class="border border-gray-200 p-8 flex flex-col justify-between hover:border-black transition-colors duration-300">
                 <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Active Orders</span>
-                <h2 class="text-4xl font-light">{{ $transactions->where('status', 'pending')->count() }}</h2>
+                <h2 class="text-4xl font-light">{{ $transactions->whereIn('status', ['pending', 'success', 'processing', 'settlement', 'paid', 'shipped'])->count() }}</h2>
             </div>
 
             <!-- Quick Actions -->

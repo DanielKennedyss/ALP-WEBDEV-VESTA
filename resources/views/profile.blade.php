@@ -72,7 +72,7 @@
 
             <div class="profile-card delay-3 border border-gray-200 p-8 flex flex-col justify-between">
                 <span class="text-[10px] tracking-[0.2em] text-gray-400 uppercase font-medium mb-6">Active Orders</span>
-                <h2 class="text-4xl font-light">{{ $transactions->where('status', 'pending')->count() }}</h2>
+                <h2 class="text-4xl font-light">{{ $transactions->whereIn('status', ['pending', 'success', 'processing', 'settlement', 'paid', 'shipped'])->count() }}</h2>
             </div>
         </div>
 
@@ -200,12 +200,12 @@
                                                     </a>
 
                                                     @if($order->status == 'shipped')
-                                                        <form action="{{ route('profile.orders.receive', $order->id) }}" method="POST" class="inline-block m-0 ml-2">
-                                                            @csrf
-                                                            <button type="submit" class="inline-block border border-black bg-white text-black text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-100 transition-colors">
-                                                                Mark Received
-                                                            </button>
-                                                        </form>
+                                                         <form id="receive-form-{{ $order->id }}" action="{{ route('profile.orders.receive', $order->id) }}" method="POST" class="inline-block m-0 ml-2">
+                                                             @csrf
+                                                             <button type="button" onclick="openReceiveModal('{{ $order->id }}', '{{ $order->invoice_number }}')" class="inline-block border border-black bg-white text-black text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-100 transition-colors w-32 text-center">
+                                                                 Mark Received
+                                                             </button>
+                                                         </form>
                                                     @elseif(in_array($order->status, ['delivered', 'completed']))
                                                         @php
                                                             $reviewItems = [];
@@ -230,11 +230,11 @@
                                                         @endphp
                                                         
                                                         @if($isReviewed)
-                                                            <button disabled class="inline-block border border-stone-200 text-stone-400 text-[9px] tracking-[0.15em] uppercase px-4 py-2 cursor-not-allowed ml-2">
+                                                            <button disabled class="inline-block border border-stone-200 text-stone-400 text-[9px] tracking-[0.15em] uppercase px-4 py-2 cursor-not-allowed ml-2 w-32 text-center">
                                                                 Reviewed
                                                             </button>
                                                         @else
-                                                            <button type="button" onclick="openReviewModal({{ $order->id }}, '{{ $order->invoice_number }}', {{ $encodedItems }})" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors ml-2">
+                                                            <button type="button" onclick="openReviewModal({{ $order->id }}, '{{ $order->invoice_number }}', {{ $encodedItems }})" class="inline-block bg-black text-white text-[9px] tracking-[0.15em] uppercase px-4 py-2 hover:bg-stone-800 transition-colors ml-2 w-32 text-center">
                                                                 Write Review
                                                             </button>
                                                         @endif
@@ -481,10 +481,10 @@
                                         <button type="button" @click="showForm = true; editMode = true; addressId = '{{ $addr->id }}'; label = '{{ $addr->label }}'; province = '{{ $addr->province_name }}'; city = '{{ $addr->city_name }}'; fullAddress = '{{ $addr->full_address }}'; isDefault = {{ $addr->is_default ? 'true' : 'false' }}; populateEditForm('{{ $addr->province_name }}', '{{ $addr->city_name }}');" class="text-[9px] border border-stone-300 text-stone-700 px-3 py-2 uppercase tracking-widest font-semibold hover:border-black hover:text-black transition-all bg-white font-mono">
                                             Edit
                                         </button>
-                                        <form action="/profile/addresses/{{ $addr->id }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this address?');">
+                                        <form id="delete-address-form-{{ $addr->id }}" action="/profile/addresses/{{ $addr->id }}" method="POST" class="m-0">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-[9px] border border-red-200 text-red-600 px-3 py-2 uppercase tracking-widest font-semibold hover:border-red-600 hover:text-red-700 transition-all bg-white font-mono">
+                                            <button type="button" onclick="if(confirm('Are you sure you want to delete this address?')) { document.getElementById('delete-address-form-{{ $addr->id }}').submit(); }" class="text-[9px] border border-red-200 text-red-600 px-3 py-2 uppercase tracking-widest font-semibold hover:border-red-600 hover:text-red-700 transition-all bg-white font-mono">
                                                 Delete
                                             </button>
                                         </form>
@@ -536,6 +536,37 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Elegant Premium Mark Received Confirmation Modal -->
+<div id="receiveModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeReceiveModal()"></div>
+    <div class="relative bg-white max-w-md w-full p-8 shadow-2xl border border-stone-100 flex flex-col z-[101] animate-fade-in text-center">
+        <button type="button" onclick="closeReceiveModal()" class="absolute top-6 right-6 hover:text-stone-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+
+        <h3 class="text-lg font-serif tracking-wider mb-2 text-stone-900">Confirm Delivery</h3>
+        <p class="text-xs text-stone-400 uppercase tracking-widest mb-1">Order <span id="receive-modal-invoice"></span></p>
+        <p class="text-xs text-stone-500 mb-8 leading-relaxed mt-3">By confirming, you acknowledge that you have received this order in good condition. This action cannot be undone.</p>
+
+        <div class="space-y-3">
+            <button type="button" id="receive-modal-confirm-btn" onclick="confirmReceiveOrder()" class="w-full bg-black text-white text-xs tracking-[0.2em] py-4 hover:bg-stone-800 transition-colors uppercase font-bold">
+                Yes, I Have Received It
+            </button>
+            <button type="button" onclick="closeReceiveModal()" class="w-full border border-stone-200 text-stone-600 text-xs tracking-[0.2em] py-4 hover:bg-stone-50 transition-colors uppercase font-bold bg-white">
+                Cancel
+            </button>
+        </div>
     </div>
 </div>
 
@@ -641,6 +672,33 @@
         const modal = document.getElementById('deleteModal');
         modal.classList.add('hidden');
         document.body.style.overflow = '';
+    }
+
+    // Mark Received Confirmation Modal
+    let receiveOrderId = null;
+
+    function openReceiveModal(orderId, invoiceNumber) {
+        receiveOrderId = orderId;
+        document.getElementById('receive-modal-invoice').textContent = invoiceNumber;
+        const modal = document.getElementById('receiveModal');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeReceiveModal() {
+        const modal = document.getElementById('receiveModal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        receiveOrderId = null;
+    }
+
+    function confirmReceiveOrder() {
+        if (receiveOrderId) {
+            const form = document.getElementById('receive-form-' + receiveOrderId);
+            if (form) {
+                form.submit();
+            }
+        }
     }
 
     // RajaOngkir integration for profile page addresses

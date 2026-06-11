@@ -77,6 +77,13 @@ class TransactionController extends Controller
             return redirect()->back()->with('info', 'No changes were made.');
         }
 
+        // Safeguard: Mencegah alur status mundur dari shipped atau status akhir ke pending/processing
+        if (in_array(strtolower($oldStatus), ['shipped', 'delivered', 'completed', 'cancelled', 'expired', 'failed', 'refunded'])) {
+            if (in_array($newStatus, ['pending', 'processing'])) {
+                return redirect()->back()->with('error', 'Cannot change status back to ' . strtoupper($newStatus) . ' once the order has reached ' . strtoupper($oldStatus) . '.');
+            }
+        }
+
         // 2. Gunakan Database Transaction untuk memastikan integritas data multi-tabel (Garda Aman)
         DB::beginTransaction();
         try {

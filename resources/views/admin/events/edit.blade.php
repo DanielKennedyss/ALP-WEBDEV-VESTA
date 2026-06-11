@@ -755,8 +755,8 @@
                                     <div id="background_image_file_wrapper" style="display: {{ old('background_image_source', $bgSource) === 'file' ? 'block' : 'none' }};">
                                         @if($event->background_image && !$isBgUrl)
                                             <div class="mb-2 p-2 border rounded d-flex align-items-center gap-3 bg-light">
-                                                <img id="current_bg_file_preview" src="{{ asset('storage/' . $event->background_image) }}" alt="Background" style="height: 50px; width: 80px; object-fit: cover; border-radius: 4px;">
-                                                <span class="text-muted small">Current: {{ basename($event->background_image) }}</span>
+                                                <img id="current_bg_file_preview" src="{{ \Illuminate\Support\Str::startsWith($event->background_image, ['http://', 'https://']) ? $event->background_image : asset('storage/' . $event->background_image) }}" alt="Background" style="height: 50px; width: 80px; object-fit: cover; border-radius: 4px;">
+                                                <span class="text-muted small" style="word-break: break-all;">Current: {{ basename($event->background_image) }}</span>
                                             </div>
                                         @endif
                                         <label for="bg_file_input" class="form-label-luxury">Background Image File <span class="text-muted fw-normal">(optional)</span></label>
@@ -793,8 +793,8 @@
                                     <div id="main_image_file_wrapper" style="display: {{ old('main_image_source', $mainSource) === 'file' ? 'block' : 'none' }};">
                                         @if($event->main_image && !$isMainUrl)
                                             <div class="mb-2 p-2 border rounded d-flex align-items-center gap-3 bg-light">
-                                                <img id="current_main_file_preview" src="{{ asset('storage/' . $event->main_image) }}" alt="Main" style="height: 50px; width: 80px; object-fit: cover; border-radius: 4px;">
-                                                <span class="text-muted small">Current: {{ basename($event->main_image) }}</span>
+                                                <img id="current_main_file_preview" src="{{ \Illuminate\Support\Str::startsWith($event->main_image, ['http://', 'https://']) ? $event->main_image : asset('storage/' . $event->main_image) }}" alt="Main" style="height: 50px; width: 80px; object-fit: cover; border-radius: 4px;">
+                                                <span class="text-muted small" style="word-break: break-all;">Current: {{ basename($event->main_image) }}</span>
                                             </div>
                                         @endif
                                         <label for="main_image_file" class="form-label-luxury">Main Image File <span class="text-muted fw-normal">(optional)</span></label>
